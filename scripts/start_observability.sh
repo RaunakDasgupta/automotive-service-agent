@@ -18,6 +18,8 @@ set -uo pipefail
 PROM_PORT="${PROM_PORT:-9090}"
 GRAF_PORT="${GRAF_PORT:-3000}"
 APP_METRICS="${ASOIA_METRICS_PORT:-9400}"
+DCGM_PORT="${DCGM_PORT:-9401}"
+DCGM_IMAGE="${DCGM_IMAGE:-nvcr.io/nvidia/k8s/dcgm-exporter:4.1.1-4.0.4-ubuntu22.04}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 up() {
@@ -30,6 +32,20 @@ up() {
     prom/prometheus:v2.54.1 \
       --config.file=/etc/prometheus/prometheus.yml \
       --web.listen-address="127.0.0.1:$PROM_PORT" >/dev/null || exit 1
+
+  # NVIDIA DCGM exporter. Needs the GPU and SYS_ADMIN for the profiling
+  # counters. Loopback-bound like everything else here. A box with no GPU
+  # simply does not get this container, and the dcgm scrape target stays down.
+  if command -v nvidia-smi >/dev/null 2>&1; then
+    echo "==> dcgm-exporter on :$DCGM_PORT (GPU telemetry)"
+    docker rm -f asoia-dcgm >/dev/null 2>&1
+    docker run -d --name asoia-dcgm --gpus all --cap-add SYS_ADMIN \
+      --restart unless-stopped -p "127.0.0.1:$DCGM_PORT:9400" \
+      "$DCGM_IMAGE" >/dev/null \
+      || echo "    dcgm-exporter did not start - GPU panels will be empty"
+  else
+    echo "==> no nvidia-smi, skipping dcgm-exporter"
+  fi
 
   echo "==> grafana on :$GRAF_PORT (anonymous viewer, no login)"
   docker rm -f asoia-grafana >/dev/null 2>&1
@@ -54,7 +70,7 @@ NEXT
 }
 
 down() {
-  docker rm -f asoia-prometheus asoia-grafana >/dev/null 2>&1
+  docker rm -f asoia-prometheus asoia-grafana asoia-dcgm >/dev/null 2>&1
   echo "stopped."
 }
 
@@ -65,6 +81,9 @@ status() {
     || echo "unreachable"
   printf 'prometheus   -> '
   curl -s -o /dev/null -w '%{http_code}\n' --max-time 4 "http://localhost:$PROM_PORT/-/ready" \
+    || echo "unreachable"
+  printf 'dcgm /metrics -> '
+  curl -s -o /dev/null -w '%{http_code}\n' --max-time 4 "http://localhost:$DCGM_PORT/metrics" \
     || echo "unreachable"
 }
 

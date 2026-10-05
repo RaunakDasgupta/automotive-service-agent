@@ -34,8 +34,12 @@ there is a complete audit trail and contradictions are surfaced rather than sile
 
 ## Architecture
 
-Twelve NVIDIA components. Eleven are built and running; the twelfth is blocked
-by a platform fault and is listed as blocked rather than claimed.
+Fourteen NVIDIA components. Thirteen are built and running; the fourteenth is
+blocked by a platform fault and is listed as blocked rather than claimed.
+In `docs/architecture.drawio` the colour carries that argument directly:
+filled green is a served NVIDIA model or NVIDIA infrastructure, an outline is
+an NVIDIA framework, plain is this project's own code and the datastores, and
+a dashed outline is present but not integrated.
 
 | Component | What it does here | Status |
 |---|---|---|
@@ -43,13 +47,16 @@ by a platform fault and is listed as blocked rather than claimed.
 | **NIM — Embedding** | `nv-embedqa-e5-v5`, 1024-dim, for the updates and for op-code resolution | local, `:8001` |
 | **NIM — Reranking** | `nv-rerankqa-mistral-4b-v3` reorders Milvus candidates | local, `:8002` |
 | **Riva — Parakeet ASR** | Speech to text for spoken shift updates, over gRPC | hosted |
+| **Riva — Magpie TTS** | Synthesises the spoken updates the ASR leg is tested with | hosted |
 | **NeMo Agent Toolkit** | The agent as a NAT workflow — `app/agent/workflow.yml` | `aiq run` |
 | **NeMo Guardrails** | `self check input` rail, evaluated by the local nano NIM | `ASOIA_NEMO_RAILS` |
 | **NeMo Curator** | Six-stage curation; the sixth quarantines the injection vector before indexing | `scripts/curate.py` |
 | **NeMo Evaluator** | The six measures as BYOB benchmarks in Evaluator's own result schema | `evals/asoia_byob.py` |
+| **NeMo Relay** | Per-stage trace spans — which tool, which model, how long | `ASOIA_TRACE` |
 | **NeMo Switchyard** | Loopback routing proxy: nano local, `nemotron-3-super-120b` hosted on escalation | off by default |
+| **NVIDIA DCGM** | GPU telemetry: utilisation, framebuffer, power, temperature, clocks | `:9401` |
 | **Milvus** | The vector store, standalone on the box | `:19530` |
-| **Observability** | 13 metric series → Prometheus → a provisioned Grafana dashboard | loopback |
+| **Observability** | 13 application series + 19 DCGM GPU series → Prometheus → Grafana | loopback |
 | **NemoClaw / OpenShell** | Would add a containment boundary and a sandboxed `compute` tool | **blocked** — see `ENGINEERING.md` §34 |
 
 **[`docs/architecture.drawio`](docs/architecture.drawio)** is the whole system in
@@ -327,6 +334,9 @@ at all, because a labelled counter is only emitted once incremented.
 | `ASOIA_SWITCHYARD` | `off` | `on` routes model calls through the Switchyard proxy instead of straight to a NIM |
 | `ASOIA_ATTU_PORT` | `8101` | Attu, the Milvus browser — loopback only |
 | `ASOIA_SQLITEWEB_PORT` | `8102` | sqlite-web, the system-of-record browser — loopback only |
+| `TTS_ENGINE` | `auto` | `riva` refuses to fall back to a local voice; `local` skips Riva |
+| `TTS_VOICE` / `TTS_FUNCTION_ID` | Magpie EN-US | the Riva voice and the hosted function behind it |
+| `DCGM_PORT` | `9401` | the GPU exporter; 9400 is already the application's |
 | `API_PORT` | `8080` | the HTTP API |
 | `PORT` | `7860` | the Gradio UI |
 | `ASOIA_MILVUS_URI` | embedded file | `http://localhost:19530` for standalone; unset locks the store to one process |

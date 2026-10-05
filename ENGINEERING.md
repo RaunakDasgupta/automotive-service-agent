@@ -1867,3 +1867,67 @@ content is not a grid.
 **Portability.** Standard library only, no third-party imports. Byte-identical
 output on Python 3.10.12 (the box's system python, no venv), 3.11.16 (the
 project venv) and 3.14.7 (macOS) - sha256 `f6aa11a3…` on all three.
+
+## 36. The two components that were not NVIDIA, and the alternatives that were
+
+The question was simple: where does this project use something that is not
+NVIDIA, when NVIDIA ships the thing that would do the job? Excluding the places
+where the answer is obviously "nowhere" - the console, the HTTP layer, the
+relational store - two came back.
+
+**Text-to-speech.** `scripts/make_speech.py` shelled out to whatever voice the
+machine had: `say` on a Mac, `espeak-ng` or `pico2wave` on Linux. The ASR leg
+was Parakeet and the leg that fed it was Apple's. Worse, on this box the audit
+turned up something the harness had been quietly hiding: **there is no local TTS
+installed at all** - no `say`, no `espeak`, no `pico2wave`, no `piper`. The one
+end-to-end speech test in the project could not run here, and said so only if
+you ran it.
+
+Riva Magpie TTS replaced it, reached the same way as Parakeet: NVCF gRPC with
+the function id in a header. Verified before a line was written -
+`ai-magpie-tts-multilingual` is ACTIVE for this key and returns 16 kHz
+LINEAR_PCM. Then the loop was closed: its audio goes through the project's own
+ASR and comes back as
+
+    Front pads at 1.8 mm on Ro 26 08165.
+
+10.3% word error rate, 4 of 5 figures surviving. The RO number is the one that
+breaks, which is exactly why `resolve_ro()` understands spoken digits. The
+figure that matters - 1.8 - survives, and that is the only thing this harness
+exists to prove.
+
+The local engines stay as the offline fallback. `TTS_ENGINE=riva` refuses to
+fall back at all, because a test that quietly proves something else is worse
+than a test that fails.
+
+**GPU telemetry.** Prometheus scraped the application's own counters and
+nothing else. On a deployment whose central claim is that three NIMs co-reside
+in 40 GB of 48, not measuring the GPU is a strange omission, and NVIDIA ships
+the exporter for exactly this. DCGM now runs beside Prometheus and Grafana on
+9401 - 9400 being taken - contributing 19 series, with a GPU row added to the
+provisioned dashboard. Framebuffer at 32,796 MiB of 46,068 is the co-residence
+claim, measured rather than asserted.
+
+**What was looked at and rejected.** NeMo Curator PII redaction: the reference
+architecture shows it, and technician notes do carry names and registrations,
+but `nemo_curator` 1.3.0 exposes no PII or de-identification modifier - checked
+by walking every module in the package rather than by reading the docs. Writing
+the detection here and labelling it NeMo Curator would be a label, not a
+component. It is not done, and that is recorded here instead of being quietly
+shipped.
+
+Also checked and already NVIDIA: NeMo Relay, which `app/obs/trace.py` has used
+for per-span tracing since pass 27 and which I had half-expected to find
+declared-but-unused, the way OpenShell was.
+
+**The diagram now carries the argument in its colours.** Filled green is a
+served NVIDIA model or NVIDIA infrastructure; a green outline is an NVIDIA
+framework; plain is this project's code, the console and the datastores; a
+dashed outline is present but not integrated. Milvus is deliberately plain -
+it is the vector store in NVIDIA's own RAG reference stack, but it is not an
+NVIDIA product, and colouring it green to pad the count would be the kind of
+claim the rest of this document exists to avoid. Boxes name components rather
+than modules: a reader of an architecture diagram wants to know what a thing
+is, not which file it lives in.
+
+Counted honestly: thirteen NVIDIA components running, one blocked.
