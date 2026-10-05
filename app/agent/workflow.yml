@@ -9,10 +9,17 @@ general:
 
 llms:
   nemotron:
-    _type: nim
+    # asoia_nim_toolshim, not nim. Asked with the OpenAI `tools` array this
+    # NIM returns the call as assistant TEXT with no tool_calls field, so the
+    # agent saw no call to make and handed the JSON back as its answer. The
+    # provider registered in app/agent/nat_functions.py lifts it back out.
+    _type: asoia_nim_toolshim
     model_name: nvidia/llama-3.1-nemotron-nano-8b-v1
-    base_url: http://localhost:8000/v1      # self-hosted NIM; omit to use build.nvidia.com
-    temperature: 0.2
+    base_url: http://localhost:8000/v1      # self-hosted NIM
+    # 0.0, not 0.2. Choosing between ten tools is a classification, and at 0.2
+    # the safety question picked list_ros on one run and detect_anomalies on
+    # the next - from an identical prompt.
+    temperature: 0.0
     max_tokens: 700
 
 embedders:
@@ -67,3 +74,17 @@ workflow:
 
     Call a tool when you need shop data. When the tools have answered the
     question, reply with the answer and stop.
+
+    Write that answer as plain prose. Never wrap it in JSON, and never read the
+    payload back field by field.
+
+    If a tool result carries "truncated", it did not fit - say how many of how
+    many you are describing, and never present the part as the whole.
+
+    Call one tool, then answer. Never call the same tool twice with the same
+    arguments: once it has returned, the answer is in what it returned, or it
+    is not there at all and you should say so.
+
+    A result of {"repeat_call": true} is not news and is never part of an
+    answer. It means you already have what you asked for: write the answer now,
+    from the earlier result.
