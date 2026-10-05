@@ -395,10 +395,10 @@ def page_architecture() -> Page:
     NY = IY + 54
     p.box(40, NY, 170, 28, S_BANDL, "Not integrated")
     p.box(216, NY, 1444, 28, S_ROAD + "align=left;verticalAlign=middle;",
-          "NemoClaw / OpenShell — containment boundary and a sandboxed "
-          "compute tool. Blocked by a platform fault on the gateway "
-          "launchable, not by this project. The one NVIDIA component of "
-          "fourteen that is not running.")
+          "NemoClaw / OpenShell — containment boundary and a sandboxed compute "
+          "tool; blocked by a platform fault on the gateway launchable. "
+          "NeMo Agent Toolkit — registered and building, but its react loop "
+          "cannot yet resolve the tool group. Two of fourteen.")
 
     LY = NY + 42
     p.raw(40, LY, 1620, 40, S_NOTE,
@@ -658,8 +658,10 @@ COMPONENTS = [
      "non-NVIDIA model in the speech path.",
      "Magpie TTS Multilingual · hosted over gRPC", "running", S_NVB),
     ("NeMo Agent Toolkit", "The agent declared as a toolkit workflow: a react "
-     "agent over the same ten typed tools.",
-     "NeMo Agent Toolkit workflow", "running", S_NV),
+     "agent over the same ten typed tools. The registration is correct and the "
+     "workflow now builds; the react loop cannot yet resolve the tool group.",
+     "NeMo Agent Toolkit workflow",
+     "NOT RUNNING — see ENGINEERING section 38", S_ROAD),
     ("NeMo Guardrails", "The input rail, judged by the local model against "
      "this project's own safety policy rather than a generic one.",
      "self check input rail", "running", S_NV),
@@ -697,9 +699,8 @@ COMPONENTS = [
 def page_components() -> Page:
     p = Page("4 · NVIDIA components", "comp", 1620, 1360)
     _title(p, 1480, "NVIDIA COMPONENT INVENTORY",
-           "thirteen NVIDIA components running, one blocked with evidence "
-           "— stated that way because it is a stronger position than "
-           "fourteen claimed")
+           "twelve NVIDIA components running and two not — both of the "
+           "two diagnosed to a named cause rather than left as a claim")
 
     cols = [(40, 230), (278, 480), (766, 400), (1174, 406)]
     for (x, w), hname in zip(cols, ["COMPONENT", "WHAT IT DOES HERE",
@@ -723,15 +724,15 @@ def page_components() -> Page:
         y += hgt + 5
 
     p.box(40, y + 10, 1540, 96, S_NOTE,
-          "What the one blocked row actually costs",
-          "The containment boundary, and a sandboxed compute tool that would "
-          "let derived figures be computed rather than narrated. What it does "
-          "not cost: any of the four acceptance criteria, any other row, or "
-          "the flywheel — the sandbox is a boundary around steps, not a step "
-          "in the loop. Nothing in the current agent executes untrusted code: "
-          "the ten tools are deterministic SQL and vector reads, with no "
-          "subprocess, no evaluation of model output and no model-directed "
-          "network calls.")
+          "What the two non-running rows actually cost",
+          "The sandbox would give a containment boundary and let derived "
+          "figures be computed rather than narrated; the toolkit workflow "
+          "would give a second front end onto the same ten tools. Neither is "
+          "in the answer path: the agent the console and the API call is this "
+          "project's own router, and it is the one every measure on this page "
+          "was taken against. Nothing in it executes untrusted code — the ten "
+          "tools are deterministic SQL and vector reads, with no subprocess, "
+          "no evaluation of model output and no model-directed network calls.")
     return p
 
 

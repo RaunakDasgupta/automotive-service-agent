@@ -224,7 +224,7 @@
         <mxCell id="arch-73" value="&lt;b&gt;Not integrated&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fillColor=#14302A;strokeColor=none;fontColor=#FFFFFF;spacingLeft=12;" vertex="1" parent="1">
           <mxGeometry x="40" y="1128" width="170" height="28" as="geometry"/>
         </mxCell>
-        <mxCell id="arch-74" value="&lt;b&gt;NemoClaw / OpenShell — containment boundary and a sandboxed compute tool. Blocked by a platform fault on the gateway launchable, not by this project. The one NVIDIA component of fourteen that is not running.&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;dashed=1;dashPattern=6 4;fontColor=#4A7023;align=left;verticalAlign=middle;" vertex="1" parent="1">
+        <mxCell id="arch-74" value="&lt;b&gt;NemoClaw / OpenShell — containment boundary and a sandboxed compute tool; blocked by a platform fault on the gateway launchable. NeMo Agent Toolkit — registered and building, but its react loop cannot yet resolve the tool group. Two of fourteen.&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;dashed=1;dashPattern=6 4;fontColor=#4A7023;align=left;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="216" y="1128" width="1444" height="28" as="geometry"/>
         </mxCell>
         <mxCell id="arch-75" value="&lt;b&gt;Green is NVIDIA.&lt;/b&gt;&amp;nbsp; &lt;font style=&quot;color:#5B8C3A;&quot;&gt;█&lt;/font&gt;&amp;nbsp;filled = served model or NVIDIA infrastructure &amp;nbsp;&amp;nbsp;&lt;font style=&quot;color:#76B900;&quot;&gt;▢&lt;/font&gt;&amp;nbsp;outlined = NVIDIA framework or library &amp;nbsp;&amp;nbsp;&lt;font style=&quot;color:#AEB7AC;&quot;&gt;▢&lt;/font&gt;&amp;nbsp;plain = this project's code, the console and the datastores &amp;nbsp;&amp;nbsp;&lt;font style=&quot;color:#76B900;&quot;&gt;⬚&lt;/font&gt;&amp;nbsp;dashed = present, not integrated&lt;br&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Nothing in the answer path calls a hosted model. Speech is the one hosted dependency, because there is no Riva container in this deployment.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=11;fillColor=#FFFFFF;strokeColor=#AEB7AC;fontColor=#33403A;" vertex="1" parent="1">
@@ -518,7 +518,7 @@
         <mxCell id="comp-1" value="&lt;b&gt;NVIDIA COMPONENT INVENTORY&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=20;fontStyle=1;fillColor=none;strokeColor=none;fontColor=#101814;" vertex="1" parent="1">
           <mxGeometry x="40" y="12" width="1480" height="38" as="geometry"/>
         </mxCell>
-        <mxCell id="comp-2" value="thirteen NVIDIA components running, one blocked with evidence — stated that way because it is a stronger position than fourteen claimed" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=12;fontStyle=1;fillColor=none;strokeColor=none;fontColor=#4A5A52;" vertex="1" parent="1">
+        <mxCell id="comp-2" value="twelve NVIDIA components running and two not — both of the two diagnosed to a named cause rather than left as a claim" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=12;fontStyle=1;fillColor=none;strokeColor=none;fontColor=#4A5A52;" vertex="1" parent="1">
           <mxGeometry x="40" y="52" width="1480" height="28" as="geometry"/>
         </mxCell>
         <mxCell id="comp-3" value="&lt;b&gt;COMPONENT&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=10;fontSize=11;fontStyle=1;fillColor=#1E4035;strokeColor=none;fontColor=#FFFFFF;" vertex="1" parent="1">
@@ -593,128 +593,128 @@
         <mxCell id="comp-26" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#5B8C3A;strokeColor=#446B29;strokeWidth=2;fontColor=#FFFFFF;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="1174" y="384" width="406" height="74" as="geometry"/>
         </mxCell>
-        <mxCell id="comp-27" value="&lt;b&gt;NeMo Agent Toolkit&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="463" width="230" height="58" as="geometry"/>
+        <mxCell id="comp-27" value="&lt;b&gt;NeMo Agent Toolkit&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;dashed=1;dashPattern=6 4;fontColor=#4A7023;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="463" width="230" height="74" as="geometry"/>
         </mxCell>
-        <mxCell id="comp-28" value="&lt;font style=&quot;font-size:11px;&quot;&gt;The agent declared as a toolkit workflow: a react agent over the same ten typed tools.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="463" width="480" height="58" as="geometry"/>
+        <mxCell id="comp-28" value="&lt;font style=&quot;font-size:11px;&quot;&gt;The agent declared as a toolkit workflow: a react agent over the same ten typed tools. The registration is correct and the workflow now builds; the react loop cannot yet resolve the tool group.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="278" y="463" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-29" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;NeMo Agent Toolkit workflow&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="463" width="400" height="58" as="geometry"/>
+          <mxGeometry x="766" y="463" width="400" height="74" as="geometry"/>
         </mxCell>
-        <mxCell id="comp-30" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="463" width="406" height="58" as="geometry"/>
+        <mxCell id="comp-30" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;NOT RUNNING — see ENGINEERING section 38&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;dashed=1;dashPattern=6 4;fontColor=#4A7023;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1174" y="463" width="406" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-31" value="&lt;b&gt;NeMo Guardrails&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="526" width="230" height="74" as="geometry"/>
+          <mxGeometry x="40" y="542" width="230" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-32" value="&lt;font style=&quot;font-size:11px;&quot;&gt;The input rail, judged by the local model against this project's own safety policy rather than a generic one.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="526" width="480" height="74" as="geometry"/>
+          <mxGeometry x="278" y="542" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-33" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;self check input rail&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="526" width="400" height="74" as="geometry"/>
+          <mxGeometry x="766" y="542" width="400" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-34" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="526" width="406" height="74" as="geometry"/>
+          <mxGeometry x="1174" y="542" width="406" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-35" value="&lt;b&gt;NeMo Curator&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="605" width="230" height="74" as="geometry"/>
+          <mxGeometry x="40" y="621" width="230" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-36" value="&lt;font style=&quot;font-size:11px;&quot;&gt;Six-stage curation. Five find nothing in generated data; the sixth quarantines the injection vector before indexing.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="605" width="480" height="74" as="geometry"/>
+          <mxGeometry x="278" y="621" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-37" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;heuristic filters + a custom quarantine stage&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="605" width="400" height="74" as="geometry"/>
+          <mxGeometry x="766" y="621" width="400" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-38" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="605" width="406" height="74" as="geometry"/>
+          <mxGeometry x="1174" y="621" width="406" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-39" value="&lt;b&gt;NeMo Evaluator&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="684" width="230" height="74" as="geometry"/>
+          <mxGeometry x="40" y="700" width="230" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-40" value="&lt;font style=&quot;font-size:11px;&quot;&gt;The six measures as BYOB benchmarks, emitted in Evaluator's own result schema so one run is comparable with the last.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="684" width="480" height="74" as="geometry"/>
+          <mxGeometry x="278" y="700" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-41" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;BYOB benchmarks, scored from recorded answers&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="684" width="400" height="74" as="geometry"/>
+          <mxGeometry x="766" y="700" width="400" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-42" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="684" width="406" height="74" as="geometry"/>
+          <mxGeometry x="1174" y="700" width="406" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-43" value="&lt;b&gt;NeMo Relay&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="763" width="230" height="74" as="geometry"/>
+          <mxGeometry x="40" y="779" width="230" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-44" value="&lt;font style=&quot;font-size:11px;&quot;&gt;Records how an answer was produced — which tool, which model, how long each span took — rather than only what it said.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="763" width="480" height="74" as="geometry"/>
+          <mxGeometry x="278" y="779" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-45" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;tool and model intercepts&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="763" width="400" height="74" as="geometry"/>
+          <mxGeometry x="766" y="779" width="400" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-46" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="763" width="406" height="74" as="geometry"/>
+          <mxGeometry x="1174" y="779" width="406" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-47" value="&lt;b&gt;NeMo Switchyard&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="842" width="230" height="74" as="geometry"/>
+          <mxGeometry x="40" y="858" width="230" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-48" value="&lt;font style=&quot;font-size:11px;&quot;&gt;Routing proxy: the efficient model locally, the capable one hosted when something raises confidence.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="842" width="480" height="74" as="geometry"/>
+          <mxGeometry x="278" y="858" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-49" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;nano local ⇄ Nemotron Super hosted&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="842" width="400" height="74" as="geometry"/>
+          <mxGeometry x="766" y="858" width="400" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-50" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;configured, off by default&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="842" width="406" height="74" as="geometry"/>
+          <mxGeometry x="1174" y="858" width="406" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-51" value="&lt;b&gt;NVIDIA DCGM&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#5B8C3A;strokeColor=#446B29;strokeWidth=2;fontColor=#FFFFFF;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="921" width="230" height="74" as="geometry"/>
+          <mxGeometry x="40" y="937" width="230" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-52" value="&lt;font style=&quot;font-size:11px;&quot;&gt;GPU telemetry — utilisation, framebuffer, power, temperature, clocks. Three NIMs co-reside in 40 GB of 48; this is where that stops being a claim.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="921" width="480" height="74" as="geometry"/>
+          <mxGeometry x="278" y="937" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-53" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;DCGM exporter · 19 series · :9401&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="921" width="400" height="74" as="geometry"/>
+          <mxGeometry x="766" y="937" width="400" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-54" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#5B8C3A;strokeColor=#446B29;strokeWidth=2;fontColor=#FFFFFF;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="921" width="406" height="74" as="geometry"/>
+          <mxGeometry x="1174" y="937" width="406" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-55" value="&lt;b&gt;Milvus&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1000" width="230" height="58" as="geometry"/>
+          <mxGeometry x="40" y="1016" width="230" height="58" as="geometry"/>
         </mxCell>
         <mxCell id="comp-56" value="&lt;font style=&quot;font-size:11px;&quot;&gt;The vector store. Standalone on the box, browsable, and rebuildable from the event log.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="1000" width="480" height="58" as="geometry"/>
+          <mxGeometry x="278" y="1016" width="480" height="58" as="geometry"/>
         </mxCell>
         <mxCell id="comp-57" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;Milvus standalone · :19530&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="1000" width="400" height="58" as="geometry"/>
+          <mxGeometry x="766" y="1016" width="400" height="58" as="geometry"/>
         </mxCell>
         <mxCell id="comp-58" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running — not an NVIDIA product, but the store in NVIDIA's own RAG reference stack&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="1000" width="406" height="58" as="geometry"/>
+          <mxGeometry x="1174" y="1016" width="406" height="58" as="geometry"/>
         </mxCell>
         <mxCell id="comp-59" value="&lt;b&gt;NVIDIA Brev&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#5B8C3A;strokeColor=#446B29;strokeWidth=2;fontColor=#FFFFFF;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1063" width="230" height="58" as="geometry"/>
+          <mxGeometry x="40" y="1079" width="230" height="58" as="geometry"/>
         </mxCell>
         <mxCell id="comp-60" value="&lt;font style=&quot;font-size:11px;&quot;&gt;The deployment target. One L40S carrying all three NIMs and everything else.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="1063" width="480" height="58" as="geometry"/>
+          <mxGeometry x="278" y="1079" width="480" height="58" as="geometry"/>
         </mxCell>
         <mxCell id="comp-61" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;L40S 48 GB&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="1063" width="400" height="58" as="geometry"/>
+          <mxGeometry x="766" y="1079" width="400" height="58" as="geometry"/>
         </mxCell>
         <mxCell id="comp-62" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#5B8C3A;strokeColor=#446B29;strokeWidth=2;fontColor=#FFFFFF;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="1063" width="406" height="58" as="geometry"/>
+          <mxGeometry x="1174" y="1079" width="406" height="58" as="geometry"/>
         </mxCell>
         <mxCell id="comp-63" value="&lt;b&gt;NemoClaw / OpenShell&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;dashed=1;dashPattern=6 4;fontColor=#4A7023;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1126" width="230" height="74" as="geometry"/>
+          <mxGeometry x="40" y="1142" width="230" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-64" value="&lt;font style=&quot;font-size:11px;&quot;&gt;Would add a containment boundary and a sandboxed compute tool, so derived figures could be computed rather than narrated.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="278" y="1126" width="480" height="74" as="geometry"/>
+          <mxGeometry x="278" y="1142" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-65" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;agent sandbox gateway&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="766" y="1126" width="400" height="74" as="geometry"/>
+          <mxGeometry x="766" y="1142" width="400" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-66" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;&lt;b&gt;BLOCKED — platform fault&lt;/b&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;dashed=1;dashPattern=6 4;fontColor=#4A7023;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1174" y="1126" width="406" height="74" as="geometry"/>
+          <mxGeometry x="1174" y="1142" width="406" height="74" as="geometry"/>
         </mxCell>
-        <mxCell id="comp-67" value="&lt;b&gt;What the one blocked row actually costs&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9.5px;color:#5C6B64;&quot;&gt;The containment boundary, and a sandboxed compute tool that would let derived figures be computed rather than narrated. What it does not cost: any of the four acceptance criteria, any other row, or the flywheel — the sandbox is a boundary around steps, not a step in the loop. Nothing in the current agent executes untrusted code: the ten tools are deterministic SQL and vector reads, with no subprocess, no evaluation of model output and no model-directed network calls.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=11;fillColor=#FFFFFF;strokeColor=#AEB7AC;fontColor=#33403A;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1215" width="1540" height="96" as="geometry"/>
+        <mxCell id="comp-67" value="&lt;b&gt;What the two non-running rows actually cost&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9.5px;color:#5C6B64;&quot;&gt;The sandbox would give a containment boundary and let derived figures be computed rather than narrated; the toolkit workflow would give a second front end onto the same ten tools. Neither is in the answer path: the agent the console and the API call is this project's own router, and it is the one every measure on this page was taken against. Nothing in it executes untrusted code — the ten tools are deterministic SQL and vector reads, with no subprocess, no evaluation of model output and no model-directed network calls.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=11;fillColor=#FFFFFF;strokeColor=#AEB7AC;fontColor=#33403A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1231" width="1540" height="96" as="geometry"/>
         </mxCell>
       </root>
     </mxGraphModel>

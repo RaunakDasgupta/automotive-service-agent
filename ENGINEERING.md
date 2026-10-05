@@ -1975,3 +1975,65 @@ console, both store browsers, Prometheus, Grafana and the DCGM exporter, with
 both Prometheus targets healthy and the GPU series arriving. The three NIM
 containers were deliberately left running - restarting them is a TRT engine
 reload, not a service bounce.
+
+## 38. The NeMo Agent Toolkit workflow had never once run
+
+Asked to say how each NVIDIA component is performing its task, I ran the one
+I had only ever asserted:
+
+    aiq run --config_file app/agent/workflow.yml --input "..."
+
+    ValueError: Invalid configuration: functions: Input tag 'service_ops_tools'
+    found using discriminator() does not match any of the expected tags: ...
+
+Four faults, each hidden behind the one in front of it.
+
+**One: no entry point.** `app/agent/nat_functions.py` registers the function
+type correctly, and importing it by hand sets `NAT_AVAILABLE=True` - which is
+why every check I had written passed. The toolkit never imports it. NAT
+discovers third-party components through the `nat.components` entry-point
+group and this package declared no entry points at all, so `aiq run` started
+with the twelve built-in groups and stopped. Declared; fixed.
+
+**Two: the prompt.** The react agent validates that `system_prompt` contains
+`{tools}` and `{tool_names}`, which it partials the tool list into. Ours
+carried the project's grounding rules and none of the scaffolding. Added the
+scaffolding and kept the rules, rather than fall back to NAT's default, which
+says nothing about citations or about never authorising work.
+
+**Three: no framework integration.** The react agent asks for a LangChain
+client and the registry answered `Please provide an LLM configuration from one
+of the following providers: set()` - an empty set. `nvidia-nat` core ships no
+framework bindings; `nvidia-nat-langchain` is a separate package that was
+never installed. Installing it into the serving venv would have **downgraded
+`openai` from 3.3.0 to 2.54.0**, and `openai` is the client the entire answer
+path uses, so it went into its own `.venv-nat` instead - the same decision, for
+the same reason, as `.venv-curator` in pass 47.
+
+**Four, and not fixed: the registration yields ten tools where NAT takes one.**
+With the first three fixed the workflow builds and the agent runs, then loops:
+
+    ReAct Agent wants to call tool [service_ops]. ... there is no tool with
+    that name
+
+`service_ops_tools` is one registered function that `yield`s ten
+`FunctionInfo` objects. `register_function` expects a generator that yields
+exactly one - the yield is the context-manager boundary, not an iteration - so
+nine are discarded and the name the agent is told to call resolves to nothing.
+Fixing it means registering each of the ten tools as its own function type and
+listing all ten in `tool_names`: a redesign of that module rather than a
+wiring fix, and not something to start in the middle of answering a different
+question.
+
+**So the row is now marked as not running, in the README and in the diagram.**
+It had read "running · aiq run" since pass 41 on the strength of the module
+importing. That is the fourth time in this project a component has been
+present, correct and unreachable - the colang rails in §22, the metrics
+exporter in §28, OpenShell in §34, and now this. The pattern is always the
+same: the thing was verified by importing it, and never by running it the way
+a user would.
+
+What it does not cost: nothing in the answer path. The agent the console and
+the HTTP API call is this project's own router, and that is the agent every
+measure in §2, §13 and §29 was taken against. The toolkit workflow is a second
+front end onto the same ten tools, not the thing being measured.
