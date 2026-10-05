@@ -106,6 +106,54 @@ def write_wav(path: str, a: array.array, rate: int = TARGET_RATE) -> None:
 
 # ------------------------------------------------------------------ the engines
 
+# ------------------------------------------------------------------ Riva TTS
+# The first engine tried. Magpie is NVIDIA's multilingual TTS and it is reached
+# the same way as Parakeet ASR: Riva over NVCF gRPC, the function id in a header.
+# Both legs of the speech test are now on the NVIDIA stack.
+TTS_GRPC_SERVER = os.environ.get("TTS_GRPC_SERVER", "grpc.nvcf.nvidia.com:443")
+TTS_FUNCTION_ID = os.environ.get("TTS_FUNCTION_ID",
+                                 "877104f7-e885-42b9-8de8-f6e4c6303969")
+TTS_VOICE = os.environ.get("TTS_VOICE", "Magpie-Multilingual.EN-US.Sofia")
+TTS_USE_SSL = os.environ.get("TTS_USE_SSL", "1") != "0"
+
+
+def _riva_tts(text: str, out: str, voice: str | None) -> str:
+    """Synthesise with Riva. Returns the engine name, or "" with a reason on
+    stderr - a missing key or client is a reason to fall back, not to fail."""
+    try:
+        import riva.client as rc
+    except ImportError:
+        print("   riva: nvidia-riva-client not installed "
+              "(uv pip install --python .venv nvidia-riva-client)", file=sys.stderr)
+        return ""
+    key = os.environ.get("NVIDIA_API_KEY", "").strip()
+    if not key and TTS_USE_SSL:
+        print("   riva: NVIDIA_API_KEY is not set", file=sys.stderr)
+        return ""
+    try:
+        meta = [["function-id", TTS_FUNCTION_ID]]
+        if key:
+            meta.append(["authorization", f"Bearer {key}"])
+        auth = rc.Auth(uri=TTS_GRPC_SERVER, use_ssl=TTS_USE_SSL, metadata_args=meta)
+        resp = rc.SpeechSynthesisService(auth).synthesize(
+            text, voice_name=voice or TTS_VOICE, language_code="en-US",
+            sample_rate_hz=TARGET_RATE, encoding=rc.AudioEncoding.LINEAR_PCM)
+        pcm = resp.audio
+        if not pcm:
+            print("   riva: empty audio returned", file=sys.stderr)
+            return ""
+        # LINEAR_PCM at TARGET_RATE already - wrap it, do not resample.
+        with wave.open(out, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(TARGET_RATE)
+            w.writeframes(pcm)
+        return "riva/magpie"
+    except Exception as e:                       # grpc raises a dozen types
+        print(f"   riva: {type(e).__name__}: {str(e)[:150]}", file=sys.stderr)
+        return ""
+
+
 def _run(cmd: list[str]) -> bool:
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=180)
@@ -114,8 +162,22 @@ def _run(cmd: list[str]) -> bool:
         return False
 
 
-def synthesise(text: str, out: str, voice: str | None, wpm: int | None) -> str:
-    """Write raw TTS audio to `out`. Returns the engine name, or "" if none worked."""
+def synthesise(text: str, out: str, voice: str | None, wpm: int | None,
+               engine: str = "auto") -> str:
+    """Write raw TTS audio to `out`. Returns the engine name, or "" if none worked.
+
+    Riva first, because it is the NVIDIA engine and because it sounds like a
+    person; the shell-out engines are the offline fallback. TTS_ENGINE=local
+    skips Riva, TTS_ENGINE=riva refuses to fall back - useful when you want the
+    test to fail rather than quietly prove something else.
+    """
+    want = (engine or os.environ.get("TTS_ENGINE", "auto")).strip().lower()
+    if want in ("auto", "riva"):
+        name = _riva_tts(text, out, voice)
+        if name:
+            return name
+        if want == "riva":
+            return ""
     if shutil.which("say"):                       # macOS: asks for 16k directly
         cmd = ["say", "--file-format=WAVE", f"--data-format=LEI16@{TARGET_RATE}",
                "-r", str(wpm or 175), "-o", out]
@@ -197,6 +259,9 @@ def main() -> int:
     ap.add_argument("-o", "--out", default="update.wav")
     ap.add_argument("--voice", help="an engine voice name, e.g. Daniel or en-gb")
     ap.add_argument("--wpm", type=int, help="speaking rate (say: 175, espeak: 150)")
+    ap.add_argument("--engine", default="auto", choices=("auto", "riva", "local"),
+                    help="auto tries Riva then the local engines; riva refuses "
+                         "to fall back; local skips Riva entirely")
     args = ap.parse_args()
 
     if not (os.path.exists("pyproject.toml") and os.path.isdir("app/pipeline")):
@@ -212,7 +277,7 @@ def main() -> int:
         text = args.text
 
     raw = os.path.join(tempfile.mkdtemp(), "raw.wav")
-    engine = synthesise(text, raw, args.voice, args.wpm)
+    engine = synthesise(text, raw, args.voice, args.wpm, args.engine)
     if not engine:
         print(NO_TTS)
         return 2

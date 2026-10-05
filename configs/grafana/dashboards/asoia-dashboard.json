@@ -1,59 +1,321 @@
 {
-  "title": "Service Operations Agent",
-  "uid": "asoia",
-  "timezone": "browser",
-  "refresh": "10s",
-  "time": {"from": "now-1h", "to": "now"},
-  "panels": [
-    {"type": "stat", "title": "Answers composed in Python (%)",
-     "description": "The headline claim. Structured questions should compose in Python and make no model call at all.",
-     "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
-     "targets": [{"expr": "100 * sum(rate(asoia_answers_total{compose=\"python\"}[5m])) / clamp_min(sum(rate(asoia_answers_total[5m])), 0.0001)", "legendFormat": "python"}],
-     "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100,
-       "thresholds": {"mode": "absolute", "steps": [
-         {"color": "red", "value": null}, {"color": "orange", "value": 50}, {"color": "green", "value": 80}]}}}},
-    {"type": "stat", "title": "Ungrounded answers",
-     "description": "Any non-zero value means a renderer derived a figure the tools never produced.",
-     "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
-     "targets": [{"expr": "sum(increase(asoia_grounding_warnings_total[1h]))", "legendFormat": "warnings"}],
-     "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [
-       {"color": "green", "value": null}, {"color": "red", "value": 1}]}}}},
-    {"type": "stat", "title": "Silent fallbacks to the model",
-     "description": "A renderer gave way to narration. Designed paths (search_updates) are not counted.",
-     "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
-     "targets": [{"expr": "sum(increase(asoia_compose_fallbacks_total[1h]))", "legendFormat": "fallbacks"}],
-     "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [
-       {"color": "green", "value": null}, {"color": "orange", "value": 1}]}}}},
-    {"type": "stat", "title": "Answers cut short",
-     "description": "Narration hit max_tokens. The answer reached the reader incomplete.",
-     "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
-     "targets": [{"expr": "sum(increase(asoia_answers_truncated_total[1h]))", "legendFormat": "truncated"}],
-     "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [
-       {"color": "green", "value": null}, {"color": "red", "value": 1}]}}}},
-    {"type": "timeseries", "title": "Answer latency by compose path (p50 / p95)",
-     "description": "Deterministic answers sit in milliseconds; only the search path should be seconds.",
-     "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
-     "targets": [
-       {"expr": "histogram_quantile(0.50, sum by (le, compose) (rate(asoia_answer_seconds_bucket[5m])))", "legendFormat": "p50 {{compose}}"},
-       {"expr": "histogram_quantile(0.95, sum by (le, compose) (rate(asoia_answer_seconds_bucket[5m])))", "legendFormat": "p95 {{compose}}"}],
-     "fieldConfig": {"defaults": {"unit": "s"}}},
-    {"type": "timeseries", "title": "NIM latency by service (p95)",
-     "description": "Generation dominates the search path; rerank was measured at 137ms for 18 candidates.",
-     "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
-     "targets": [{"expr": "histogram_quantile(0.95, sum by (le, service) (rate(asoia_nim_seconds_bucket[5m])))", "legendFormat": "{{service}}"}],
-     "fieldConfig": {"defaults": {"unit": "s"}}},
-    {"type": "timeseries", "title": "Model calls per minute, by purpose",
-     "description": "Routing calls should be rare and narration calls should only come from free-text search.",
-     "gridPos": {"h": 7, "w": 8, "x": 0, "y": 13},
-     "targets": [{"expr": "sum by (purpose) (rate(asoia_llm_calls_total[5m])) * 60", "legendFormat": "{{purpose}}"}]},
-    {"type": "timeseries", "title": "Tool usage",
-     "description": "Which tools the router actually picks - the cheapest way to spot a routing regression.",
-     "gridPos": {"h": 7, "w": 8, "x": 8, "y": 13},
-     "targets": [{"expr": "sum by (tool) (rate(asoia_tool_calls_total[5m])) * 60", "legendFormat": "{{tool}}"}]},
-    {"type": "timeseries", "title": "Guardrail blocks and NIM errors",
-     "gridPos": {"h": 7, "w": 8, "x": 16, "y": 13},
-     "targets": [
-       {"expr": "sum by (rail) (rate(asoia_rail_blocks_total[5m])) * 60", "legendFormat": "rail {{rail}}"},
-       {"expr": "sum by (service) (rate(asoia_nim_errors_total[5m])) * 60", "legendFormat": "error {{service}}"}]}
-  ]
+ "title": "Service Operations Agent",
+ "uid": "asoia",
+ "timezone": "browser",
+ "refresh": "10s",
+ "time": {
+  "from": "now-1h",
+  "to": "now"
+ },
+ "panels": [
+  {
+   "type": "stat",
+   "title": "Answers composed in Python (%)",
+   "description": "The headline claim. Structured questions should compose in Python and make no model call at all.",
+   "gridPos": {
+    "h": 5,
+    "w": 6,
+    "x": 0,
+    "y": 0
+   },
+   "targets": [
+    {
+     "expr": "100 * sum(rate(asoia_answers_total{compose=\"python\"}[5m])) / clamp_min(sum(rate(asoia_answers_total[5m])), 0.0001)",
+     "legendFormat": "python"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "min": 0,
+     "max": 100,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 50
+       },
+       {
+        "color": "green",
+        "value": 80
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Ungrounded answers",
+   "description": "Any non-zero value means a renderer derived a figure the tools never produced.",
+   "gridPos": {
+    "h": 5,
+    "w": 6,
+    "x": 6,
+    "y": 0
+   },
+   "targets": [
+    {
+     "expr": "sum(increase(asoia_grounding_warnings_total[1h]))",
+     "legendFormat": "warnings"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 1
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Silent fallbacks to the model",
+   "description": "A renderer gave way to narration. Designed paths (search_updates) are not counted.",
+   "gridPos": {
+    "h": 5,
+    "w": 6,
+    "x": 12,
+    "y": 0
+   },
+   "targets": [
+    {
+     "expr": "sum(increase(asoia_compose_fallbacks_total[1h]))",
+     "legendFormat": "fallbacks"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 1
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "type": "stat",
+   "title": "Answers cut short",
+   "description": "Narration hit max_tokens. The answer reached the reader incomplete.",
+   "gridPos": {
+    "h": 5,
+    "w": 6,
+    "x": 18,
+    "y": 0
+   },
+   "targets": [
+    {
+     "expr": "sum(increase(asoia_answers_truncated_total[1h]))",
+     "legendFormat": "truncated"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 1
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Answer latency by compose path (p50 / p95)",
+   "description": "Deterministic answers sit in milliseconds; only the search path should be seconds.",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 5
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.50, sum by (le, compose) (rate(asoia_answer_seconds_bucket[5m])))",
+     "legendFormat": "p50 {{compose}}"
+    },
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, compose) (rate(asoia_answer_seconds_bucket[5m])))",
+     "legendFormat": "p95 {{compose}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "NIM latency by service (p95)",
+   "description": "Generation dominates the search path; rerank was measured at 137ms for 18 candidates.",
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 5
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, service) (rate(asoia_nim_seconds_bucket[5m])))",
+     "legendFormat": "{{service}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    }
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "Model calls per minute, by purpose",
+   "description": "Routing calls should be rare and narration calls should only come from free-text search.",
+   "gridPos": {
+    "h": 7,
+    "w": 8,
+    "x": 0,
+    "y": 13
+   },
+   "targets": [
+    {
+     "expr": "sum by (purpose) (rate(asoia_llm_calls_total[5m])) * 60",
+     "legendFormat": "{{purpose}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Tool usage",
+   "description": "Which tools the router actually picks - the cheapest way to spot a routing regression.",
+   "gridPos": {
+    "h": 7,
+    "w": 8,
+    "x": 8,
+    "y": 13
+   },
+   "targets": [
+    {
+     "expr": "sum by (tool) (rate(asoia_tool_calls_total[5m])) * 60",
+     "legendFormat": "{{tool}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Guardrail blocks and NIM errors",
+   "gridPos": {
+    "h": 7,
+    "w": 8,
+    "x": 16,
+    "y": 13
+   },
+   "targets": [
+    {
+     "expr": "sum by (rail) (rate(asoia_rail_blocks_total[5m])) * 60",
+     "legendFormat": "rail {{rail}}"
+    },
+    {
+     "expr": "sum by (service) (rate(asoia_nim_errors_total[5m])) * 60",
+     "legendFormat": "error {{service}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "GPU utilisation and framebuffer",
+   "description": "NVIDIA DCGM. Three NIMs co-reside in about 40 GB of the 48; this is where that stops being a claim.",
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 20
+   },
+   "targets": [
+    {
+     "expr": "DCGM_FI_DEV_GPU_UTIL",
+     "legendFormat": "SM util %"
+    },
+    {
+     "expr": "DCGM_FI_DEV_FB_USED / 1024",
+     "legendFormat": "framebuffer used (GiB)"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "min": 0,
+     "custom": {
+      "fillOpacity": 8
+     }
+    },
+    "overrides": []
+   }
+  },
+  {
+   "type": "timeseries",
+   "title": "GPU power, temperature and clock",
+   "description": "NVIDIA DCGM. Power and temperature are what throttle an L40S long before memory does.",
+   "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 12,
+    "y": 20
+   },
+   "targets": [
+    {
+     "expr": "DCGM_FI_DEV_POWER_USAGE",
+     "legendFormat": "power (W)"
+    },
+    {
+     "expr": "DCGM_FI_DEV_GPU_TEMP",
+     "legendFormat": "temp (C)"
+    },
+    {
+     "expr": "DCGM_FI_DEV_SM_CLOCK",
+     "legendFormat": "SM clock (MHz)"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "min": 0,
+     "custom": {
+      "fillOpacity": 0
+     }
+    },
+    "overrides": []
+   }
+  }
+ ]
 }

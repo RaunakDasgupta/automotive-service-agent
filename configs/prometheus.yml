@@ -8,6 +8,14 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9400"]
 
+  # NVIDIA DCGM. The GPU itself - utilisation, framebuffer, power, temperature,
+  # clocks. 9401 because the app already holds 9400. Started by
+  # scripts/start_observability.sh; if it is not running this target is simply
+  # down, which Prometheus reports and nothing else notices.
+  - job_name: dcgm
+    static_configs:
+      - targets: ["localhost:9401"]
+
   # The three NIMs publish Triton metrics on their own container port 8002.
   # start_nims.sh maps each container's 8000 to a distinct host port, so these
   # are only reachable if you also publish 8002 - left here, commented, because

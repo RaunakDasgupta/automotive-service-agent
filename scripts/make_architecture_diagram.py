@@ -7,17 +7,30 @@ multi-page draw.io file.
 
 WHY A GENERATOR RATHER THAN A HAND-DRAWN FILE
 
-A diagram drawn once is accurate once. Every box here carries a count, a port,
-a model id or a file path, and all of those move. Generating the file from
+A diagram drawn once is accurate once. Every box here carries a model id, a
+port, a count or a capability, and all of those move. Generating the file from
 constants that sit next to the claim they make means a wrong number is a one
 line fix and a re-run, not an afternoon of dragging rectangles.
 
+THE COLOUR SCHEME CARRIES THE ARGUMENT
+
+Green is NVIDIA. Everything else is plain. That is the whole legend, and it is
+deliberate: the question this diagram has to answer at a glance is which parts
+of the system are NVIDIA's and which are not. Solid green is NVIDIA
+infrastructure and the served models; a green outline is an NVIDIA framework or
+library; a dashed green outline is present but not integrated. Plain grey boxes
+are this project's own code, the UI, and the datastores.
+
+Boxes name COMPONENTS, not files. A reader of an architecture diagram wants to
+know what a thing is, not which module it lives in; the file paths are in
+README.md and ENGINEERING.md where they belong.
+
 The counts marked VERIFIED were read off the running box on 2026-10-05:
-10 tools, 27 HTTP routes, 13 metric series, and the table row counts.
+10 tools, 27 HTTP routes, 13 application metric series plus 19 DCGM GPU series,
+and the table row counts.
 
 The output is uncompressed draw.io XML, so it is diffable and opens in
-app.diagrams.net, the desktop app, or the VS Code extension without a round
-trip through a server.
+app.diagrams.net, the desktop app, or the VS Code extension.
 """
 from __future__ import annotations
 
@@ -27,88 +40,106 @@ import re
 from xml.sax.saxutils import escape as _xesc
 
 # --------------------------------------------------------------------------
-# palette. Fill encodes WHAT A THING IS, which is the only legend the reader
-# has to learn: green is NVIDIA, blue is our Python, amber is a store.
+# palette, taken from the use-case slides: a near-black green for section
+# bands, NVIDIA green for anything NVIDIA, and plain paper for the rest.
 # --------------------------------------------------------------------------
-GREEN = "#76B900"        # NVIDIA components
-BLUE = "#3A6EA5"         # project code
-AMBER = "#D6B656"        # persistent stores
-RED = "#B85450"          # guardrails and verification
-PURPLE = "#7E57C2"       # operations / observability
-GREY = "#9E9E9E"         # not integrated
-INK = "#1D3C4E"          # lane headers
-DEEP = "#102A38"         # section bands
+NVGRN = "#76B900"        # NVIDIA green - every NVIDIA border
+NVSOLID = "#5B8C3A"      # filled green - served models and NVIDIA infrastructure
+BAND = "#14302A"         # section bands, near-black green
+LANE = "#1E4035"         # lane headers, a shade up from the bands
+PAPER = "#FCFCFA"        # ordinary components
+EDGE = "#AEB7AC"         # their border
+ACCENT_G = "#5B8C3A"     # objective rule
+ACCENT_O = "#C1562A"     # outcome rule
 
 _BOX = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;"
-        "spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;strokeWidth=2;")
+        "spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;")
 
-S_NV = _BOX + f"fillColor=#EDF6DD;strokeColor={GREEN};fontColor=#1C3307;"
-S_CODE = _BOX + f"fillColor=#E8EEF7;strokeColor={BLUE};fontColor=#13293D;"
-S_STORE = _BOX + f"fillColor=#FFF4D6;strokeColor={AMBER};fontColor=#3D3317;"
-S_RAIL = _BOX + f"fillColor=#FBE5E5;strokeColor={RED};fontColor=#3D1414;"
-S_OPS = _BOX + f"fillColor=#EFE9F8;strokeColor={PURPLE};fontColor=#271A3D;"
-S_OFF = _BOX + f"fillColor=#F4F4F4;strokeColor={GREY};fontColor=#555555;dashed=1;"
+# NVIDIA framework / library: white, green outline.
+S_NV = _BOX + f"fillColor=#FFFFFF;strokeColor={NVGRN};strokeWidth=2;fontColor=#17301A;"
+# NVIDIA served model or infrastructure: filled green.
+S_NVB = _BOX + f"fillColor={NVSOLID};strokeColor=#446B29;strokeWidth=2;fontColor=#FFFFFF;"
+# Not NVIDIA: this project's code, the UI, the datastores.
+S_STD = _BOX + f"fillColor={PAPER};strokeColor={EDGE};strokeWidth=1;fontColor=#1C2B25;"
+# Present but not integrated.
+S_ROAD = (_BOX + f"fillColor=#FFFFFF;strokeColor={NVGRN};strokeWidth=2;"
+          "dashed=1;dashPattern=6 4;fontColor=#4A7023;")
 
 S_LANE = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
-          f"spacingLeft=10;fontSize=11;fontStyle=1;fillColor={INK};"
+          f"spacingLeft=10;fontSize=11;fontStyle=1;fillColor={LANE};"
           "strokeColor=none;fontColor=#FFFFFF;")
-S_BAND = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
-          f"spacingLeft=12;fontSize=12;fontStyle=1;fillColor={DEEP};"
+S_BAND = ("rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
+          f"fontSize=12;fontStyle=1;fillColor={BAND};"
           "strokeColor=none;fontColor=#FFFFFF;")
+S_BANDL = S_BAND.replace("align=center", "align=left") + "spacingLeft=12;"
 S_GROUP = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;"
            "spacingLeft=10;spacingTop=4;fontSize=11;fontStyle=1;"
-           "fillColor=#FAFBFC;strokeColor=#B6C2CC;fontColor=#1D3C4E;"
-           "dashed=0;")
+           f"fillColor=#F7F8F5;strokeColor={EDGE};fontColor={BAND};")
 S_TITLE = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
-           "spacingLeft=16;fontSize=20;fontStyle=1;fillColor=#FFFFFF;"
-           "strokeColor=none;fontColor=#102A38;")
+           "spacingLeft=14;fontSize=20;fontStyle=1;fillColor=none;"
+           "strokeColor=none;fontColor=#101814;")
 S_NOTE = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;"
-          "spacing=6;fontSize=11;fillColor=#FFFFFF;strokeColor=#C9D3DA;"
-          "fontColor=#33474F;")
+          f"spacing=6;fontSize=11;fillColor=#FFFFFF;strokeColor={EDGE};"
+          "fontColor=#33403A;")
 S_PANEL_L = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;"
-             "spacing=8;fontSize=11;fillColor=#F4F8EC;strokeColor=#76B900;"
-             "fontColor=#1C3307;")
+             "spacing=8;spacingLeft=14;fontSize=11;fillColor=#EFF3EA;"
+             "strokeColor=none;fontColor=#1D2E1B;")
 S_PANEL_R = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;"
-             "spacing=8;fontSize=11;fillColor=#FDF1EC;strokeColor=#D79B7A;"
-             "fontColor=#3D2314;")
+             "spacing=8;spacingLeft=14;fontSize=11;fillColor=#FAEADF;"
+             "strokeColor=none;fontColor=#3A2114;")
+S_RULE_G = f"rounded=0;html=1;fillColor={ACCENT_G};strokeColor=none;"
+S_RULE_O = f"rounded=0;html=1;fillColor={ACCENT_O};strokeColor=none;"
+S_CHIP = ("rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
+          f"fontSize=10;fontStyle=1;fillColor={NVSOLID};strokeColor=none;"
+          "fontColor=#FFFFFF;")
+S_CHIP_R = ("rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
+            f"fontSize=10;fontStyle=1;fillColor=#FFFFFF;strokeColor={NVGRN};"
+            "dashed=1;dashPattern=6 4;fontColor=#4A7023;")
 
 S_START = ("ellipse;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
-           "fontSize=11;fontStyle=1;fillColor=#E8EEF7;strokeColor=#3A6EA5;"
-           "strokeWidth=2;fontColor=#13293D;")
+           f"fontSize=11;fontStyle=1;fillColor=#FFFFFF;strokeColor={BAND};"
+           "strokeWidth=2;fontColor=#14302A;")
 S_END = ("ellipse;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
-         "fontSize=11;fontStyle=1;fillColor=#E3EEDA;strokeColor=#5C8A1E;"
-         "strokeWidth=2;fontColor=#1C3307;")
+         f"fontSize=11;fontStyle=1;fillColor={NVSOLID};strokeColor=#446B29;"
+         "strokeWidth=2;fontColor=#FFFFFF;")
 S_DEC = ("rhombus;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
-         "fontSize=10;fillColor=#FFF4D6;strokeColor=#D6B656;strokeWidth=2;"
-         "fontColor=#3D3317;")
+         f"fontSize=10;fillColor=#FFFFFF;strokeColor={BAND};strokeWidth=2;"
+         "fontColor=#14302A;")
 
 E_MAIN = ("edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;"
-          "strokeColor=#44616F;strokeWidth=1.6;endArrow=block;endFill=1;"
-          "fontSize=10;fontColor=#33474F;labelBackgroundColor=#FFFFFF;")
+          f"strokeColor={BAND};strokeWidth=1.6;endArrow=block;endFill=1;"
+          "fontSize=10;fontColor=#33403A;labelBackgroundColor=#FFFFFF;")
 E_SIDE = ("edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;"
-          "strokeColor=#B85450;strokeWidth=1.4;endArrow=block;endFill=1;"
-          "dashed=1;fontSize=10;fontColor=#B85450;"
+          f"strokeColor={ACCENT_O};strokeWidth=1.4;endArrow=block;endFill=1;"
+          "dashed=1;fontSize=10;fontColor=#9E441F;"
           "labelBackgroundColor=#FFFFFF;")
 E_FEED = ("edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;"
-          "strokeColor=#7E57C2;strokeWidth=1.4;endArrow=block;endFill=1;"
-          "dashed=1;fontSize=10;fontColor=#5E3FA0;"
+          f"strokeColor={NVSOLID};strokeWidth=1.4;endArrow=block;endFill=1;"
+          "dashed=1;fontSize=10;fontColor=#446B29;"
           "labelBackgroundColor=#FFFFFF;")
-E_FAT = ("edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#76B900;"
-         "strokeWidth=3;endArrow=blockThin;endFill=1;")
 
 
 def esc(s: str) -> str:
     return _xesc(s, {'"': "&quot;"})
 
 
-def lbl(title: str, sub: str = "") -> str:
-    """A bold name over a small grey line. The sub line is where the evidence
-    goes - a port, a file, a count - so no box is a noun with nothing behind it."""
+# Fills dark enough that a grey sub-line disappears on them.
+_DARK_FILLS = (NVSOLID, BAND, LANE)
+
+
+def lbl(title: str, sub: str = "", style: str = "") -> str:
+    """A bold name over a small muted line. The sub line carries the evidence -
+    a model id, a port, a capability - so no box is a noun with nothing behind
+    it. On a filled-green or banded box the muted grey is invisible, so the
+    sub-line goes pale instead; the colour follows the fill rather than being
+    passed in at every call site."""
     title = title.replace("\n", "<br>")
     out = f"<b>{title}</b>"
     if sub:
         sub = sub.replace("\n", "<br>")
-        out += f'<br><font style="font-size:9.5px;color:#55707E;">{sub}</font>'
+        on_dark = any(f"fillColor={c}" in style for c in _DARK_FILLS)
+        colour = "#DCE8CF" if on_dark else "#5C6B64"
+        out += f'<br><font style="font-size:9.5px;color:{colour};">{sub}</font>'
     return out
 
 
@@ -131,7 +162,7 @@ class Page:
     def box(self, x, y, w, h, style, title, sub="", _id=None) -> str:
         cid = _id or self._id()
         self.cells.append(
-            f'        <mxCell id="{cid}" value="{esc(lbl(title, sub))}" '
+            f'        <mxCell id="{cid}" value="{esc(lbl(title, sub, style))}" '
             f'style="{esc(style)}" vertex="1" parent="1">\n'
             f'          <mxGeometry x="{x}" y="{y}" width="{w}" '
             f'height="{h}" as="geometry"/>\n        </mxCell>')
@@ -193,302 +224,303 @@ def row(page: Page, x: int, y: int, w: int, h: int, items, pad=10, gap=10):
 # PAGE 1 - the system map
 # ==========================================================================
 def page_architecture() -> Page:
-    p = Page("1 · Architecture", "arch", 1700, 1250)
+    p = Page("1 · Architecture", "arch", 1700, 1270)
 
-    p.raw(40, 20, 1620, 52, S_TITLE,
-          '<b>AGENTIC AI USE CASE — Automotive Service Operations '
-          'Intelligence Agent</b>'
-          '<font style="font-size:12px;color:#55707E;">&nbsp;&nbsp;·&nbsp;&nbsp;'
-          'voice and text shift updates → derived repair-order state → a '
-          'grounded agent</font>')
+    p.raw(40, 12, 1000, 38, S_TITLE, "<b>AGENTIC AI USE CASE</b>")
+    p.raw(40, 52, 1200, 30,
+          S_TITLE.replace("fontSize=20", "fontSize=15")
+                 .replace("fontColor=#101814", "fontColor=#3A4A42"),
+          "Automotive Service Operations Intelligence Agent")
 
-    p.raw(40, 82, 800, 100, S_PANEL_L,
-          '<b style="font-size:13px;">OBJECTIVE</b><br>'
+    # ------------------------------------------------- objective / outcome
+    p.raw(40, 84, 5, 118, S_RULE_G, "")
+    p.raw(45, 84, 795, 118, S_PANEL_L,
+          '<b style="font-size:12px;">OBJECTIVE</b><br>'
           '<font style="font-size:11px;">A service department\'s true state '
-          'lives in what technicians say during the shift, and it is lost: '
-          'spoken updates never reach the DMS, the advisor re-walks the shop '
-          'to answer "is this car safe to release?", and the handover between '
-          'shifts is rebuilt from memory. Status is stale, blocked vehicles '
-          'sit unnoticed, and nobody can show how a figure was '
-          'arrived at.</font>')
+          'lives in what technicians say during the shift, and it is lost. '
+          'Spoken updates never reach the DMS, the advisor re-walks the shop '
+          'to answer &quot;is this car safe to release?&quot;, and the '
+          'handover is rebuilt from memory. Status is stale, blocked vehicles '
+          'sit unnoticed, and nobody can show how a figure was arrived '
+          'at.</font>')
 
-    p.raw(860, 82, 800, 100, S_PANEL_R,
-          '<b style="font-size:13px;">BUSINESS OUTCOME</b><br>'
+    p.raw(860, 84, 5, 118, S_RULE_O, "")
+    p.raw(865, 84, 795, 118, S_PANEL_R,
+          '<b style="font-size:12px;">BUSINESS OUTCOME</b><br>'
           '<font style="font-size:11px;">'
           '• Capture the shift by speaking, not by typing into a DMS<br>'
           '• Surface blocked and at-risk vehicles the moment they block<br>'
           '• Hand over a shift in one prioritised, cited page<br>'
-          '• Every figure computed and traceable to an update id — auditable '
-          'by construction<br>'
-          '• Runs on one L40S: no customer data leaves the box</font>')
+          '• Every figure computed and traceable to an update id<br>'
+          '• Runs on one L40S — no customer data leaves the box</font>')
 
-    p.raw(40, 212, 1620, 26, S_BAND,
-          'ARCHITECTURE&nbsp;&nbsp;<font style="font-weight:normal;'
-          'font-size:10px;">lanes run top to bottom; the write path and the '
-          'read path are drawn on pages 2 and 3</font>')
+    # ------------------------------------------------------- chips + label
+    p.raw(40, 214, 300, 30,
+          S_TITLE.replace("fontSize=20", "fontSize=14").replace("spacingLeft=14", "spacingLeft=0"),
+          "<b>ARCHITECTURE</b>")
+    p.box(1118, 216, 180, 26, S_CHIP, "NVIDIA · SERVED")
+    p.box(1304, 216, 180, 26, S_NV + "align=center;verticalAlign=middle;"
+          "fontStyle=1;fontSize=10;spacingLeft=0;", "NVIDIA · FRAMEWORK")
+    p.box(1490, 216, 170, 26, S_CHIP_R, "NOT INTEGRATED")
 
-    Y0 = 256
-    # Columns leave a 44px gutter on each side of the platform, because the
-    # flow arrows live in those gutters rather than on top of a lane.
+    Y0 = 252
     LX, LW = 40, 240
     CX, CW = 324, 1000
     RX, RW = 1368, 292
 
-    # ---------------------------------------------------------------- left
-    p.box(LX, Y0, LW, 24, S_LANE, "LIVE INPUTS")
-    g = Y0 + 28
-    p.box(LX, g, LW, 60, S_CODE, "Voice update",
-          "16 kHz mono WAV · gr.Audio or POST /updates")
-    p.box(LX, g + 66, LW, 60, S_CODE, "Typed update",
-          "technician free text, same pipeline")
-    p.box(LX, g + 132, LW, 60, S_CODE, "Manager question",
-          "natural language · UI tab or POST /ask")
+    p.box(CX, Y0, CW, 26, S_BAND,
+          "SERVICE OPERATIONS INTELLIGENCE PLATFORM")
 
-    p.box(LX, Y0 + 226, LW, 24, S_LANE, "SEEDED CORPORA")
-    g = Y0 + 254
-    p.box(LX, g, LW, 56, S_STORE, "Repair orders · 400",
-          "VIN, vehicle, pay type, promised time")
-    p.box(LX, g + 62, LW, 56, S_STORE, "Shift updates · 1,949",
+    # ---------------------------------------------------------------- left
+    p.box(LX, Y0, LW, 26, S_BANDL, "Shop Floor Inputs")
+    g = Y0 + 30
+    p.box(LX, g, LW, 56, S_STD, "Spoken update",
+          "a technician dictating at the bay")
+    p.box(LX, g + 62, LW, 56, S_STD, "Typed update",
+          "the same pipeline, no audio leg")
+    p.box(LX, g + 124, LW, 56, S_STD, "Manager question",
+          "natural language, console or API")
+
+    p.box(LX, Y0 + 220, LW, 26, S_BANDL, "Knowledge Corpora")
+    g = Y0 + 250
+    p.box(LX, g, LW, 52, S_STD, "Repair orders · 400",
+          "vehicle, pay type, promised time")
+    p.box(LX, g + 58, LW, 52, S_STD, "Shift updates · 1,949",
           "technician prose + ground truth")
-    p.box(LX, g + 124, LW, 56, S_STORE, "Labour operations · 104",
-          "op code, flat rate, skill, safety flag")
-    p.box(LX, g + 186, LW, 56, S_STORE, "Staff · 50",
+    p.box(LX, g + 116, LW, 52, S_STD, "Labour operations · 104",
+          "op code, flat rate, safety flag")
+    p.box(LX, g + 174, LW, 52, S_STD, "Staff · 50",
           "role, skill, shift, team")
 
-    p.box(LX, Y0 + 508, LW, 92, S_NOTE,
-          "Generated, not scraped",
-          "app/data/{generate,scenarios,catalog,vin,narrate}.py builds a "
-          "shop with realistic failure modes — contradictions, missing "
-          "authorisations, parts holds — so the agent has something worth "
-          "being right about.")
-
-    # -------------------------------------------------------------- center
+    # -------------------------------------------------------------- centre
     lanes = [
-        ("1 · INGESTION &amp; UNDERSTANDING", [
-            (S_CODE, "Capture", "app/pipeline/run.py · one entry point"),
-            (S_NV, "Riva · Parakeet CTC 0.6B", "ASR over gRPC · nvcf"),
-            (S_NV, "Extract — Nemotron Nano 8B", "prose → strict JSON"),
-            (S_CODE, "Resolve", "RO digits + op code, embedding-assisted"),
-            (S_CODE, "Reconcile", "conflict detection vs snapshot"),
+        ("1 · CAPTURE &amp; UNDERSTANDING", [
+            (S_NVB, "Riva · Parakeet ASR", "speech to text, streaming or offline"),
+            (S_NVB, "Nemotron Nano 8B", "technician prose → strict JSON"),
+            (S_STD, "Entity resolver", "repair orders, op codes, spoken digits"),
+            (S_STD, "Reconciler", "new facts vs the current snapshot"),
         ]),
         ("2 · EVENT LOG &amp; DERIVED STATE", [
-            (S_STORE, "events · append-only", "10,927 rows · never overwritten"),
-            (S_CODE, "Fold → RO snapshot", "app/state/engine.py"),
-            (S_CODE, "13-state lifecycle", "illegal transitions rejected, not applied"),
-            (S_CODE, "Diff card", "what changed, since when, by whom"),
+            (S_STD, "Event log", "append-only · 10,927 events"),
+            (S_STD, "Fold engine", "state derived on read, never stored"),
+            (S_STD, "Lifecycle gate", "13 states; illegal moves rejected"),
+            (S_STD, "Diff card", "what changed, since when, by whom"),
         ]),
         ("3 · DATA PREPARATION &amp; INDEXING", [
-            (S_NV, "NeMo Curator", "6 stages · scripts/curate.py"),
-            (S_NV, "nv-embedqa-e5-v5", "1024-dim · NIM :8001"),
-            (S_STORE, "Milvus upsert", "collection &quot;updates&quot; · COSINE"),
-            (S_CODE, "Index audit + exclusions", "staleness, dangling ids, re-index"),
+            (S_NV, "NeMo Curator", "6 stages · injection quarantine"),
+            (S_NVB, "NV-EmbedQA E5 v5", "1024-dimension embeddings"),
+            (S_STD, "Milvus", "COSINE · AUTOINDEX · exact at this size"),
+            (S_STD, "Index audit", "staleness, exclusions, re-index"),
         ]),
         ("4 · RETRIEVAL &amp; GROUNDING", [
-            (S_STORE, "Milvus search", "AUTOINDEX · top-k candidates"),
-            (S_NV, "nv-rerankqa-mistral-4b-v3", "relevance reorder · NIM :8002"),
-            (S_CODE, "Context assembly", "top passages + their update ids"),
-            (S_CODE, "Citation set", "[RO-…] [UPD-…] carried to the answer"),
+            (S_STD, "Vector search", "top-k candidates over the updates"),
+            (S_NVB, "NV-RerankQA Mistral 4B", "relevance reorder"),
+            (S_STD, "Context assembly", "passages the answer may use"),
+            (S_STD, "Citation set", "every claim tied to an update id"),
         ]),
         ("5 · REASONING &amp; ANSWERING", [
-            (S_CODE, "Planner", "keyword first; LLM router optional"),
-            (S_NV, "NeMo Switchyard", "nano local ⇄ super hosted · off by default"),
-            (S_CODE, "10 typed tools", "deterministic SQL and vector reads"),
-            (S_CODE, "Renderers", "every figure computed in Python"),
-            (S_NV, "Nemotron narration", "prose only, from tool payloads"),
+            (S_STD, "Query planner", "picks the tool; 24 of 24 without a model"),
+            (S_NV, "NeMo Switchyard", "nano local ⇄ Nemotron Super hosted"),
+            (S_STD, "Tool layer · 10 tools", "deterministic SQL and vector reads"),
+            (S_STD, "Answer composers", "every figure computed, not generated"),
+            (S_NVB, "Nemotron narration", "prose only, from tool payloads"),
         ]),
         ("6 · GUARDRAILS &amp; VERIFICATION", [
-            (S_NV, "NeMo Guardrails input rail", "self check input · nano NIM"),
-            (S_RAIL, "Injection + scope rails", "regex, pre-model, always on"),
-            (S_RAIL, "Grounding rail", "digits and decimals vs payload"),
-            (S_RAIL, "Output rail", "unauthorised-release claim check"),
+            (S_NV, "NeMo Guardrails", "self check input, on the local NIM"),
+            (S_STD, "Injection &amp; scope rail", "pre-model, always on"),
+            (S_STD, "Grounding rail", "digits and decimals vs the payload"),
+            (S_STD, "Release-claim rail", "authorisation claims need evidence"),
         ]),
     ]
-    y = Y0
-    lane_ids = []
+    y = Y0 + 32
     for header, items in lanes:
-        p.box(CX, y, CW, 24, S_LANE, header)
-        ids = row(p, CX, y + 28, CW, 64, items)
-        lane_ids.append(ids)
-        y += 112
+        p.box(CX, y, CW, 26, S_LANE, header)
+        row(p, CX, y + 29, CW, 62, items)
+        y += 111
 
     # --------------------------------------------------------------- right
-    p.box(RX, Y0, RW, 24, S_LANE, "ANALYST EXPERIENCE")
-    g = Y0 + 28
-    p.box(RX, g, RW, 60, S_CODE, "Gradio UI · 6 tabs",
-          "dashboard, RO, update, handover, assistant, data")
-    p.box(RX, g + 66, RW, 60, S_CODE, "Review workbench · 7 panes",
-          "event log, fold, vector store, retrieval, answers")
-    p.box(RX, g + 132, RW, 60, S_CODE, "HTTP API · 27 routes",
-          "FastAPI :8080 · /ask /updates /review/*")
+    p.box(RX, Y0, RW, 26, S_BANDL, "Analyst Experience")
+    g = Y0 + 30
+    p.box(RX, g, RW, 56, S_STD, "Operations console · 6 tabs",
+          "dashboard, RO, update, handover, assistant")
+    p.box(RX, g + 62, RW, 56, S_STD, "Review workbench · 7 panes",
+          "event log, fold, vectors, retrieval, answers")
+    p.box(RX, g + 124, RW, 56, S_STD, "HTTP API · 27 routes",
+          "same rails as the console")
 
-    p.box(RX, Y0 + 226, RW, 24, S_LANE, "OBSERVABILITY")
-    g = Y0 + 254
-    p.box(RX, g, RW, 56, S_OPS, "Prometheus · 13 series",
-          "counters, histograms, build info")
-    p.box(RX, g + 62, RW, 56, S_OPS, "Grafana",
-          "latency by stage, rail activity")
-    p.box(RX, g + 124, RW, 56, S_OPS, "Attu",
-          "vector store browser · loopback :8101")
-    p.box(RX, g + 186, RW, 56, S_OPS, "sqlite-web",
-          "system of record browser · loopback :8102")
-
-    p.box(RX, Y0 + 508, RW, 92, S_NOTE,
-          "Operator surfaces, not app surfaces",
-          "The stores are inspectable and mutable, but deliberately outside "
-          "the product UI: bound to loopback and reached over one SSH "
-          "forward. scripts/stores.sh")
+    p.box(RX, Y0 + 220, RW, 26, S_BANDL, "Observability")
+    g = Y0 + 250
+    p.box(RX, g, RW, 52, S_NVB, "NVIDIA DCGM",
+          "19 GPU series: utilisation, VRAM, power")
+    p.box(RX, g + 58, RW, 52, S_STD, "Prometheus · 13 app series",
+          "answers, latency, rails, NIM errors")
+    p.box(RX, g + 116, RW, 52, S_STD, "Grafana · 11 panels",
+          "provisioned, including the GPU row")
+    p.box(RX, g + 174, RW, 52, S_STD, "Store browsers",
+          "Attu and sqlite-web, loopback only")
 
     # ------------------------------------------------- traceability band
-    BY = 962
+    BY = Y0 + 32 + 6 * 111 + 14
     p.box(40, BY, 1620, 26, S_BAND, "TRACEABILITY, ASSURANCE &amp; GOVERNANCE")
-    row(p, 40, BY + 30, 1620, 72, [
-        (S_CODE, "Answer log · 601",
-         "question, route, tools, citations, grounded, seconds"),
-        (S_CODE, "Trace spans",
-         "per-stage latency · app/obs/trace.py"),
-        (S_NV, "NeMo Evaluator · BYOB",
-         "evals/asoia_byob.py — results in Evaluator's own schema"),
-        (S_RAIL, "Adversarial suite",
-         "4 attack prompts · 100% floor, no exceptions"),
-        (S_CODE, "Acceptance floors",
-         "routing 90 · grounding 100 · traceability 100 · "
-         "refusal 100 · recall 60 · narrated 90"),
+    row(p, 40, BY + 30, 1620, 66, [
+        (S_STD, "Answer log · 601",
+         "what was asked, what it cited, whether it was grounded"),
+        (S_NV, "NeMo Relay",
+         "per-stage trace spans: tool, model, timing"),
+        (S_NV, "NeMo Evaluator",
+         "six measures as BYOB benchmarks, run over run"),
+        (S_NVB, "Riva · Magpie TTS",
+         "synthesises the spoken updates the ASR leg is tested with"),
+        (S_STD, "Acceptance gates",
+         "routing 90 · grounding 100 · refusal 100 · recall 60"),
     ], pad=0, gap=12)
 
     # -------------------------------------------------------- infra band
-    IY = BY + 116
-    p.box(40, IY, 1620, 26, S_BAND, "AI &amp; DATA INFRASTRUCTURE")
-    row(p, 40, IY + 30, 1620, 50, [
-        (S_NV, "NVIDIA Brev · L40S 48 GB", "instance f8mp81s5j"),
-        (S_NV, "NIM containers", "llm :8000 · embed :8001 · rerank :8002"),
-        (S_STORE, "Milvus standalone", "v2.5.4 · :19530 · metrics :9091"),
-        (S_STORE, "SQLite — system of record", "data/generated/service.sqlite"),
-        (S_OPS, "Prometheus :9090 · Grafana :3000", "loopback only"),
-    ], pad=0, gap=12)
+    IY = BY + 110
+    p.box(40, IY, 170, 44, S_BANDL, "Infrastructure")
+    row(p, 216, IY, 1444, 44, [
+        (S_NVB + "align=center;spacingLeft=0;verticalAlign=middle;fontStyle=1;",
+         "NVIDIA Brev\nL40S 48 GB", ""),
+        (S_NVB + "align=center;spacingLeft=0;verticalAlign=middle;fontStyle=1;",
+         "NIM containers\nLLM · embed · rerank", ""),
+        (S_NVB + "align=center;spacingLeft=0;verticalAlign=middle;fontStyle=1;",
+         "NVIDIA API Catalog\nhosted speech, escalation", ""),
+        (S_STD + "align=center;spacingLeft=0;verticalAlign=middle;",
+         "Milvus standalone", ""),
+        (S_STD + "align=center;spacingLeft=0;verticalAlign=middle;",
+         "SQLite system of record", ""),
+    ], pad=0, gap=10)
 
-    # ------------------------------------------------------------ legend
-    LY = IY + 92
-    p.raw(40, LY, 1620, 54, S_NOTE,
-          '<b>Legend&nbsp;&nbsp;</b>'
-          '<font style="color:#5C8A1E;">■</font>&nbsp;NVIDIA component &nbsp;&nbsp;'
-          '<font style="color:#3A6EA5;">■</font>&nbsp;project Python &nbsp;&nbsp;'
-          '<font style="color:#D6B656;">■</font>&nbsp;persistent store &nbsp;&nbsp;'
-          '<font style="color:#B85450;">■</font>&nbsp;guardrail / verification '
-          '&nbsp;&nbsp;'
-          '<font style="color:#7E57C2;">■</font>&nbsp;operations &nbsp;&nbsp;'
-          '<font style="color:#9E9E9E;">▨</font>&nbsp;present but not integrated'
+    # ---------------------------------------------- not-integrated strip
+    NY = IY + 54
+    p.box(40, NY, 170, 28, S_BANDL, "Not integrated")
+    p.box(216, NY, 1444, 28, S_ROAD + "align=left;verticalAlign=middle;",
+          "NemoClaw / OpenShell — containment boundary and a sandboxed "
+          "compute tool. Blocked by a platform fault on the gateway "
+          "launchable, not by this project. The one NVIDIA component of "
+          "fourteen that is not running.")
+
+    LY = NY + 42
+    p.raw(40, LY, 1620, 40, S_NOTE,
+          '<b>Green is NVIDIA.</b>&nbsp; '
+          '<font style="color:#5B8C3A;">█</font>&nbsp;filled = served model or '
+          'NVIDIA infrastructure &nbsp;&nbsp;'
+          '<font style="color:#76B900;">▢</font>&nbsp;outlined = NVIDIA '
+          'framework or library &nbsp;&nbsp;'
+          '<font style="color:#AEB7AC;">▢</font>&nbsp;plain = this project\'s '
+          'code, the console and the datastores &nbsp;&nbsp;'
+          '<font style="color:#76B900;">⬚</font>&nbsp;dashed = present, not '
+          'integrated'
           '<br><font style="font-size:10px;">Nothing in the answer path calls '
-          'a hosted model. ASR is the one hosted dependency, because there is '
-          'no Riva container in this deployment.</font>')
+          'a hosted model. Speech is the one hosted dependency, because there '
+          'is no Riva container in this deployment.</font>')
 
-    # fat arrows, drawn last so they sit over the lane fills
-    p.raw(LX + LW + 4, Y0 + 180, 36, 40,
+    # flow arrows, in the gutters
+    p.raw(LX + LW + 4, Y0 + 170, 36, 40,
           "shape=singleArrow;direction=east;whiteSpace=wrap;html=1;"
-          f"fillColor=#EDF6DD;strokeColor={GREEN};strokeWidth=2;", "")
-    p.raw(CX + CW + 4, Y0 + 180, 36, 40,
+          f"fillColor=#FFFFFF;strokeColor={NVGRN};strokeWidth=2;", "")
+    p.raw(CX + CW + 4, Y0 + 170, 36, 40,
           "shape=singleArrow;direction=east;whiteSpace=wrap;html=1;"
-          f"fillColor=#EDF6DD;strokeColor={GREEN};strokeWidth=2;", "")
+          f"fillColor=#FFFFFF;strokeColor={NVGRN};strokeWidth=2;", "")
     return p
+
+
+def _title(p, w, head, sub):
+    p.raw(40, 12, w, 38, S_TITLE, f"<b>{head}</b>")
+    p.raw(40, 52, w, 28,
+          S_TITLE.replace("fontSize=20", "fontSize=12")
+                 .replace("fontColor=#101814", "fontColor=#4A5A52"), sub)
 
 
 # ==========================================================================
 # PAGE 2 - the write path
 # ==========================================================================
 def page_write_path() -> Page:
-    p = Page("2 · Write path — an update becomes state", "write", 1560, 1700)
+    p = Page("2 · Write path", "write", 1560, 1700)
+    _title(p, 1400, "WRITE PATH",
+           "one spoken or typed update, from the shop floor to the event log "
+           "and the vector store")
 
-    p.raw(40, 20, 1480, 52, S_TITLE,
-          '<b>WRITE PATH</b><font style="font-size:12px;color:#55707E;">'
-          '&nbsp;&nbsp;·&nbsp;&nbsp;one spoken or typed update, from the shop '
-          'floor to the event log and the vector store '
-          '— <i>app/pipeline/run.py</i></font>')
+    MX, MW = 440, 340
+    SX, SW = 880, 340
+    QX, QW = 60, 330
 
-    MX, MW = 440, 340          # main column
-    SX, SW = 880, 340          # branches taken off the main line
-    QX, QW = 60, 330           # commentary
-
-    start = p.box(MX + 70, 96, 200, 48, S_START, "Shift update")
-    d_audio = p.box(MX + 60, 180, 220, 76, S_DEC, "audio, or text?")
-    asr = p.box(SX, 180, SW, 76, S_NV,
-                "transcribe() — Riva Parakeet CTC 0.6B",
-                "gRPC grpc.nvcf.nvidia.com:443 · offline and streaming "
-                "both implemented · app/pipeline/asr.py")
-    bad = p.box(SX, 282, SW, 54, S_RAIL, "reject",
+    start = p.box(MX + 70, 110, 200, 46, S_START, "Shift update")
+    d_audio = p.box(MX + 60, 192, 220, 72, S_DEC, "spoken, or typed?")
+    asr = p.box(SX, 192, SW, 72, S_NVB, "Riva · Parakeet ASR",
+                "streaming and offline paths both implemented; the hosted "
+                "model is reached over gRPC")
+    bad = p.box(SX, 290, SW, 50, S_STD, "Rejected",
                 "empty transcript, no words, wrong sample rate")
 
-    extract = p.box(MX, 300, MW, 74, S_NV,
-                    "extract() — Nemotron Nano 8B",
-                    "prose → strict JSON. parse_json() repairs what the "
-                    "model returns before any of it is trusted")
-    validate = p.box(MX, 404, MW, 68, S_CODE, "validate()",
-                     "types, hour ranges, enum membership · "
-                     "app/pipeline/extract.py")
-    resolve = p.box(MX, 502, MW, 86, S_CODE, "resolve_ro() + resolve_op()",
-                    "spoken digits (&quot;oh one four&quot;), shop aliases, "
-                    "front/rear position words; op code matched against the "
-                    "104-row catalogue, embedding-assisted above threshold 55")
+    extract = p.box(MX, 306, MW, 72, S_NVB, "Nemotron Nano 8B · extraction",
+                    "technician prose → strict JSON, repaired and parsed "
+                    "before any of it is trusted")
+    validate = p.box(MX, 408, MW, 64, S_STD, "Validation",
+                     "types, hour ranges, enum membership")
+    resolve = p.box(MX, 502, MW, 84, S_STD, "Entity resolution",
+                    "spoken digits, shop aliases and position words; op codes "
+                    "matched against the 104-row catalogue, embedding-assisted")
 
-    d_res = p.box(MX + 60, 618, 220, 76, S_DEC, "repair order resolved?")
-    clarify = p.box(SX, 618, SW, 92, S_CODE, "clarifying questions",
+    d_res = p.box(MX + 60, 616, 220, 72, S_DEC, "repair order resolved?")
+    clarify = p.box(SX, 616, SW, 88, S_STD, "Clarifying questions",
                     "returned to the speaker. Nothing is written and nothing "
                     "is guessed — a partial resolution still proceeds with "
                     "what did resolve")
 
-    recon = p.box(MX, 738, MW, 68, S_CODE, "reconcile()",
-                  "new facts against the current snapshot · "
-                  "app/pipeline/reconcile.py")
-    d_conf = p.box(MX + 60, 836, 220, 76, S_DEC, "contradicts the snapshot?")
-    conflict = p.box(SX, 836, SW, 76, S_RAIL, "surface the contradiction",
-                     "shown, never silently clobbered. accept_conflicts=True "
-                     "is an explicit operator act, not a default")
+    recon = p.box(MX, 734, MW, 64, S_STD, "Reconciliation",
+                  "new facts against the current snapshot")
+    d_conf = p.box(MX + 60, 828, 220, 72, S_DEC, "contradicts the snapshot?")
+    conflict = p.box(SX, 828, SW, 72, S_STD, "Contradiction surfaced",
+                     "shown, never silently clobbered. Accepting one is an "
+                     "explicit operator act, not a default")
 
-    append = p.box(MX, 956, MW, 74, S_STORE, "append to events",
-                   "append-only · event_id, ro_number, type, at, actor_id, "
-                   "shift, source_update_id, payload")
-    fold = p.box(MX, 1060, MW, 74, S_CODE, "fold → RO snapshot",
-                 "state is derived from the log, never stored as truth. "
-                 "An illegal transition is rejected and reported")
-    card = p.box(MX, 1164, MW, 62, S_CODE, "render diff card",
+    append = p.box(MX, 944, MW, 64, S_STD, "Append to the event log",
+                   "append-only; the only table state is folded from")
+    fold = p.box(MX, 1038, MW, 72, S_STD, "Fold → repair-order snapshot",
+                 "state derived from the log, never stored as truth. An "
+                 "illegal transition is rejected and reported")
+    card = p.box(MX, 1140, MW, 58, S_STD, "Diff card",
                  "what changed, since when, by whom")
-    curate = p.box(MX, 1256, MW, 74, S_NV, "NeMo Curator — quarantine",
-                   "InstructionLikeFilter drops notes that address the model "
-                   "rather than the record, before they are ever embedded")
-    embed = p.box(MX, 1360, MW, 62, S_NV, "embed — nv-embedqa-e5-v5",
-                  "1024-dim · NIM :8001")
-    upsert = p.box(MX, 1452, MW, 62, S_STORE, "Milvus upsert",
-                   "collection &quot;updates&quot; · COSINE · AUTOINDEX")
-    done = p.box(MX + 70, 1552, 200, 48, S_END, "searchable")
+    curate = p.box(MX, 1228, MW, 72, S_NV, "NeMo Curator · quarantine",
+                   "drops notes that address the model rather than the "
+                   "record, before they are ever embedded")
+    embed = p.box(MX, 1330, MW, 58, S_NVB, "NV-EmbedQA E5 v5",
+                  "1024-dimension embeddings")
+    upsert = p.box(MX, 1418, MW, 58, S_STD, "Milvus upsert",
+                   "COSINE · AUTOINDEX · strong consistency")
+    done = p.box(MX + 70, 1508, 200, 46, S_END, "Searchable")
 
     for a, b in ((start, d_audio), (asr, extract), (extract, validate),
                  (validate, resolve), (resolve, d_res), (recon, d_conf),
                  (append, fold), (fold, card), (card, curate),
                  (curate, embed), (embed, upsert), (upsert, done)):
         p.edge(a, b)
-    p.edge(d_audio, asr, E_MAIN, "audio")
-    p.edge(d_audio, extract, E_MAIN, "text")
+    p.edge(d_audio, asr, E_MAIN, "spoken")
+    p.edge(d_audio, extract, E_MAIN, "typed")
     p.edge(asr, bad, E_SIDE, "fails")
     p.edge(d_res, clarify, E_SIDE, "no")
     p.edge(d_res, recon, E_MAIN, "yes")
     p.edge(d_conf, conflict, E_SIDE, "yes")
     p.edge(d_conf, append, E_MAIN, "no")
 
-    p.box(QX, 150, QW, 150, S_NOTE, "Two principles",
-          "COMPUTE DETERMINISTICALLY, NARRATE WITH THE LLM. The model turns "
+    p.box(QX, 160, QW, 150, S_NOTE, "Two principles",
+          "COMPUTE DETERMINISTICALLY, NARRATE WITH THE MODEL. The model turns "
           "prose into JSON on the way in and JSON into prose on the way out. "
           "It never counts, never infers state and never does arithmetic.\n\n"
-          "UPDATES ARE EVENTS, NOT OVERWRITES. There is a complete audit "
-          "trail, and contradictions surface instead of being clobbered.")
-    p.box(QX, 326, QW, 112, S_NOTE, "The model is fenced in",
+          "UPDATES ARE EVENTS, NOT OVERWRITES. A complete audit trail, and "
+          "contradictions surface instead of being clobbered.")
+    p.box(QX, 340, QW, 112, S_NOTE, "The model is fenced in",
           "Every field a technician can influence is untrusted input. The "
-          "extraction is parsed, type-checked and range-checked before any "
-          "of it reaches the database, and the free-text fields are carried "
-          "as data rather than as instructions.")
-    p.box(QX, 1256, QW, 126, S_NOTE, "Why curate a clean corpus",
+          "extraction is parsed, type-checked and range-checked before any of "
+          "it reaches the database, and free text is carried as data rather "
+          "than as instructions.")
+    p.box(QX, 1228, QW, 126, S_NOTE, "Why curate a clean corpus",
           "Five of the six stages remove nothing, which is the honest result "
           "for generated data. The sixth earns the pipeline: it removes the "
           "injection vector before indexing, so the retriever can never "
-          "surface it. Measured: the known payload caught, zero false "
-          "positives across 1,949 notes.")
+          "surface it. The known payload is caught with zero false positives "
+          "across 1,949 notes.")
     return p
 
 
@@ -496,20 +528,16 @@ def page_write_path() -> Page:
 # PAGE 3 - the read path
 # ==========================================================================
 def page_read_path() -> Page:
-    p = Page("3 · Read path — a question becomes a cited answer", "read",
-             1620, 1580)
-
-    p.raw(40, 20, 1540, 52, S_TITLE,
-          '<b>READ PATH</b><font style="font-size:12px;color:#55707E;">'
-          '&nbsp;&nbsp;·&nbsp;&nbsp;question → rails → plan → tool → '
-          'renderer or narration → verification → cited answer '
-          '— <i>app/agent/agent.py</i></font>')
+    p = Page("3 · Read path", "read", 1620, 1580)
+    _title(p, 1480, "READ PATH",
+           "a question becomes a cited answer — rails, plan, tool, composer "
+           "or narration, verification")
 
     MX, MW = 480, 380
     LX, LW = 60, 370
     RX, RW = 1000, 380
     h, step = 68, 96
-    y = 96
+    y = 112
 
     def main(style, t, s=""):
         nonlocal y
@@ -517,72 +545,63 @@ def page_read_path() -> Page:
         y += step
         return cid
 
-    start = p.box(MX + 90, y, 200, 48, S_START, "Question")
-    y += 92
+    start = p.box(MX + 90, y, 200, 46, S_START, "Question")
+    y += 90
 
-    rails_in = main(S_RAIL, "input rails — always on, before any model",
-                    "regex: prompt injection, out of scope, unauthorised "
-                    "instruction · app/guardrails/rails.py")
+    rails_in = main(S_STD, "Pattern rails — always on, before any model",
+                    "prompt injection, out of scope, unauthorised instruction")
     nemo = main(S_NV, "NeMo Guardrails · self check input",
-                "a prompt task evaluated by the local nano NIM — one call, "
-                "~45 ms. Measured 4/4 adversarial blocked, 24/24 legitimate "
-                "allowed")
-    refused = p.box(RX, y - step, RW, h, S_RAIL, "refusal",
-                    "no tool runs and no model narrates · "
-                    "asoia_rail_blocks_total")
+                "a prompt task judged by the local Nemotron NIM — one call, "
+                "about 45 ms. Measured 4/4 adversarial blocked, 24/24 "
+                "legitimate allowed")
+    refused = p.box(RX, y - step, RW, h, S_STD, "Refusal",
+                    "no tool runs and no model narrates; the block is counted")
 
-    plan = main(S_CODE, "plan_for() — choose the tool",
-                "keyword planner by default. The LLM router exists and is "
-                "deliberately not paid for: the keyword planner already "
-                "routes 24 of 24")
-    switch = main(S_OFF, "NeMo Switchyard — off unless ASOIA_SWITCHYARD=on",
-                  "route asoia · efficient_first · nano local, "
-                  "nemotron-3-super-120b hosted on escalation")
-    tool = main(S_CODE, "call one of 10 typed tools",
+    plan = main(S_STD, "Query planner",
+                "keyword-first. The model router exists and is deliberately "
+                "not paid for: the planner already routes 24 of 24")
+    switch = main(S_NV, "NeMo Switchyard",
+                  "nano locally, Nemotron Super hosted on escalation. Off "
+                  "unless the deployment turns it on")
+    tool = main(S_STD, "Tool layer · one of 10 typed tools",
                 "deterministic SQL and vector reads. No subprocess, no eval "
                 "of model output, no model-directed sockets")
 
-    d_search = p.box(MX + 80, y, 220, 76, S_DEC, "free-text search?")
-    y += 112
+    d_search = p.box(MX + 80, y, 220, 72, S_DEC, "free-text search?")
+    y += 108
 
-    rend = p.box(LX, y, LW, 96, S_CODE, "deterministic renderer",
-                 "_ros_summary · _ro_state_summary · _handover_summary · "
-                 "_anomaly_summary · _diff_summary · _shift_summary · "
-                 "_vehicles_summary — every count, date and booked-hour "
-                 "figure is computed in Python from the event log")
-    ms = p.box(RX, y, RW, h, S_STORE, "Milvus search",
-               "top-k candidates from the &quot;updates&quot; collection")
-    rr = p.box(RX, y + 96, RW, h, S_NV, "rerank NIM",
-               "nv-rerankqa-mistral-4b-v3 reorders to the passages actually "
-               "used")
-    narr = p.box(RX, y + 192, RW, h + 12, S_NV, "Nemotron narration",
+    rend = p.box(LX, y, LW, 92, S_STD, "Answer composers",
+                 "one per tool shape. Every count, date and booked-hour "
+                 "figure is computed in Python from the event log, so these "
+                 "paths make no model call at all")
+    ms = p.box(RX, y, RW, h, S_STD, "Milvus vector search",
+               "top-k candidates from the updates collection")
+    rr = p.box(RX, y + 96, RW, h, S_NVB, "NV-RerankQA Mistral 4B",
+               "reorders to the passages actually used")
+    narr = p.box(RX, y + 192, RW, h + 10, S_NVB, "Nemotron narration",
                  "the one question class a model answers: summarising what "
-                 "technicians wrote. A context-only prompt — it is asked for "
-                 "prose, never for a figure")
-    y += 312
+                 "technicians wrote. Asked for prose, never for a figure")
+    y += 308
 
-    ground = main(S_RAIL, "check_grounding()",
+    ground = main(S_STD, "Grounding check",
                   "every digit and decimal in the text must appear in the "
-                  "tool payload. Decimals matter most: booked hours are what "
+                  "tool payload. Decimals matter most — booked hours are what "
                   "a manager acts on")
-    neg = main(S_RAIL, "check_negations()",
-               "a flipped &quot;not&quot; inverts the operational meaning of "
-               "a safety answer")
-    outr = main(S_RAIL, "check_output() — unauthorised-release claim",
+    neg = main(S_STD, "Negation check",
+               "a flipped &quot;not&quot; inverts the meaning of a safety "
+               "answer")
+    outr = main(S_STD, "Release-claim rail",
                 "is &quot;approved for release&quot; supported by the "
-                "payload, or invented? This runs in Python because it needs "
-                "the payload — a prose rail cannot see it, which is why "
-                "there is no self_check_output task")
-    ans = main(S_CODE, "answer + citations",
-               "[RO-…] [UPD-…] with route, tools used and warnings attached")
+                "payload, or invented? This runs in code because it needs the "
+                "payload — a prose rail cannot see it")
+    ans = main(S_STD, "Answer + citations",
+               "every claim tied to a repair order and an update id")
 
-    log = p.box(LX, y - step + 2, LW, h, S_STORE, "answer_log · 601 rows",
-                "what was asked, what it cited, whether grounding passed, "
-                "how long it took")
-    met = p.box(RX, y - step + 2, RW, h, S_OPS, "Prometheus + trace span",
-                "asoia_answers_total · asoia_answer_seconds · "
-                "asoia_tool_calls_total · asoia_grounding_warnings_total")
-    end = p.box(MX + 90, y, 200, 48, S_END, "Answer")
+    log = p.box(LX, y - step + 2, LW, h, S_STD, "Answer log · 601",
+                "question, route, tools, citations, grounded, seconds")
+    met = p.box(RX, y - step + 2, RW, h, S_NV, "NeMo Relay + Prometheus",
+                "per-stage trace spans and the counters behind the dashboard")
+    end = p.box(MX + 90, y, 200, 46, S_END, "Answer")
 
     p.edge(start, rails_in)
     p.edge(rails_in, nemo)
@@ -604,14 +623,13 @@ def page_read_path() -> Page:
     p.edge(ans, met, E_FEED)
     p.edge(ans, end)
 
-    p.box(LX, 112, LW, 124, S_NOTE, "The flywheel",
-          "Every answer is logged together with the payload it was built "
-          "from. scripts/make_eval_dataset.py turns those rows into a "
-          "dataset, evals/asoia_byob.py scores it in NeMo Evaluator's own "
+    p.box(LX, 120, LW, 124, S_NOTE, "The flywheel",
+          "Every answer is logged with the payload it was built from. Those "
+          "rows become a dataset, NeMo Evaluator scores it in its own result "
           "schema, and the scores gate the next change. The agent's own "
           "output is what measures it.")
-    p.box(LX, 254, LW, 110, S_NOTE, "Where the model is not",
-          "Five of six question classes never reach an LLM. That is not a "
+    p.box(LX, 262, LW, 110, S_NOTE, "Where the model is not",
+          "Five of six question classes never reach a model. That is not a "
           "cost saving — it is the reason the figures can be trusted and the "
           "reason the deterministic measures sit at a 100% floor rather than "
           "a hopeful one.")
@@ -621,100 +639,99 @@ def page_read_path() -> Page:
 # ==========================================================================
 # PAGE 4 - the NVIDIA component inventory
 # ==========================================================================
-# (component, what it does HERE, where it lives, status, style)
+# (component, what it does HERE, the thing itself, status, style)
 COMPONENTS = [
-    ("NIM — LLM", "Nemotron Nano 8B. Extraction (prose → JSON) and narration "
-     "of search results. Nothing else.",
-     "nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-8b-v1 · :8000",
-     "running · local", S_NV),
-    ("NIM — Embedding", "1024-dim vectors for the 1,949 updates and for "
-     "op-code resolution.",
-     "nvcr.io/nim/nvidia/nv-embedqa-e5-v5 · :8001", "running · local", S_NV),
-    ("NIM — Reranking", "Reorders Milvus candidates to the passages the "
+    ("NIM — LLM", "Turns technician prose into strict JSON on the way in, and "
+     "tool payloads into prose on the way out. Nothing else.",
+     "Nemotron Nano 8B · served locally on :8000", "running", S_NVB),
+    ("NIM — Embedding", "Vectors for all 1,949 updates, and for matching "
+     "spoken work against the operation catalogue.",
+     "NV-EmbedQA E5 v5 · 1024-dim · :8001", "running", S_NVB),
+    ("NIM — Reranking", "Reorders vector candidates to the passages the "
      "answer actually cites.",
-     "nvcr.io/nim/nvidia/nv-rerankqa-mistral-4b-v3 · :8002",
-     "running · local", S_NV),
-    ("Riva — Parakeet ASR", "Speech to text for spoken shift updates. "
-     "Offline and streaming paths both implemented.",
-     "grpc.nvcf.nvidia.com:443 · app/pipeline/asr.py",
-     "running · hosted (no Riva container in this deployment)", S_NV),
-    ("NeMo Agent Toolkit", "The agent declared as a NAT workflow: react "
-     "agent, one tool group, the same 10 typed tools.",
-     "app/agent/workflow.yml · app/agent/nat_functions.py",
-     "running · aiq run", S_NV),
-    ("NeMo Guardrails", "self check input rail evaluated by the local nano "
-     "NIM, over the project's own safety policy.",
-     "app/guardrails/config/{config,prompts}.yml · nemo.py",
-     "running · ASOIA_NEMO_RAILS=shadow", S_NV),
+     "NV-RerankQA Mistral 4B · :8002", "running", S_NVB),
+    ("Riva — ASR", "Speech to text for spoken shift updates. Streaming and "
+     "offline paths both implemented.",
+     "Parakeet CTC 0.6B · hosted over gRPC", "running", S_NVB),
+    ("Riva — TTS", "Synthesises the spoken updates the ASR leg is tested "
+     "with. Replaced the operating system's own voice, which was the last "
+     "non-NVIDIA model in the speech path.",
+     "Magpie TTS Multilingual · hosted over gRPC", "running", S_NVB),
+    ("NeMo Agent Toolkit", "The agent declared as a toolkit workflow: a react "
+     "agent over the same ten typed tools.",
+     "NeMo Agent Toolkit workflow", "running", S_NV),
+    ("NeMo Guardrails", "The input rail, judged by the local model against "
+     "this project's own safety policy rather than a generic one.",
+     "self check input rail", "running", S_NV),
     ("NeMo Curator", "Six-stage curation. Five find nothing in generated "
      "data; the sixth quarantines the injection vector before indexing.",
-     "scripts/curate.py · isolated .venv-curator",
-     "running · run/curation/", S_NV),
+     "heuristic filters + a custom quarantine stage", "running", S_NV),
     ("NeMo Evaluator", "The six measures as BYOB benchmarks, emitted in "
-     "Evaluator's own result schema so runs are comparable.",
-     "evals/asoia_byob.py · scripts/eval_standard.py",
-     "running · response_field, no endpoint needed", S_NV),
-    ("NeMo Switchyard", "A loopback routing proxy: nano locally, "
-     "nemotron-3-super-120b hosted on escalation.",
-     "configs/switchyard.toml · app/routing/switchyard.py",
-     "configured · off unless ASOIA_SWITCHYARD=on", S_NV),
-    ("Milvus", "The vector store. Standalone, on the box, browsable through "
-     "Attu.",
-     "milvusdb/milvus:v2.5.4 · :19530 · collection &quot;updates&quot;",
-     "running · local", S_STORE),
-    ("Observability", "13 metric series scraped into Prometheus and drawn "
-     "in Grafana — latency by stage, rail activity, NIM errors.",
-     "app/obs/metrics.py · configs/prometheus.yml · "
-     "scripts/start_observability.sh", "running · loopback only", S_OPS),
-    ("NemoClaw / OpenShell", "Would give a containment boundary and a "
-     "sandboxed compute tool. Not reachable: the gateway launchable's sshd "
-     "rejects a certificate signed by its own Brev CA.",
-     "openshell 0.1.2 in the venv · scripts/openshell_gateway.py",
-     "BLOCKED — platform fault, reproduces on a fresh launchable", S_OFF),
+     "Evaluator's own result schema so one run is comparable with the last.",
+     "BYOB benchmarks, scored from recorded answers", "running", S_NV),
+    ("NeMo Relay", "Records how an answer was produced — which tool, which "
+     "model, how long each span took — rather than only what it said.",
+     "tool and model intercepts", "running", S_NV),
+    ("NeMo Switchyard", "Routing proxy: the efficient model locally, the "
+     "capable one hosted when something raises confidence.",
+     "nano local ⇄ Nemotron Super hosted", "configured, off by default", S_NV),
+    ("NVIDIA DCGM", "GPU telemetry — utilisation, framebuffer, power, "
+     "temperature, clocks. Three NIMs co-reside in 40 GB of 48; this is "
+     "where that stops being a claim.",
+     "DCGM exporter · 19 series · :9401", "running", S_NVB),
+    ("Milvus", "The vector store. Standalone on the box, browsable, and "
+     "rebuildable from the event log.",
+     "Milvus standalone · :19530",
+     "running — not an NVIDIA product, but the store in NVIDIA's own RAG "
+     "reference stack", S_STD),
+    ("NVIDIA Brev", "The deployment target. One L40S carrying all three NIMs "
+     "and everything else.",
+     "L40S 48 GB", "running", S_NVB),
+    ("NemoClaw / OpenShell", "Would add a containment boundary and a "
+     "sandboxed compute tool, so derived figures could be computed rather "
+     "than narrated.",
+     "agent sandbox gateway", "BLOCKED — platform fault", S_ROAD),
 ]
 
 
 def page_components() -> Page:
-    p = Page("4 · NVIDIA component inventory", "comp", 1620, 1200)
-    p.raw(40, 20, 1540, 56, S_TITLE,
-          '<b>NVIDIA COMPONENT INVENTORY</b>'
-          '<font style="font-size:12px;color:#55707E;">&nbsp;&nbsp;·&nbsp;&nbsp;'
-          'eleven built and running, one blocked with evidence — stated that '
-          'way deliberately, because it is a stronger position than twelve '
-          'claimed</font>')
+    p = Page("4 · NVIDIA components", "comp", 1620, 1360)
+    _title(p, 1480, "NVIDIA COMPONENT INVENTORY",
+           "thirteen NVIDIA components running, one blocked with evidence "
+           "— stated that way because it is a stronger position than "
+           "fourteen claimed")
 
-    cols = [(40, 230), (278, 470), (756, 430), (1194, 386)]
-    heads = ["COMPONENT", "WHAT IT DOES HERE", "WHERE IT LIVES", "STATUS"]
-    for (x, w), hname in zip(cols, heads):
-        p.box(x, 82, w, 26, S_LANE, hname)
+    cols = [(40, 230), (278, 480), (766, 400), (1174, 406)]
+    for (x, w), hname in zip(cols, ["COMPONENT", "WHAT IT DOES HERE",
+                                    "THE COMPONENT", "STATUS"]):
+        p.box(x, 86, w, 24, S_LANE, hname)
 
-    y = 114
-    for name, role, where, status, style in COMPONENTS:
-        hgt = 76 if len(role) > 95 else 62
+    y = 116
+    for name, role, thing, status, style in COMPONENTS:
+        hgt = 74 if len(role) > 95 else 58
         p.box(cols[0][0], y, cols[0][1], hgt,
               style + "verticalAlign=middle;", name)
-        p.raw(cols[1][0], y, cols[1][1], hgt,
-              style.replace("fontStyle=1;", "") + "verticalAlign=middle;",
+        p.raw(cols[1][0], y, cols[1][1], hgt, S_STD + "verticalAlign=middle;",
               f'<font style="font-size:11px;">{role}</font>')
-        p.raw(cols[2][0], y, cols[2][1], hgt,
-              S_NOTE + "verticalAlign=middle;fontFamily=Courier New;",
-              f'<font style="font-size:10px;">{where}</font>')
+        p.raw(cols[2][0], y, cols[2][1], hgt, S_STD + "verticalAlign=middle;",
+              f'<font style="font-size:10.5px;">{thing}</font>')
         blocked = status.startswith("BLOCKED")
         p.raw(cols[3][0], y, cols[3][1], hgt,
-              (S_RAIL if blocked else style) + "verticalAlign=middle;",
+              (S_ROAD if blocked else style) + "verticalAlign=middle;",
               f'<font style="font-size:10.5px;">'
               f'{"<b>" + status + "</b>" if blocked else status}</font>')
-        y += hgt + 6
+        y += hgt + 5
 
-    p.box(40, y + 10, 1540, 92, S_NOTE,
-          "What the blocked row actually costs",
+    p.box(40, y + 10, 1540, 96, S_NOTE,
+          "What the one blocked row actually costs",
           "The containment boundary, and a sandboxed compute tool that would "
           "let derived figures be computed rather than narrated. What it does "
           "not cost: any of the four acceptance criteria, any other row, or "
-          "the flywheel — NemoClaw is a boundary around steps, not a step in "
-          "the loop. Nothing in the current agent executes untrusted code: "
+          "the flywheel — the sandbox is a boundary around steps, not a step "
+          "in the loop. Nothing in the current agent executes untrusted code: "
           "the ten tools are deterministic SQL and vector reads, with no "
-          "subprocess, no eval of model output and no model-directed sockets.")
+          "subprocess, no evaluation of model output and no model-directed "
+          "network calls.")
     return p
 
 
@@ -722,82 +739,80 @@ def page_components() -> Page:
 # PAGE 5 - deployment
 # ==========================================================================
 def page_deployment() -> Page:
-    p = Page("5 · Deployment and ports", "dep", 1520, 1080)
-    p.raw(40, 20, 1440, 56, S_TITLE,
-          '<b>DEPLOYMENT</b><font style="font-size:12px;color:#55707E;">'
-          '&nbsp;&nbsp;·&nbsp;&nbsp;one Brev L40S. All three NIMs co-reside '
-          'in roughly 40 GB of the 48 — which is why escalation leaves the '
-          'box rather than loading a second local model</font>')
+    p = Page("5 · Deployment and ports", "dep", 1520, 1120)
+    _title(p, 1400, "DEPLOYMENT",
+           "one Brev L40S. All three NIMs co-reside in roughly 40 GB of the "
+           "48 — which is why escalation leaves the box rather than loading a "
+           "second local model")
 
-    p.box(40, 82, 1440, 30, S_BAND,
-          "NVIDIA Brev · L40S 48 GB · instance f8mp81s5j")
+    p.box(40, 92, 1440, 28, S_BAND, "NVIDIA BREV · L40S 48 GB")
 
-    p.box(60, 130, 1400, 26, S_LANE,
-          "GPU — NIM containers (docker, host network published)")
-    row(p, 60, 162, 1400, 76, [
-        (S_NV, "nim-llm :8000", "llama-3.1-nemotron-nano-8b-v1 · ~22.5 GB · "
-         "OpenAI-compatible /v1/chat/completions"),
-        (S_NV, "nim-embed :8001", "nv-embedqa-e5-v5 · 1024-dim · /v1/embeddings"),
-        (S_NV, "nim-rerank :8002", "nv-rerankqa-mistral-4b-v3 · "
-         "/v1/ranking · no hosted equivalent exists"),
+    p.box(60, 140, 1400, 24, S_LANE, "GPU — served models")
+    row(p, 60, 170, 1400, 72, [
+        (S_NVB, "LLM NIM · :8000", "Nemotron Nano 8B · about 22.5 GB · "
+         "OpenAI-compatible chat completions"),
+        (S_NVB, "Embedding NIM · :8001", "NV-EmbedQA E5 v5 · 1024 dimensions"),
+        (S_NVB, "Reranking NIM · :8002", "NV-RerankQA Mistral 4B · no hosted "
+         "equivalent exists"),
     ], pad=0, gap=14)
 
-    p.box(60, 258, 1400, 26, S_LANE, "Stores")
-    row(p, 60, 290, 1400, 76, [
-        (S_STORE, "asoia-milvus :19530", "milvusdb/milvus:v2.5.4 · "
-         "metrics :9091 · collection &quot;updates&quot;"),
-        (S_STORE, "SQLite — system of record",
-         "data/generated/service.sqlite · WAL · every app read is mode=ro "
-         "except the writer"),
-        (S_STORE, "data/generated/milvus.db",
-         "a Milvus Lite file. Present, NOT in use — the startup report names "
-         "it so it cannot be mistaken for the live store again"),
+    p.box(60, 262, 1400, 24, S_LANE, "GPU — telemetry")
+    p.box(70, 292, 1380, 50, S_NVB, "NVIDIA DCGM exporter · :9401",
+          "utilisation, framebuffer, power, temperature and clocks, scraped "
+          "every 10 seconds. 9401 because the application already holds 9400.")
+
+    p.box(60, 362, 1400, 24, S_LANE, "Datastores")
+    row(p, 60, 392, 1400, 72, [
+        (S_STD, "Milvus standalone · :19530", "the vector store; metrics on "
+         ":9091"),
+        (S_STD, "SQLite — system of record", "every application read is "
+         "read-only except the single writer"),
+        (S_STD, "An unused embedded store", "present and NOT in use — the "
+         "startup report names it so it cannot be mistaken for the live one "
+         "again"),
     ], pad=0, gap=14)
 
-    p.box(60, 386, 1400, 26, S_LANE,
-          "Application processes (the venv, not containers)")
-    row(p, 60, 418, 1400, 72, [
-        (S_CODE, "FastAPI :8080", "27 routes · uvicorn · scripts/start_api.sh"),
-        (S_CODE, "Gradio :7860", "6 tabs · optional public share link"),
-        (S_CODE, "metrics exporter :9400", "/metrics — separate from the API "
-         "port, which is why :8080/metrics is a 404"),
+    p.box(60, 484, 1400, 24, S_LANE, "Application")
+    row(p, 60, 514, 1400, 66, [
+        (S_STD, "HTTP API · :8080", "27 routes, OpenAPI at /docs"),
+        (S_STD, "Operations console · :7860", "6 tabs, optional public link"),
+        (S_STD, "Metrics exporter · :9400", "separate from the API port, "
+         "which is why :8080/metrics is a 404"),
     ], pad=0, gap=14)
 
-    p.box(60, 510, 1400, 26, S_LANE,
-          "Operator surfaces — bound to 127.0.0.1, reached over one SSH forward")
-    row(p, 60, 542, 1400, 72, [
-        (S_OPS, "Prometheus :9090", "named volume asoia-prom-data · "
-         "retention survives a recreate"),
-        (S_OPS, "Grafana :3000", "GF_SERVER_HTTP_ADDR=127.0.0.1"),
-        (S_OPS, "Attu :8101", "zilliz/attu:v2.5 — tracks Milvus by minor "
-         "version; pointed at Milvus's container IP"),
-        (S_OPS, "sqlite-web :8102", "-x -q -f -T · foreign keys on"),
+    p.box(60, 600, 1400, 24, S_LANE,
+          "Operator surfaces — bound to loopback, reached over one SSH forward")
+    row(p, 60, 630, 1400, 66, [
+        (S_STD, "Prometheus · :9090", "named volume; retention survives a "
+         "recreate"),
+        (S_STD, "Grafana · :3000", "provisioned dashboard, GPU row included"),
+        (S_STD, "Attu · :8101", "the Milvus browser"),
+        (S_STD, "sqlite-web · :8102", "the system-of-record browser"),
     ], pad=0, gap=14)
 
-    p.box(60, 634, 680, 96, S_NOTE, "One command up, one command down",
-          "scripts/stack.sh up — Milvus first, because the API reads the "
-          "store; then the NIMs, the API, the UI, the admin UIs and "
-          "observability. Every start prints a report naming which store is "
-          "actually serving, so the question &quot;which database am I "
-          "looking at?&quot; is answered before it is asked.\n\n"
-          "scripts/stack.sh down reverses it, including the admin UIs and "
-          "the observability stack.")
-    p.box(760, 634, 700, 96, S_NOTE, "Why Attu needs the container IP",
+    p.box(60, 716, 680, 112, S_NOTE, "One command up, one command down",
+          "Milvus first, because the API reads the store; then the NIMs, the "
+          "API, the console, the store browsers, DCGM and the observability "
+          "stack. Every start prints a report naming which store is actually "
+          "serving, so the question &quot;which database am I looking "
+          "at?&quot; is answered before it is asked.")
+    p.box(760, 716, 700, 112, S_NOTE, "Why the vector browser needs a container IP",
           "Milvus sits on docker's default bridge, which has no embedded DNS, "
-          "and TCP from a container to the published 19530 on the gateway "
-          "address times out on this box. So stores.sh resolves Milvus's "
-          "container IP at start and recreates Attu if it has moved. "
-          "Diagnosed rather than guessed; the alternative was an Attu that "
-          "silently showed an empty store.")
+          "and a container reaching the published port on the gateway address "
+          "times out on this box. So the launcher resolves the container IP at "
+          "start and recreates the browser if it has moved. Diagnosed rather "
+          "than guessed; the alternative was a browser that silently showed an "
+          "empty store.")
 
-    p.box(60, 804, 1400, 26, S_LANE, "Exposure")
-    p.box(60, 836, 1400, 92, S_NOTE, "What is reachable from outside the box",
-          "The Gradio share link, when one is published, and nothing else. "
-          "8080, 19530, 3000, 9090, 8101 and 8102 are not exposed beyond the "
-          "instance; the operator UIs are loopback-bound and reached with "
-          "ssh -L. The NVIDIA key lives in .env, is never committed and is "
-          "never printed — the stack verifies the line length after every "
-          "edit rather than echoing the value.")
+    p.box(60, 848, 1400, 24, S_LANE, "Exposure")
+    p.box(60, 878, 1400, 88, S_NOTE, "What is reachable from outside the box",
+          "The optional public console link, and nothing else. The API, the "
+          "vector store, Grafana, Prometheus and both store browsers are not "
+          "exposed beyond the instance; the operator surfaces are "
+          "loopback-bound and reached with an SSH forward. The API key lives "
+          "in an ignored environment file, is never committed and is never "
+          "printed — the stack verifies the line length after every edit "
+          "rather than echoing the value.")
     return p
 
 
@@ -805,7 +820,7 @@ def page_deployment() -> Page:
 # PAGE 6 - the data model
 # ==========================================================================
 S_TBL = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;"
-         "spacing=6;fontSize=11;strokeWidth=2;")
+         "spacing=6;spacingLeft=8;fontSize=11;")
 
 
 def _table(p: Page, x, y, w, name, rows, cols, style_fill, note=""):
@@ -829,22 +844,22 @@ def _table(p: Page, x, y, w, name, rows, cols, style_fill, note=""):
 
 
 def page_data_model() -> Page:
-    p = Page("6 · Data model", "data", 1500, 1040)
+    p = Page("6 · Data model", "data", 1500, 1060)
     p.raw(40, 20, 1420, 52, S_TITLE,
           '<b>DATA MODEL</b><font style="font-size:12px;color:#55707E;">'
           '&nbsp;&nbsp;·&nbsp;&nbsp;SQLite is the system of record; Milvus '
           'is derived from it and can always be rebuilt. Row counts read '
           'from the running box</font>')
 
-    F_SRC = "fillColor=#FFF4D6;strokeColor=#D6B656;fontColor=#3D3317;"
-    F_DER = "fillColor=#EDF6DD;strokeColor=#76B900;fontColor=#1C3307;"
-    F_AUD = "fillColor=#EFE9F8;strokeColor=#7E57C2;fontColor=#271A3D;"
+    # Same legend as every other page: green is NVIDIA, plain is not.
+    F_SRC = f"fillColor={PAPER};strokeColor={EDGE};strokeWidth=1;fontColor=#1C2B25;"
+    F_DER = f"fillColor=#FFFFFF;strokeColor={NVGRN};strokeWidth=2;fontColor=#17301A;"
+    F_AUD = F_SRC
 
-    p.box(40, 82, 900, 26, S_LANE,
-          "SYSTEM OF RECORD — data/generated/service.sqlite")
-    p.box(970, 82, 490, 26, S_LANE, "DERIVED — rebuildable from the log")
+    p.box(40, 92, 900, 26, S_LANE, "SYSTEM OF RECORD")
+    p.box(970, 92, 490, 26, S_LANE, "DERIVED — rebuildable from the log")
 
-    ros = _table(p, 60, 124, 290, "ros", "400 rows",
+    ros = _table(p, 60, 134, 290, "ros", "400 rows",
                  ["ro_number  PK", "vin · registration", "make · model · model_year",
                   "engine · odometer_miles", "pay_type · wait_type",
                   "checked_in_at · promised_time", "advisor_id  → staff",
@@ -856,7 +871,7 @@ def page_data_model() -> Page:
                  ["op_code  PK", "description · category",
                   "flat_rate_hrs · min_skill", "safety_critical"], F_SRC,
                  "The catalogue resolve_op() matches against.")
-    upd = _table(p, 400, 124, 300, "updates", "1,949 rows",
+    upd = _table(p, 400, 134, 300, "updates", "1,949 rows",
                  ["update_id  PK", "ro_number  → ros", "staff_id  → staff",
                   "at · shift", "text", "ground_truth"], F_SRC,
                  "What a technician said. &quot;text&quot; is untrusted "
@@ -877,7 +892,7 @@ def page_data_model() -> Page:
                   "grounded · tools", "citations · warnings", "seconds"],
                  F_AUD, "The flywheel's raw material.")
 
-    mil = _table(p, 990, 124, 440, "Milvus collection &quot;updates&quot;",
+    mil = _table(p, 990, 134, 440, "Milvus collection &quot;updates&quot;",
                  "one row per update",
                  ["pk  INT64  PK", "vector  FLOAT_VECTOR(1024)",
                   "update_id · ro_number", "staff_id · staff_name",
@@ -942,21 +957,22 @@ TERMINAL = {"INVOICED"}
 
 
 def page_lifecycle() -> Page:
-    p = Page("7 · Repair order lifecycle", "life", 2560, 820)
-    p.raw(40, 20, 2400, 52, S_TITLE,
-          '<b>REPAIR ORDER LIFECYCLE</b>'
-          '<font style="font-size:12px;color:#55707E;">&nbsp;&nbsp;·&nbsp;'
-          '&nbsp;13 states, and only these transitions. Anything absent is '
-          'rejected by the engine and surfaced, never silently applied '
-          '— <i>app/state/transitions.py</i></font>')
+    p = Page("7 · Repair order lifecycle", "life", 2560, 840)
+    _title(p, 2400, "REPAIR ORDER LIFECYCLE",
+           "13 states, and only these transitions. Anything absent is "
+           "rejected by the engine and surfaced, never silently applied")
 
     S_ST = ("rounded=0;whiteSpace=wrap;html=1;align=center;"
+            "verticalAlign=middle;fontSize=11;fontStyle=1;strokeWidth=1;"
+            f"fillColor={PAPER};strokeColor={EDGE};fontColor=#1C2B25;")
+    # The two blocking states are the point of the whole lifecycle, so they
+    # are the only ones that get emphasis.
+    S_BL = ("rounded=0;whiteSpace=wrap;html=1;align=center;"
             "verticalAlign=middle;fontSize=11;fontStyle=1;strokeWidth=2;"
-            "fillColor=#E8EEF7;strokeColor=#3A6EA5;fontColor=#13293D;")
-    S_BL = S_ST.replace("#E8EEF7", "#FFE9C7").replace("#3A6EA5", "#D79B00") \
-               .replace("#13293D", "#5A3B00")
-    S_TE = S_ST.replace("#E8EEF7", "#E3EEDA").replace("#3A6EA5", "#5C8A1E") \
-               .replace("#13293D", "#1C3307")
+            f"fillColor=#FAEADF;strokeColor={ACCENT_O};fontColor=#3A2114;")
+    S_TE = ("rounded=0;whiteSpace=wrap;html=1;align=center;"
+            "verticalAlign=middle;fontSize=11;fontStyle=1;strokeWidth=2;"
+            f"fillColor={NVSOLID};strokeColor=#446B29;fontColor=#FFFFFF;")
 
     ids = {}
     for name, (x, y) in STATES.items():
