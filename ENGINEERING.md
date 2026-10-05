@@ -1931,3 +1931,47 @@ than modules: a reader of an architecture diagram wants to know what a thing
 is, not which file it lives in.
 
 Counted honestly: thirteen NVIDIA components running, one blocked.
+
+## 37. The restart, and the first time the rails were measured in the process
+
+Passes 46 and 48 were both measured by importing the code and calling it. That
+is a fair test of the code and no test at all of the deployment: the API had
+been running since before pass 46, so the rails that pass had rewritten were on
+disk and not in memory. Saying "measured" about those two things as if they
+were one thing is exactly the sort of claim this document exists to stop.
+
+The stack has now been restarted and the sets driven through the **live** API,
+with the counters read from `/metrics` afterwards rather than from a return
+value:
+
+    adversarial blocked   4/4     action:unauthorised x3, input:injection x1
+    legitimate allowed   24/24
+
+So the deterministic rails behave in the process exactly as they did in the
+import, and the NeMo `self check input` rail running in shadow beside them
+agreed with every block.
+
+**A harness bug worth recording, because it is the same one as last time.** The
+first run of this check reported `0/4 blocked` while the shadow counter showed
+`agree_block +4`. The rails were right and the harness was wrong: it looked for
+`refused` and `blocked` in the response, and the API returns `allowed: false`
+with a `rail` naming the one that fired. In §13 a text matcher scored blocks as
+allows because a `stop` emits no wording; this is the same mistake wearing
+different clothes - guessing at a response shape instead of reading one. The
+counter is what caught it, which is an argument for having the counter.
+
+**The shadow rail is not deterministic, and that matters for promoting it.**
+Across two identical runs of the 24 legitimate questions the agreement split
+was 20 allow / 4 no-opinion, then 19 allow / 5 no-opinion. One question that
+drew an opinion the first time drew none the second. "No opinion" is handled -
+`verdict()` returns None when no rail activated, and None is not an allow - so
+the behaviour is safe either way. But a rail whose answer moves between
+identical runs is a rail to leave in shadow until that variance is understood,
+and this is the evidence for leaving `ASOIA_NEMO_RAILS=shadow` rather than a
+preference for caution.
+
+Also confirmed up after the restart, from one command: Milvus, the API, the
+console, both store browsers, Prometheus, Grafana and the DCGM exporter, with
+both Prometheus targets healthy and the GPU series arriving. The three NIM
+containers were deliberately left running - restarting them is a TRT engine
+reload, not a service bounce.
