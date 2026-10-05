@@ -1,0 +1,64 @@
+# NeMo Switchyard deployment config. Loaded by app/routing/switchyard.py, which
+# starts a loopback proxy from it; the agent then talks OpenAI-chat to that proxy
+# instead of straight to a NIM. Off unless ASOIA_SWITCHYARD=on.
+#
+# Every field name here was established by reading the native loader's own errors:
+# nothing about this schema is documented, `picker` is a string and not a callable,
+# `llm_client` is a REFERENCE to a named client rather than an inline table, and
+# `format` must be one of openai_chat / openai_responses / anthropic_messages.
+schema_version = 1
+
+# ---------------------------------------------------------------- clients
+[llm_clients.local]
+format = "openai_chat"
+base_url = "http://localhost:8000/v1"
+
+[llm_clients.hosted]
+format = "openai_chat"
+base_url = "https://integrate.api.nvidia.com/v1"
+# The proxy reads the key itself and adds the header on the hop that needs it, so
+# the agent sends no Authorization to loopback. See _is_loopback() in
+# app/nim/client.py - this is the reason that function exists.
+api_key_env = "NVIDIA_API_KEY"
+
+# ---------------------------------------------------------------- targets
+# The efficient tier. 8B, on this box, ~22.5 GB of the L40S.
+[targets.nano]
+id = "nvidia/llama-3.1-nemotron-nano-8b-v1"
+llm_client = "local"
+
+# The capable tier, hosted, costing no VRAM at all - which is the point, because a
+# second LOCAL 8B needs 22.5 GB and only 12.6 GB is free. Evicting the reranker
+# would give 21.4 GB, still short, so escalation has to leave the box.
+#
+# This model id was VERIFIED callable by this account before being written here:
+# 200 in 0.7s. Two larger Nemotrons in the same catalogue - the 70b-instruct and
+# the ultra-253b - return 404 "not found for account", so GET /v1/models is a
+# catalogue and not an entitlement list. Check before you swap this.
+[targets.super]
+id = "nvidia/nemotron-3-super-120b-a12b"
+llm_client = "hosted"
+
+# ---------------------------------------------------------------- routes
+# What the agent asks for. efficient_first means: local unless something raises
+# confidence above the threshold. With no signals the router logs
+# `fall_through ... confidence=0.0` and picks nano, which is the correct default
+# for a shop-floor question that five times in six needs no model at all.
+[routes.asoia]
+id = "asoia"
+type = "stage_router"
+picker = "efficient_first"
+confidence_threshold = 0.5
+efficient_target = "nano"
+capable_target = "super"
+
+# The same pool, opposite preference. Not used by the agent: it exists so that the
+# escalation path is exercised by scripts/test_switchyard.py rather than merely
+# declared. A configured target nobody has ever called is not a configured target.
+[routes.asoia_capable]
+id = "asoia_capable"
+type = "stage_router"
+picker = "capable_first"
+confidence_threshold = 0.5
+efficient_target = "nano"
+capable_target = "super"

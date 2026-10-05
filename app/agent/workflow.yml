@@ -1,0 +1,47 @@
+# NeMo Agent Toolkit workflow.
+#   aiq run --config_file app/agent/workflow.yml --input "Which vehicles are unsafe to release?"
+#
+# The LLM here only plans and narrates. Every figure it reports comes from a tool,
+# which computes it in Python from the event log.
+
+general:
+  use_uvloop: true
+
+llms:
+  nemotron:
+    _type: nim
+    model_name: nvidia/llama-3.1-nemotron-nano-8b-v1
+    base_url: http://localhost:8000/v1      # self-hosted NIM; omit to use build.nvidia.com
+    temperature: 0.2
+    max_tokens: 700
+
+embedders:
+  nv_embed:
+    _type: nim
+    model_name: nvidia/nv-embedqa-e5-v5
+    base_url: http://localhost:8001/v1
+
+functions:
+  service_ops:
+    _type: service_ops_tools
+    db_path: data/generated/service.sqlite
+
+workflow:
+  _type: react_agent
+  llm_name: nemotron
+  tool_names: [service_ops]
+  max_iterations: 4
+  verbose: true
+  system_prompt: |
+    You are a service operations assistant for a vehicle workshop.
+
+    Answer from TOOL RESULTS ONLY. Never state a number, date, state or name
+    that is not in the tool results. Cite the repair order numbers and update
+    ids you used, in square brackets.
+
+    Lead with what needs action: safety items first, then breached promises,
+    then at-risk, then blocked work.
+
+    You may report and advise. You must NEVER authorise work, order parts,
+    approve chargeable repairs, or close a repair order - only a person does
+    that. Write in plain British English.

@@ -1,0 +1,65 @@
+[project]
+name = "automotive-service-agent"
+version = "0.1.0"
+description = "Automotive Service Operations Intelligence Agent - NVIDIA NeMo stack"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "gradio>=4.44",
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "pydantic>=2.8",
+  "httpx>=0.27",
+  "openai>=1.40",          # OpenAI-compatible client for NIM endpoints
+  "pymilvus>=2.4",
+  "milvus-lite>=2.4",      # embedded Milvus; a server is a URI change, not a code one
+  "lancedb>=0.13",         # the store up to pass 26, kept so the migration reverses
+  "pyarrow>=17",
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "python-dotenv>=1.0",
+  "rapidfuzz>=3.9",        # RO/VIN fuzzy resolution
+  "tenacity>=9.0",         # retry + 40 RPM backoff against build.nvidia.com
+  "prometheus-client>=0.20",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "ruff>=0.6", "jupyterlab>=4.2", "ipywidgets>=8.1"]
+# Installed on the GPU box only - heavier and slower to resolve.
+# langchain-nvidia-ai-endpoints is what `engine: nim` in the colang config
+# instantiates (ChatNVIDIA). It was not declared, so it was not installed, so the
+# rails could not have run even after the flow names were correct.
+# aiqtoolkit is a deprecated transitional shim whose own PyPI summary says it will
+# be removed; nvidia-nat is the package it forwards to, and it was ALREADY
+# installed here as aiqtoolkit's dependency. So this rename costs nothing to apply
+# and stops the project pinning a dead name.
+nvidia = ["nemoguardrails>=0.11", "nvidia-nat>=1.4",
+          "langchain-nvidia-ai-endpoints>=1.4"]
+# The flywheel. Relay records HOW each answer was produced (app/obs/trace.py);
+# Evaluator makes a run comparable with the run before it. Separate from `nvidia`
+# because the agent answers perfectly well without either.
+flywheel = ["nemo-relay>=0.9", "nemo-evaluator>=0.2",
+            "nemo-switchyard>=0.3"]
+# Hosted Parakeet is Riva over gRPC; this is the client for it. Separate because
+# it pulls grpcio, and everything except speech-to-text works without it.
+voice = ["nvidia-riva-client>=2.16"]
+# The store admin UIs (scripts/stores.sh). sqlite-web is the only pip
+# half of `stores provision`: Attu is a container image, pinned there to
+# Milvus's minor version. Separate from everything else because nothing
+# the agent does needs it - `up` starts a UI only if it is already
+# installed - and a box that never opens the UIs should not carry a
+# Flask app and peewee.
+admin = ["sqlite-web>=0.8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100

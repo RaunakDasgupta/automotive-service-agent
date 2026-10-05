@@ -1,0 +1,39 @@
+# ---------------------------------------------------------------- secrets
+# .env holds a live NVIDIA key. So do the dated backups the patch scripts
+# write beside it - `*.bak` did NOT match `.env.bak.p41`, and six such files
+# were carrying real key material before this line existed.
+.env
+.env.*
+!.env.example
+*.bak
+*.bak.*
+
+# ------------------------------------------------------------ environments
+# .venv is 1.5 GB; .venv-curator is 6.3 GB because NeMo Curator pulls ray and
+# torch. `.venv/` alone did not match the second one.
+.venv*/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ----------------------------------------------------------------- derived
+# Everything here is rebuildable: the dataset from app.data.generate, the
+# vector store from app.retrieval.index.build. None of it is a source of truth.
+data/generated/*
+!data/generated/.gitkeep
+data/milvus/
+*.lance/
+.gradio/
+
+# pid files written by scripts/stack.sh
+run/
+
+# Generated every run by scripts/make_eval_dataset.py - the agent's own answers,
+# which change whenever the agent does. The QUESTIONS are versioned, in
+# scripts/evaluate.py; these responses are the measurement, not the corpus.
+evals/data/*.jsonl
+
+# ---------------------------------------------------------------- archives
+*.tar.gz

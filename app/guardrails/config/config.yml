@@ -1,0 +1,41 @@
+models:
+  - type: main
+    engine: nim
+    model: nvidia/llama-3.1-nemotron-nano-8b-v1
+    parameters:
+      # base_url, and NOT nim_base_url. ChatNVIDIA has no nim_base_url field:
+      # passing it is accepted, moved silently into model_kwargs with a
+      # UserWarning, and the base url stays hosted. Measured on this box:
+      #   base_url      -> http://localhost:8000/v1      (what we want)
+      #   nim_base_url  -> https://integrate.api.nvidia.com/v1  (silently wrong)
+      # The hosted copy of this model reached end of life on 2026-08-26 and
+      # answers HTTP 410, so pointing there disables the rails in a way that
+      # only shows up as a failed LLM call inside a guardrail.
+      base_url: http://localhost:8000/v1
+
+instructions:
+  - type: general
+    content: |
+      You are a service operations assistant for a vehicle workshop.
+      You report and advise on repair orders from tool results only.
+      You never authorise work, order parts, approve chargeable repairs,
+      or close a repair order. Only a person does those things.
+
+# Exactly the flows rails.co defines, and no others: nemoguardrails refuses the
+# whole config if one is missing, so a fourth name here - there used to be a
+# `require grounding` - stopped the rails loading at all, every time.
+#
+# There is no grounding flow on purpose. Grounding is checked deterministically:
+# check_output/check_grounding verify every figure in an answer against the tool
+# results. A model judging its own grounding would be weaker than that.
+# The prompt-based rails NeMo Guardrails documents for safety checks, with the
+# policy in prompts.yml. The three colang flows in rails.co are no longer listed
+# here: a dialog flow used as a rail runs its body unconditionally, which made
+# `refuse out of scope` stop every utterance in ~1ms with no model call. They
+# stay defined because they are still a readable statement of the domain policy,
+# and because nemoguardrails rejects a config that names a flow it cannot find -
+# but nothing routes to them now.
+rails:
+  input:
+    flows:
+      - self check input
