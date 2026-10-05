@@ -400,7 +400,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--with-llm", action="store_true",
                     help="also score retrieval, which needs the NIMs up")
-    ap.add_argument("--sample", type=int, default=40, help="retrieval queries")
+    # 120 and not 40. At 40 the rerank ablation reported +0.0 points and this
+    # project recorded the reranker as "not earning its latency"; over 120 the
+    # same comparison is 41.7% vector-only against 49.2% reranked. The sample
+    # was the finding.
+    ap.add_argument("--sample", type=int, default=120, help="retrieval queries")
     ap.add_argument("-k", type=int, default=6, help="passages per query")
     ap.add_argument("--json", metavar="PATH", help="write the scores as JSON")
     ap.add_argument("--min-routing", type=float, default=90.0)
