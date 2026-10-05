@@ -658,9 +658,9 @@ COMPONENTS = [
      "non-NVIDIA model in the speech path.",
      "Magpie TTS Multilingual · hosted over gRPC", "running", S_NVB),
     ("NeMo Agent Toolkit", "A second front end onto the same ten tools, one "
-     "toolkit function type each. Five of six question classes answer with "
-     "citations; free-text search exhausts the ReAct loop budget on the 8B.",
-     "NeMo Agent Toolkit workflow", "running · 5 of 6 classes", S_NV),
+     "toolkit function type each, driven by the model's own function calling "
+     "rather than a text protocol.",
+     "NeMo Agent Toolkit workflow", "running · 6 of 6 classes", S_NV),
     ("NeMo Guardrails", "The input rail, judged by the local model against "
      "this project's own safety policy rather than a generic one.",
      "self check input rail", "running", S_NV),

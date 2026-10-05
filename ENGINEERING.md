@@ -2134,3 +2134,43 @@ gave 100%, 100%, 50% for pools 18, 30, 50 - a real but much narrower effect.
 Third time in this project that the instrument was broken rather than the thing
 being measured, after §13 and §38. The tell is the same each time: a result too
 clean to be true.
+
+## 40. The sixth question class was a format limit, not a model limit
+
+§39 recorded the toolkit workflow at five of six question classes, with
+free-text search exhausting the loop budget at 10 steps and again at 26, and
+concluded: "a model-capacity limit rather than a wiring one."
+
+That was half right, and the wrong half was the important one.
+
+ReAct asks the model for a text protocol - Thought, Action, Action Input,
+Observation - and to end the transcript by writing the literal words "Final
+Answer". The other five classes return a small structured payload and the 8B
+had no trouble stopping on them. A search returns a page of technician prose,
+and after reading it the model kept narrating. It never failed to call the
+tool. It failed to stop talking.
+
+`tool_calling_agent` replaces the text protocol with the model's own function
+calling - which is the mechanism this project's own router has used since pass
+11, and the reason the router has never had this problem:
+
+    react_agent          5 of 6     free-text search loops at 10 and at 26
+    tool_calling_agent   6 of 6
+
+Same six questions, one per class, same model, same ten tools.
+
+Two things worth keeping from this.
+
+**The diagnosis that sounded like humility was just imprecise.** "A model
+capacity limit" is a comfortable thing to write - it sounds careful, it blames
+nothing that can be fixed, and it closed the question. Raising the budget from
+10 to 26 and seeing the same failure should have been the tell: a model that is
+one step short of finishing looks different from a model that is never going to
+finish. The evidence for "capacity" was that it looped, and looping is equally
+consistent with a format it cannot terminate.
+
+**The ReAct scaffolding that pass 49 added is gone again.** `{tools}` and
+`{tool_names}` were required by the ReAct agent's validator and are meaningless
+to this one, so the system prompt is back to the project's own rules and
+nothing else. Three passes to arrive at a config file that is shorter than the
+one it started from.

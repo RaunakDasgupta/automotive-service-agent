@@ -37,21 +37,20 @@ functions:
   get_shift_activity:      {_type: asoia_get_shift_activity}
 
 workflow:
-  _type: react_agent
+  # tool_calling_agent, not react_agent. ReAct asks the model to produce a text
+  # protocol and to stop by writing "Final Answer"; on a search payload - a page
+  # of technician prose - the 8B kept narrating instead of emitting the stop
+  # token, and exhausted the loop budget at 10 steps and again at 26. It never
+  # failed to call the tool; it failed to end the transcript. Native function
+  # calling is the mechanism this project's own router already uses, and it
+  # takes the workflow from five of six question classes to six of six.
+  _type: tool_calling_agent
   llm_name: nemotron
   tool_names: [get_ro_state, get_ro_timeline, list_ros,
                get_technician_activity, generate_handover, detect_anomalies,
                diff_ro, search_updates, get_op_code_info, get_shift_activity]
-  # max_iterations is not a field of this agent - it was silently ignored,
-  # and the real budget is max_tool_calls, from which the graph derives
-  # recursion_limit = (max_tool_calls + 1) * 2. At the inherited 4 that is
-  # 10, which a search question exhausts before the 8B settles on a Final
-  # Answer. 12 gives it 26 steps.
-  max_tool_calls: 12
-  parse_agent_response_max_retries: 3
+  max_iterations: 12
   verbose: true
-  # {tools} and {tool_names} are REQUIRED by the ReAct agent and are filled
-  # in by the toolkit from the configured tool group.
   system_prompt: |
     You are a service operations assistant for a vehicle workshop.
 
@@ -66,20 +65,5 @@ workflow:
     approve chargeable repairs, or close a repair order - only a person does
     that. Write in plain British English.
 
-    You have these tools:
-
-    {tools}
-
-    Use this format exactly when you need a tool:
-
-    Question: the question you must answer
-    Thought: what you need to find out
-    Action: one of [{tool_names}]
-    Action Input: the input to the action, or None
-    Observation: wait for the result - never invent one
-
-    Repeat Thought/Action/Action Input/Observation as needed. When the tools
-    have given you enough:
-
-    Thought: I now know the final answer
-    Final Answer: the answer, citing the repair order and update ids used
+    Call a tool when you need shop data. When the tools have answered the
+    question, reply with the answer and stop.
