@@ -2037,3 +2037,100 @@ What it does not cost: nothing in the answer path. The agent the console and
 the HTTP API call is this project's own router, and that is the agent every
 measure in §2, §13 and §29 was taken against. The toolkit workflow is a second
 front end onto the same ten tools, not the thing being measured.
+
+## 39. The toolkit workflow runs, and the obvious retrieval fix was overfitting
+
+Two jobs. One finished; the other finished differently from how it started.
+
+### The NeMo Agent Toolkit workflow now runs
+
+§38 left it one fault short. The fault was the shape of the registration:
+`service_ops_tools` was a single registered function that `yield`ed ten
+`FunctionInfo` objects. `register_function` wraps an async generator whose
+single yield is the context-manager boundary - setup before, teardown after,
+and the yielded value is *the* function. Yielding ten registers the first and
+drops nine, and the tool name the agent is told to call then resolves to
+nothing.
+
+Each tool is now its own function type, `asoia_<tool>`, built by a loop over
+the same registry the project's own router uses. Two further faults surfaced
+while fixing it:
+
+- **The registry listed nine tools where `TOOLS` has ten.**
+  `get_shift_activity` - the one that answers "who worked yesterday afternoon"
+  - had never been exposed to the toolkit at all.
+- **`max_iterations: 4` is not a field of `ReActAgentWorkflowConfig`.** It was
+  accepted and ignored. The real budget is `max_tool_calls`, from which the
+  graph derives `recursion_limit = (max_tool_calls + 1) * 2`.
+
+Measured across the six question classes:
+
+    PASS  Which vehicles cannot be released on safety grounds?
+    PASS  What did technician EMP014 work on in the last 7 days?
+    PASS  What is the state of RO-26-08165?
+    PASS  Give me the afternoon shift handover
+    PASS  What changed on RO-26-08165 in the last 12 hours?
+    LOOP  any notes about a whistling noise on a Passat
+
+Five of six complete with a cited Final Answer. The sixth exhausts the loop
+budget - at 10 steps and still at 26 - because the 8B never emits a terminating
+Final Answer for free-text search in the ReAct format. That is a model-capacity
+limit rather than a wiring one, and it is worth noticing which class it is: the
+free-text search question is the one class that reaches a model in this
+project's own router too. Everything else is a tool call and a renderer.
+
+### The reranker: the obvious fix was overfitting, and a held-out set caught it
+
+The reranker was handed 18 candidates, and pass 36 had written it off - over 40
+queries, recall@6 was 50.0% with it and 50.0% without. The obvious move was a
+wider pool, and the ceiling argument was good: the vector stage puts the right
+repair order inside its top 18 for 72.5% of queries and inside its top 50 for
+100%, so 18 was capping the reranker below its own ceiling.
+
+At pool 50, recall@6 went 50.0% -> 57.5%. I nearly shipped it.
+
+                        tuned (40)      held-out (120)
+    pool 18               50.0%            49.2%
+    pool 30               55.0%            49.2%
+    pool 50               57.5%            49.2%
+
+**Every point of it lived on the 40 queries the number was chosen with.**
+Held-out MRR got worse as the pool grew - 0.236, 0.222, 0.196 - and at pool 50
+the model began answering "none of them" to a narration question, which the
+absence rail correctly blocked: narration 100% at pools 18 and 30, 50% at 50,
+deterministic over three runs each. The pool stays at 18.
+
+Four other candidates were measured and rejected: a question-shaped query for
+the reranker (50.0%, worse MRR), hybrid BM25 fusion (57.5%, nothing over the
+pool alone), reranking over vehicle+category+text (worse MRR), one passage per
+repair order (the top 6 already holds 5.97 distinct orders, so there was no
+crowding to fix), and pinning the vector's nearest hits into the result (no
+effect). A repair-order score aggregating each order's best two passages hit
+60.0% - the floor, exactly - on the tuning set and 46.7% held out. That one is
+why the held-out set exists.
+
+**What the exercise did establish is that pass 36 was wrong.** Over 120 queries
+instead of 40, the ablation is 47.5% vector-only against 50.0% reranked, +0.034
+MRR - and on a different 120 it was 41.7% against 49.2%. The reranker does find
+repair orders the vector stage alone misses; "not earning its latency" was an
+artefact of a 40-query sample. So the default sample in `scripts/evaluate.py`
+is now 120, and the docstring that wrote the reranker off is corrected.
+
+Recall is unchanged at 50.0% against a 60% floor. I did not improve it, and
+three sessions of plausible ideas are recorded above as not having improved it
+either.
+
+### The harness fault that nearly produced all of this as a false result
+
+The first narration comparison reported 100% at pool 18 and 0% at every wider
+pool, five runs each, which looked like an overwhelming regression. It was a
+bug in the measuring script. To change the pool between configurations it
+deleted `app.*` from `sys.modules` and re-imported - and re-importing
+`app.obs.metrics` re-registers the Prometheus collectors, which raises
+`DuplicateTimeseries`. Every configuration after the first was returning 0%
+from a crash, not from a failure. Running each configuration in its own process
+gave 100%, 100%, 50% for pools 18, 30, 50 - a real but much narrower effect.
+
+Third time in this project that the instrument was broken rather than the thing
+being measured, after §13 and §38. The tell is the same each time: a result too
+clean to be true.

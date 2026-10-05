@@ -69,6 +69,14 @@ class OpInput(BaseModel):
     op_code: str = Field(description="Labour operation code, e.g. BRK-FR-PAD")
 
 
+class ShiftActivityInput(BaseModel):
+    day_offset: int = Field(default=0,
+                            description="0 today, -1 yesterday, -2 the day before")
+    shift: str = Field(default="", description="MORNING, AFTERNOON, or empty for both")
+    view: str = Field(default="people",
+                      description="people = who worked; vehicles = which cars")
+
+
 # Every tool, its schema, and a one-line description for the planner.
 REGISTRY = [
     ("get_ro_state",            T.get_ro_state,            RoInput),
@@ -80,26 +88,57 @@ REGISTRY = [
     ("diff_ro",                 T.diff_ro,                 RoWindowInput),
     ("search_updates",          T.search_updates,          SearchInput),
     ("get_op_code_info",        T.get_op_code_info,        OpInput),
+    ("get_shift_activity",      T.get_shift_activity,      ShiftActivityInput),
 ]
 
 
 if NAT_AVAILABLE:
+    import os
+    import types
 
-    class ServiceOpsConfig(FunctionBaseConfig, name="service_ops_tools"):
-        """Configuration for the service-operations tool group."""
-        db_path: str = Field(default="data/generated/service.sqlite",
-                             description="SQLite database produced by notebook 01")
+    def _register(tool_name, fn, schema):
+        """One NAT function type per tool.
 
-    @register_function(config_type=ServiceOpsConfig)
-    async def service_ops_tools(config: ServiceOpsConfig, builder: Builder):
-        """Expose every service-operations tool to NeMo Agent Toolkit."""
-        import os
-        os.environ.setdefault("ASOIA_DB", config.db_path)
+        The previous shape - one registered type yielding ten FunctionInfo -
+        exposed exactly one of them. `register_function` wraps an ASYNC
+        GENERATOR whose single yield is the context-manager boundary: what
+        comes before it is setup, what comes after is teardown, and the yielded
+        value is THE function. Yielding ten does not register ten; it registers
+        the first and drops the rest, and the agent is then told to call a tool
+        name that resolves to nothing.
 
-        for name, fn, schema in REGISTRY:
-            async def _run(payload, _fn=fn):
+        The config class is built with types.new_class because
+        FunctionBaseConfig takes its registered name as a class keyword, which
+        the three-argument form of type() cannot pass.
+        """
+        cfg_cls = types.new_class(
+            f"{tool_name.title().replace('_', '')}Config",
+            (FunctionBaseConfig,),
+            {"name": f"asoia_{tool_name}"},
+            lambda ns: ns.update({
+                "__doc__": f"Configuration for the {tool_name} tool.",
+                "__annotations__": {"db_path": str},
+                "db_path": Field(
+                    default="data/generated/service.sqlite",
+                    description="SQLite database produced by notebook 01"),
+            }),
+        )
+
+        async def _build(config, builder: "Builder", _fn=fn, _schema=schema,
+                         _name=tool_name):
+            os.environ.setdefault("ASOIA_DB", config.db_path)
+
+            async def _run(payload):
                 return _fn(**payload.model_dump(exclude_none=True))
 
+            _run.__annotations__ = {"payload": _schema, "return": dict}
+
             yield FunctionInfo.from_fn(
-                _run, input_schema=schema,
-                description=(fn.__doc__ or name).strip())
+                _run, input_schema=_schema,
+                description=(_fn.__doc__ or _name).strip())
+
+        register_function(config_type=cfg_cls)(_build)
+        return cfg_cls
+
+    NAT_TYPES = {name: _register(name, fn, schema)
+                 for name, fn, schema in REGISTRY}

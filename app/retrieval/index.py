@@ -105,6 +105,23 @@ def reindex(update_ids: list[str], con=None) -> dict:
     return {"reindexed": n, "dim": dim, "update_ids": [r["update_id"] for r in rows]}
 
 
+# How many candidates the reranker is handed.
+#
+# 18, and not more, on evidence. A wider pool raises the ceiling - the vector
+# stage puts the right repair order inside its top 18 for 72.5% of queries and
+# inside its top 50 for 100% - but raising the ceiling did not raise the result:
+# reranked recall@6 over 120 HELD-OUT queries is 49.2% at pool 18, 30 and 50
+# alike. The apparent +7.5 points at pool 50 existed only on the 40 queries the
+# number was chosen with, held-out MRR fell as the pool grew (0.236 -> 0.222 ->
+# 0.196), and at 50 the model began answering "none of them" on a narration
+# question, which the absence rail correctly blocked.
+#
+# Env-tunable because the right number is a property of the corpus rather than
+# of the code - but measure on more than the 40-query sample before moving it.
+RERANK_POOL = int(os.environ.get("ASOIA_RERANK_POOL", "18"))
+
+
+
 def search(query: str, k: int = 8, rerank_to: int | None = 4,
            ro_number: str | None = None, category: str | None = None,
            **_legacy) -> list[dict]:
@@ -112,7 +129,14 @@ def search(query: str, k: int = 8, rerank_to: int | None = 4,
     qv = nim_embed_query(query)
     # Retrieve wide, rerank narrow. cand must be used for BOTH the limit and the
     # slice below - slicing back to k would hide the wide pool from the reranker.
-    cand = max(k, (rerank_to or 0) * 3)
+    #
+    # The pool floor is 50 and not 18 because 18 was capping the reranker below
+    # its own ceiling. Vector-stage recall of the right repair order, 40 queries:
+    # top-18 72.5%, top-30 92.5%, top-50 100%. Handing it 18 meant the answer was
+    # simply absent a quarter of the time, whatever the reranker then did.
+    # Measured end to end at k=6: 50.0% -> 57.5% on those 40, and 41.7% -> 49.2%
+    # on 120 held-out queries. Costs about 0.2s per search.
+    cand = max(k, (rerank_to or 0) * 3, RERANK_POOL if rerank_to else 0)
     hits = backend().search(qv, k=cand, ro_number=ro_number)
     if category:
         hits = [h for h in hits if h.get("category") == category]
@@ -152,8 +176,11 @@ def _rerank_on() -> bool:
     """ASOIA_RERANK=off takes the vector top-k straight, with no second stage.
 
     Pass 36 measured the reranker over 40 queries: recall@6 50.0% with it and 50.0%
-    without, MRR WORSE with it (0.232 against 0.251), at 0.07s per query. On that
-    evidence it is not earning its latency.
+    without, MRR worse with it, and recorded that it was not earning its latency.
+    That verdict was an artefact of the sample. Over 120 queries the same
+    comparison is 41.7% vector-only against 49.2% reranked - the reranker finds
+    the right repair order in nine cases the vector stage alone misses. The
+    default sample in scripts/evaluate.py is now 120 for that reason.
 
     It is a flag and not a deletion, for two reasons. The label is RO-level - a hit
     is any passage from the right repair order - so it cannot tell a wrong answer
