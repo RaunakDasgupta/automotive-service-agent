@@ -37,7 +37,12 @@ const EDGE = "C3CCC0";
 const MUTE = "5C6B64";
 const WARN = "C1562A";
 
-const W = 13.333, H = 7.5, M = 0.5;
+const W = 13.333, H = 7.5, M = 0.55;
+// Nothing on a slide goes below these. The first build had 55 runs under 10pt
+// on the architecture slide alone, some at 7.5pt - legible on a laptop at 100%
+// and not from the back of a room. Raising the floor is what forced the
+// content down to what actually fits.
+const NAME_PT = 11, SUB_PT = 10, BOTTOM = H - 0.5;
 
 // ---------------------------------------------------------------- helpers
 const txt = (s, o) => Object.assign({ isTextBox: true, margin: 0 }, o);
@@ -54,8 +59,8 @@ function card(slide, x, y, w, h, kind, name, sub, opts = {}) {
   });
   const nameColor = kind === "nv" ? "FFFFFF" : INK;
   const subColor = kind === "nv" ? "DCE8CF" : MUTE;
-  const body = [{ text: name, options: { bold: true, fontSize: opts.ns || 11, color: nameColor, breakLine: !!sub } }];
-  if (sub) body.push({ text: sub, options: { fontSize: opts.ss || 8.5, color: subColor } });
+  const body = [{ text: name, options: { bold: true, fontSize: opts.ns || NAME_PT, color: nameColor, breakLine: !!sub } }];
+  if (sub) body.push({ text: sub, options: { fontSize: opts.ss || SUB_PT, color: subColor } });
   slide.addText(body, txt(null, {
     x: x + 0.07, y: y + 0.04, w: w - 0.14, h: h - 0.08,
     align: "left", valign: sub ? "top" : "middle", lineSpacingMultiple: 0.92,
@@ -66,17 +71,17 @@ function band(slide, x, y, w, h, label, opts = {}) {
   slide.addShape("rect", { x, y, w, h, fill: { color: opts.fill || INK }, line: { color: opts.fill || INK } });
   slide.addText(label, txt(null, {
     x: x + 0.12, y, w: w - 0.24, h, align: opts.align || "left", valign: "middle",
-    fontSize: opts.fs || 10.5, bold: true, color: "FFFFFF", charSpacing: 0.6,
+    fontSize: opts.fs || 11, bold: true, color: "FFFFFF", charSpacing: 0.6,
   }));
 }
 
 function slideTitle(slide, title, sub) {
   slide.addText(title, txt(null, {
-    x: M, y: 0.28, w: W - 2 * M, h: 0.42, fontSize: 26, bold: true,
+    x: M, y: 0.26, w: W - 2 * M, h: 0.44, fontSize: 26, bold: true,
     color: INK, fontFace: "Arial",
   }));
   if (sub) slide.addText(sub, txt(null, {
-    x: M, y: 0.72, w: W - 2 * M, h: 0.42, fontSize: 11, color: MUTE,
+    x: M, y: 0.74, w: W - 2 * M, h: 0.34, fontSize: 11.5, color: MUTE,
   }));
 }
 
@@ -109,7 +114,7 @@ function slideTitleCard(pres) {
     const x = M + i * (sw + 0.26);
     s.addShape("rect", { x, y: 4.6, w: sw, h: 1.65, fill: { color: "1E4035" }, line: { color: "2E5245" }, objectName: "stat" + i });
     s.addText(n, txt(null, { x: x + 0.16, y: 4.75, w: sw - 0.3, h: 0.62, fontSize: 30, bold: true, color: NV, fontFace: "Arial" }));
-    s.addText(l, txt(null, { x: x + 0.16, y: 5.4, w: sw - 0.3, h: 0.75, fontSize: 9.5, color: "C8D6BE", lineSpacingMultiple: 0.95 }));
+    s.addText(l, txt(null, { x: x + 0.16, y: 5.4, w: sw - 0.3, h: 0.8, fontSize: 11, color: "C8D6BE", lineSpacingMultiple: 0.95 }));
   });
   s.addNotes("One L40S carries all three NIMs. Nothing in the answer path calls a hosted model; speech is the single hosted dependency.");
   return s;
@@ -120,63 +125,85 @@ function slideArchitecture(pres) {
   const s = pres.addSlide({ sectionTitle: "Architecture" });
   slideTitle(s, "Architecture", "Green is NVIDIA: filled is a served model or infrastructure, outlined is a framework, plain is this project's own code");
 
-  const top = 1.20;
-  const LX = M, LW = 2.15;
-  const CX = 2.95, CW = 7.45;
-  const RX = 10.62, RW = W - M - 10.62;
+  const TOP = 1.16;
+  const LX = M, LW = 2.25;
+  const CX = 3.05, CW = 6.95;
+  const RX = 10.30, RW = W - M - 10.30;
 
-  band(s, CX, top, CW, 0.26, "SERVICE OPERATIONS INTELLIGENCE PLATFORM", { align: "center" });
+  band(s, CX, TOP, CW, 0.28, "SERVICE OPERATIONS INTELLIGENCE PLATFORM", { align: "center" });
 
-  // left
-  band(s, LX, top, LW, 0.26, "Inputs", { fill: LANE });
-  [["Spoken update", "dictated at the bay"], ["Typed update", "same pipeline"],
-   ["Manager question", "console or API"]].forEach(([n, sb], i) =>
-    card(s, LX, top + 0.34 + i * 0.6, LW, 0.52, "std", n, sb, { ns: 10, ss: 8 }));
-  band(s, LX, top + 2.2, LW, 0.26, "Corpora", { fill: LANE });
-  [["Repair orders", "400"], ["Shift updates", "1,949"],
-   ["Labour operations", "104"], ["Staff", "50"]].forEach(([n, sb], i) =>
-    card(s, LX, top + 2.54 + i * 0.50, LW, 0.44, "std", n, sb, { ns: 10, ss: 8 }));
+  // ---- left: one line per card, so the type stays at 11pt
+  band(s, LX, TOP, LW, 0.28, "Inputs", { fill: LANE });
+  ["Spoken update", "Typed update", "Manager question"].forEach((n, i) =>
+    card(s, LX, TOP + 0.36 + i * 0.54, LW, 0.46, "std", n, null));
+  band(s, LX, TOP + 2.02, LW, 0.28, "Corpora", { fill: LANE });
+  ["Repair orders · 400", "Shift updates · 1,949", "Labour operations · 104",
+   "Staff · 50"].forEach((n, i) =>
+    card(s, LX, TOP + 2.38 + i * 0.51, LW, 0.44, "std", n, null));
 
-  // centre lanes
+  // ---- centre
   const lanes = [
-    ["1 · CAPTURE & UNDERSTANDING", [["nv", "Riva Parakeet ASR"], ["nv", "Nemotron Nano 8B"], ["std", "Entity resolver"], ["std", "Reconciler"]]],
-    ["2 · EVENT LOG & DERIVED STATE", [["std", "Event log · 10,927"], ["std", "Fold engine"], ["std", "Lifecycle gate · 13"], ["std", "Diff card"]]],
-    ["3 · PREPARATION & INDEXING", [["fw", "NeMo Curator"], ["nv", "NV-EmbedQA E5 v5"], ["std", "Milvus upsert"], ["std", "Index audit"]]],
-    ["4 · RETRIEVAL & GROUNDING", [["std", "Vector search"], ["nv", "NV-RerankQA 4B"], ["std", "Context assembly"], ["std", "Citation set"]]],
-    ["5 · REASONING & ANSWERING", [["std", "Query planner"], ["fw", "NeMo Switchyard"], ["std", "10 typed tools"], ["nv", "Nemotron narration"]]],
-    ["6 · GUARDRAILS & VERIFICATION", [["fw", "NeMo Guardrails"], ["std", "Injection rail"], ["std", "Grounding rail"], ["std", "Release-claim rail"]]],
+    ["1 · CAPTURE & UNDERSTANDING", [["nv", "Riva ASR"], ["nv", "Nemotron 8B"], ["std", "Entity resolver"], ["std", "Reconciler"]]],
+    ["2 · EVENT LOG & DERIVED STATE", [["std", "Event log"], ["std", "Fold engine"], ["std", "Lifecycle gate"], ["std", "Diff card"]]],
+    ["3 · PREPARATION & INDEXING", [["fw", "NeMo Curator"], ["nv", "NV-EmbedQA E5"], ["std", "Milvus upsert"], ["std", "Index audit"]]],
+    ["4 · RETRIEVAL & GROUNDING", [["std", "Vector search"], ["nv", "NV-RerankQA 4B"], ["std", "Context assembly"], ["std", "Citations"]]],
+    ["5 · REASONING & ANSWERING", [["std", "Query planner"], ["fw", "Switchyard"], ["std", "10 typed tools"], ["nv", "Narration"]]],
+    ["6 · GUARDRAILS & VERIFICATION", [["fw", "NeMo Guardrails"], ["std", "Injection rail"], ["std", "Grounding rail"], ["std", "Release claim"]]],
   ];
-  // 0.70 per lane: six of them have to clear the governance band at 5.80.
-  let y = top + 0.34;
+  let y = TOP + 0.36;
   const bw = (CW - 3 * 0.08) / 4;
   lanes.forEach(([hdr, items]) => {
-    band(s, CX, y, CW, 0.20, hdr, { fill: LANE, fs: 8.5 });
-    items.forEach(([k, n], i) => card(s, CX + i * (bw + 0.08), y + 0.24, bw, 0.40, k, n, null, { ns: 9.5 }));
-    y += 0.70;
+    band(s, CX, y, CW, 0.24, hdr, { fill: LANE, fs: 10 });
+    items.forEach(([k, n], i) => {
+      const x = CX + i * (bw + 0.08);
+      const fill = k === "nv" ? NVF : PAPER;
+      const line = k === "nv" ? { color: "446B29", width: 1.5 }
+        : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 };
+      s.addShape("rect", { x, y: y + 0.28, w: bw, h: 0.44, fill: { color: fill }, line, objectName: "lane-" + n });
+      s.addText(n, txt(null, { x: x + 0.06, y: y + 0.28, w: bw - 0.12, h: 0.44,
+        align: "center", valign: "middle", fontSize: NAME_PT, bold: true,
+        color: k === "nv" ? "FFFFFF" : INK, lineSpacingMultiple: 0.88 }));
+    });
+    y += 0.74;
   });
 
-  // right
-  band(s, RX, top, RW, 0.26, "Experience", { fill: LANE });
-  [["Operations console", "6 tabs"], ["Review workbench", "7 panes"],
-   ["HTTP API", "27 routes"]].forEach(([n, sb], i) =>
-    card(s, RX, top + 0.34 + i * 0.6, RW, 0.52, "std", n, sb, { ns: 10, ss: 8 }));
-  band(s, RX, top + 2.2, RW, 0.26, "Observability", { fill: LANE });
-  [["nv", "NVIDIA DCGM", "19 GPU series"], ["std", "Prometheus", "13 app series"],
-   ["std", "Grafana", "11 panels"], ["std", "Store browsers", "Attu, sqlite-web"]].forEach(([k, n, sb], i) =>
-    card(s, RX, top + 2.54 + i * 0.50, RW, 0.44, k, n, sb, { ns: 10, ss: 8 }));
+  // ---- right
+  band(s, RX, TOP, RW, 0.28, "Experience", { fill: LANE });
+  ["Operations console · 6 tabs", "Review workbench · 7 panes",
+   "HTTP API · 27 routes"].forEach((n, i) =>
+    card(s, RX, TOP + 0.36 + i * 0.54, RW, 0.46, "std", n, null));
+  band(s, RX, TOP + 2.02, RW, 0.28, "Observability", { fill: LANE });
+  [["nv", "NVIDIA DCGM · 19 GPU series"], ["std", "Prometheus · 13 app series"],
+   ["std", "Grafana · 11 panels"], ["std", "Attu and sqlite-web"]].forEach(([k, n], i) =>
+    card(s, RX, TOP + 2.38 + i * 0.51, RW, 0.44, k, n, null));
 
-  band(s, M, 5.84, W - 2 * M, 0.26, "TRACEABILITY, ASSURANCE & GOVERNANCE", { align: "center" });
-  const gw = (W - 2 * M - 4 * 0.1) / 5;
-  [["std", "Answer log", "706 answers, what each cited"],
-   ["fw", "NeMo Relay", "per-stage trace spans"],
-   ["fw", "NeMo Evaluator", "six measures, run over run"],
-   ["nv", "Riva Magpie TTS", "the spoken-update test harness"],
-   ["std", "Acceptance gates", "routing 90 · grounding 100 · refusal 100"],
-  ].forEach(([k, n, sb], i) => card(s, M + i * (gw + 0.1), 6.18, gw, 0.56, k, n, sb, { ns: 9.5, ss: 7.5 }));
+  // ---- governance, with the blocked component as its last cell
+  const GY = 6.06;
+  band(s, M, GY, W - 2 * M, 0.28, "TRACEABILITY, ASSURANCE & GOVERNANCE", { align: "center" });
+  const gw = (W - 2 * M - 5 * 0.1) / 6;
+  const gov = [
+    ["std", "Answer log", "706 logged"],
+    ["fw", "NeMo Relay", "trace spans"],
+    ["fw", "NeMo Evaluator", "run over run"],
+    ["nv", "Riva Magpie TTS", "speech harness"],
+    ["std", "Acceptance gates", "six floors"],
+    ["off", "NemoClaw", "blocked"],
+  ];
+  gov.forEach(([k, n, sb], i) => {
+    const x = M + i * (gw + 0.1), yy = GY + 0.36;
+    const blocked = k === "off";
+    s.addShape("rect", { x, y: yy, w: gw, h: 0.52,
+      fill: { color: k === "nv" ? NVF : PAPER },
+      line: blocked ? { color: NV, width: 1.5, dashType: "dash" }
+        : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 },
+      objectName: "gov-" + n });
+    s.addText([
+      { text: n, options: { bold: true, fontSize: 10.5, color: k === "nv" ? "FFFFFF" : (blocked ? "4A7023" : INK), breakLine: true } },
+      { text: sb, options: { fontSize: SUB_PT, color: k === "nv" ? "DCE8CF" : MUTE } },
+    ], txt(null, { x: x + 0.08, y: yy + 0.03, w: gw - 0.16, h: 0.46, valign: "top", lineSpacingMultiple: 0.9 }));
+  });
 
-  s.addText("NemoClaw / OpenShell — the sandbox gateway — is blocked by a platform fault and is the one NVIDIA component of fourteen not running", txt(null, {
-    x: M, y: 6.84, w: W - 2 * M, h: 0.3, fontSize: 9, italic: true, color: MUTE }));
-  s.addNotes("Six lanes, read top to bottom. The write path fills lanes 1-3; a question runs through 4-6.");
+  s.addNotes("Six lanes, read top to bottom. The write path fills lanes 1-3; a question runs through 4-6. NemoClaw is the one NVIDIA component of fourteen not running.");
   return s;
 }
 
@@ -187,7 +214,7 @@ function slideFlow(pres) {
     "One loop, not two paths: what a technician says becomes the state and the corpus a manager's question is then answered from");
 
   const FW = W - 2 * M;
-  const n = 7, gap = 0.06;
+  const n = 6, gap = 0.1;
   const cw = (FW - (n - 1) * gap) / n;
 
   function chevrons(y, steps) {
@@ -197,71 +224,69 @@ function slideFlow(pres) {
       const line = k === "nv" ? { color: "446B29", width: 1.5 }
         : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 };
       s.addShape(i === 0 ? "rect" : "chevron", {
-        x, y, w: cw, h: 0.82, fill: { color: fill }, line,
+        x, y, w: cw, h: 0.92, fill: { color: fill }, line,
         objectName: "step-" + name.slice(0, 16),
       });
       const nc = k === "nv" ? "FFFFFF" : INK;
       const sc = k === "nv" ? "DCE8CF" : MUTE;
       s.addText([
-        { text: name, options: { bold: true, fontSize: 9.5, color: nc, breakLine: true } },
-        { text: sub, options: { fontSize: 7.5, color: sc } },
+        { text: name, options: { bold: true, fontSize: 10.5, color: nc, breakLine: true } },
+        { text: sub, options: { fontSize: SUB_PT, color: sc } },
       ], txt(null, {
-        x: x + (i === 0 ? 0.08 : 0.2), y: y + 0.06, w: cw - (i === 0 ? 0.16 : 0.3), h: 0.7,
+        x: x + (i === 0 ? 0.1 : 0.24), y: y + 0.07, w: cw - (i === 0 ? 0.2 : 0.38), h: 0.78,
         valign: "top", lineSpacingMultiple: 0.9,
       }));
     });
   }
 
   // ---- write half
-  band(s, M, 1.18, FW, 0.24, "CAPTURE  →  STATE   ·   what a technician says, becoming the record", { fs: 9.5 });
-  chevrons(1.5, [
-    ["std", "Capture", "spoken or typed, one entry point"],
-    ["nv", "Riva Parakeet ASR", "speech to text, streaming or offline"],
-    ["nv", "Nemotron Nano 8B", "prose → strict JSON"],
-    ["std", "Resolve", "repair orders, op codes, spoken digits"],
-    ["std", "Reconcile", "new facts vs the snapshot; conflicts surfaced"],
-    ["std", "Append + fold", "append-only log; state derived on read"],
-    ["fw", "Curate + embed", "injection quarantined, then 1024-dim vectors"],
+  band(s, M, 1.16, FW, 0.26, "CAPTURE  →  STATE   ·   what a technician says, becoming the record", { fs: 10.5 });
+  chevrons(1.48, [
+    ["std", "Capture", "spoken or typed"],
+    ["nv", "Riva ASR", "speech to text"],
+    ["nv", "Nemotron 8B", "prose → strict JSON"],
+    ["std", "Resolve", "orders, op codes, spoken digits"],
+    ["std", "Reconcile", "conflicts surfaced, not clobbered"],
+    ["fw", "Curate and embed", "quarantine, then index"],
   ]);
 
   // ---- the hinge
-  s.addShape("downArrow", { x: 6.45, y: 2.42, w: 0.42, h: 0.26, fill: { color: NV }, line: { color: NV } });
-  band(s, M, 2.74, FW, 0.24, "SYSTEM OF RECORD   ·   the only thing both halves share", { align: "center", fs: 9.5, fill: LANE });
+  s.addShape("downArrow", { x: 6.47, y: 2.50, w: 0.42, h: 0.26, fill: { color: NV }, line: { color: NV } });
+  band(s, M, 2.82, FW, 0.26, "SYSTEM OF RECORD   ·   the only thing both halves share", { align: "center", fs: 10.5, fill: LANE });
   const hw = (FW - 0.2) / 2;
-  card(s, M, 3.06, hw, 0.62, "std", "Event log — 10,927 events",
-    "Append-only. Every repair order's state is folded from it on each read, never stored.", { ns: 10.5, ss: 8.5 });
-  card(s, M + hw + 0.2, 3.06, hw, 0.62, "std", "Vector index — 1,949 passages @ 1024d",
-    "Derived, and rebuildable from the log. Holds no fact the record does not.", { ns: 10.5, ss: 8.5 });
-  s.addShape("downArrow", { x: 6.45, y: 3.76, w: 0.42, h: 0.26, fill: { color: NV }, line: { color: NV } });
+  card(s, M, 3.14, hw, 0.60, "std", "Event log — 10,927 events",
+    "Append-only. Every repair order's state is folded from it on each read.", { ns: NAME_PT, ss: SUB_PT });
+  card(s, M + hw + 0.2, 3.14, hw, 0.60, "std", "Vector index — 1,949 @ 1024d",
+    "Derived, and rebuildable. Holds no fact the record does not.", { ns: NAME_PT, ss: SUB_PT });
+  s.addShape("downArrow", { x: 6.47, y: 3.78, w: 0.42, h: 0.26, fill: { color: NV }, line: { color: NV } });
 
   // ---- read half
-  band(s, M, 4.08, FW, 0.24, "QUESTION  →  CITED ANSWER   ·   and what a manager can then ask of it", { fs: 9.5 });
-  chevrons(4.4, [
+  band(s, M, 4.02, FW, 0.26, "QUESTION  →  CITED ANSWER   ·   and what a manager can then ask of it", { fs: 10.5 });
+  chevrons(4.34, [
     ["std", "Question", "console or HTTP API"],
-    ["fw", "Rails", "injection, scope and NeMo self-check, before any model"],
-    ["std", "Plan", "keyword planner routes 24 of 24"],
-    ["std", "Tool call", "one of ten; deterministic reads"],
-    ["nv", "Retrieve + rerank", "only for free-text search"],
-    ["std", "Compose", "every figure computed in Python"],
-    ["nv", "Narrate", "prose only, from the tool payload"],
+    ["fw", "Rails", "injection, scope, NeMo self-check"],
+    ["std", "Plan", "routes 24 of 24 with no model"],
+    ["std", "Tool call", "one of ten, deterministic"],
+    ["nv", "Retrieve + rerank", "free-text search only"],
+    ["nv", "Compose or narrate", "figures computed, prose written"],
   ]);
 
   // ---- verification + answer
   const vw = (FW - 3 * 0.1) / 4;
-  [["Grounding check", "every digit must appear in the payload"],
+  [["Grounding check", "every digit must be in the payload"],
    ["Negation check", "a flipped \"not\" inverts a safety answer"],
-   ["Release-claim rail", "authorisation needs evidence, not phrasing"],
-   ["Answer log", "question, route, tools, citations, seconds"],
-  ].forEach(([n2, sb], i) => card(s, M + i * (vw + 0.1), 5.34, vw, 0.5, "std", n2, sb, { ns: 9, ss: 7.5 }));
+   ["Release-claim rail", "authorisation needs evidence"],
+   ["Answer log", "route, tools, citations, seconds"],
+  ].forEach(([n2, sb], i) => card(s, M + i * (vw + 0.1), 5.40, vw, 0.62, "std", n2, sb, { ns: NAME_PT, ss: SUB_PT }));
 
-  s.addShape("rect", { x: M, y: 5.98, w: FW, h: 0.52, fill: { color: NVF }, line: { color: "446B29" }, objectName: "answer" });
+  s.addShape("rect", { x: M, y: 6.14, w: FW, h: 0.54, fill: { color: NVF }, line: { color: "446B29" }, objectName: "answer" });
   s.addText([
     { text: "Cited answer   —   ", options: { bold: true, fontSize: 11.5, color: "FFFFFF" } },
-    { text: "every claim tied to a repair order and an update id — and logged, which is what the evaluator scores the next release against", options: { fontSize: 9.5, color: "DCE8CF" } },
-  ], txt(null, { x: M + 0.14, y: 5.98, w: FW - 0.28, h: 0.52, valign: "middle" }));
+    { text: "every claim tied to a repair order and an update id, and logged — which is what the evaluator scores the next release against", options: { fontSize: 11, color: "DCE8CF" } },
+  ], txt(null, { x: M + 0.14, y: 6.14, w: FW - 0.28, h: 0.54, valign: "middle" }));
 
   s.addText("Five of six question classes never reach a model — that is why the deterministic measures sit at a 100% floor rather than a hopeful one", txt(null, {
-    x: M, y: 6.62, w: FW, h: 0.26, fontSize: 9, italic: true, color: MUTE }));
+    x: M, y: 6.70, w: FW, h: 0.3, fontSize: 10, italic: true, color: MUTE }));
   s.addNotes("The loop: answers are logged with the payload they were built from, those rows become the evaluation dataset, and the scores gate the next change.");
   return s;
 }
@@ -291,10 +316,10 @@ function slideComponents(pres) {
   const colW = (W - 2 * M - 0.3) / 2;
   COMPONENTS.forEach(([k, name, role, thing], i) => {
     const col = i < 7 ? 0 : 1, row = i % 7;
-    const x = M + col * (colW + 0.3), y = 1.2 + row * 0.79;
+    const x = M + col * (colW + 0.3), y = 1.22 + row * 0.80;
     const blocked = k === "off";
     s.addShape("rect", {
-      x, y, w: colW, h: 0.68,
+      x, y, w: colW, h: 0.70,
       fill: { color: k === "nv" ? NVF : PAPER },
       line: blocked ? { color: NV, width: 1.5, dashType: "dash" }
         : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 },
@@ -303,17 +328,17 @@ function slideComponents(pres) {
     const nc = k === "nv" ? "FFFFFF" : (blocked ? "4A7023" : INK);
     const sc = k === "nv" ? "DCE8CF" : MUTE;
     s.addText([
-      { text: name, options: { bold: true, fontSize: 10.5, color: nc, breakLine: true } },
-      { text: role, options: { fontSize: 8.5, color: sc } },
-    ], txt(null, { x: x + 0.12, y: y + 0.05, w: colW - 2.35, h: 0.6, valign: "top", lineSpacingMultiple: 0.92 }));
+      { text: name, options: { bold: true, fontSize: NAME_PT, color: nc, breakLine: true } },
+      { text: role, options: { fontSize: SUB_PT, color: sc } },
+    ], txt(null, { x: x + 0.12, y: y + 0.05, w: colW - 2.25, h: 0.62, valign: "top", lineSpacingMultiple: 0.92 }));
     s.addText(thing, txt(null, {
-      x: x + colW - 2.2, y: y + 0.05, w: 2.08, h: 0.58, align: "right", valign: "middle",
-      fontSize: 8.5, bold: blocked, color: blocked ? WARN : sc,
+      x: x + colW - 2.1, y: y + 0.05, w: 1.98, h: 0.60, align: "right", valign: "middle",
+      fontSize: SUB_PT, bold: blocked, color: blocked ? WARN : sc,
     }));
   });
 
-  s.addText("The blocked row costs the containment boundary, and a sandboxed compute tool that would let derived figures be computed rather than narrated. It is not in the answer path: the agent the console and the API call is this project's own router, and nothing in it executes untrusted code.", txt(null, {
-    x: M, y: 6.82, w: W - 2 * M, h: 0.36, fontSize: 9, italic: true, color: MUTE }));
+  s.addText("The blocked row costs the containment boundary and a sandboxed compute tool. It is not in the answer path: the agent the console and the API call is this project's own router, and nothing in it executes untrusted code.", txt(null, {
+    x: M, y: 6.66, w: W - 2 * M, h: 0.34, fontSize: 10, italic: true, color: MUTE }));
   return s;
 }
 
@@ -344,15 +369,15 @@ function slideDeployment(pres) {
   ];
   let y = 1.68;
   rows.forEach(([hdr, items]) => {
-    band(s, M, y, FW, 0.24, hdr, { fill: LANE, fs: 9.5 });
+    band(s, M, y, FW, 0.24, hdr, { fill: LANE, fs: 10.5 });
     const n = items.length, bw = (FW - (n - 1) * 0.1) / n;
-    items.forEach(([k, nm, sb], i) => card(s, M + i * (bw + 0.1), y + 0.28, bw, 0.72, k, nm, sb, { ns: 9.5, ss: 8 }));
-    y += 1.22;
+    items.forEach(([k, nm, sb], i) => card(s, M + i * (bw + 0.1), y + 0.30, bw, 0.78, k, nm, sb, { ns: NAME_PT, ss: SUB_PT }));
+    y += 1.26;
   });
 
   card(s, M, y + 0.06, FW, 0.78, "std", "What is reachable from outside the box",
     "The optional public console link, and nothing else. The API, the vector store, Grafana, Prometheus and both store browsers are not exposed beyond the instance. The API key lives in an ignored environment file, is never committed and is never printed.",
-    { ns: 10.5, ss: 9 });
+    { ns: NAME_PT, ss: SUB_PT });
   return s;
 }
 
@@ -371,11 +396,11 @@ function slideDataModel(pres) {
       line: kind === "der" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 },
       objectName: "tbl-" + name });
     s.addText([
-      { text: name, options: { bold: true, fontSize: 10.5, color: INK } },
-      { text: "   " + rows, options: { fontSize: 9, color: MUTE } },
+      { text: name, options: { bold: true, fontSize: NAME_PT, color: INK } },
+      { text: "   " + rows, options: { fontSize: SUB_PT, color: MUTE } },
     ], txt(null, { x: x + 0.12, y: y + 0.05, w: w - 0.24, h: 0.34 }));
     s.addText(cols.map((c, i) => ({
-      text: c, options: { fontSize: 8.5, color: MUTE, fontFace: "Courier New", breakLine: i < cols.length - 1 },
+      text: c, options: { fontSize: SUB_PT, color: MUTE, fontFace: "Courier New", breakLine: i < cols.length - 1 },
     })), txt(null, { x: x + 0.12, y: y + 0.38, w: w - 0.24, h: h - 0.46, valign: "top", lineSpacingMultiple: 0.95 }));
   }
 
@@ -391,7 +416,7 @@ function slideDataModel(pres) {
 
   card(s, M, 5.46, FW, 0.82, "std", "Why derived means rebuildable",
     "The vector store holds no fact SQLite does not; dropping the collection and re-running the index loses nothing, which is what makes editing it safe to offer at all. The reverse is not true — events can never be rebuilt from anything, which is why they are append-only and why every application read of the record is opened read-only.",
-    { ns: 10.5, ss: 9 });
+    { ns: NAME_PT, ss: SUB_PT });
   return s;
 }
 
@@ -422,8 +447,8 @@ function slideLifecycle(pres) {
     s.addShape("rect", { x, y, w: cw, h: ch, fill: { color: fill }, line, objectName: "st-" + name });
     const nc = kind === "end" ? "FFFFFF" : (kind === "blk" ? "7A3418" : INK);
     const parts = [{ text: name.replace(/_/g, " "), options: { bold: true, fontSize: 10, color: nc } }];
-    if (kind === "blk") parts.push({ text: "\nvehicles sit here", options: { fontSize: 8, color: WARN } });
-    if (kind === "end") parts.push({ text: "\nterminal", options: { fontSize: 8, color: "DCE8CF" } });
+    if (kind === "blk") parts.push({ text: "\nvehicles sit here", options: { fontSize: SUB_PT, color: WARN } });
+    if (kind === "end") parts.push({ text: "\nterminal", options: { fontSize: SUB_PT, color: "DCE8CF" } });
     s.addText(parts, txt(null, { x: x + 0.06, y, w: cw - 0.12, h: ch, align: "center", valign: "middle", lineSpacingMultiple: 0.9 }));
   }
 
@@ -442,30 +467,30 @@ function slideLifecycle(pres) {
     w: 0.18, h: 0.4, fill: { color: NV }, line: { color: NV } });
 
   // states that leave and rejoin the line, stated rather than drawn
-  band(s, M, 3.86, FW, 0.26, "LEAVES AND REJOINS THE LINE", { fill: LANE, fs: 9.5 });
+  band(s, M, 3.80, FW, 0.28, "LEAVES AND REJOINS THE LINE", { fill: LANE, fs: 10.5 });
   const ew = (FW - 0.2) / 2;
-  s.addShape("rect", { x: M, y: 4.2, w: ew, h: 0.72, fill: { color: "FBEADF" }, line: { color: WARN, width: 1.75 }, objectName: "st-PARTS_HOLD" });
+  s.addShape("rect", { x: M, y: 4.16, w: ew, h: 0.84, fill: { color: "FBEADF" }, line: { color: WARN, width: 1.75 }, objectName: "st-PARTS_HOLD" });
   s.addText([
-    { text: "PARTS HOLD", options: { bold: true, fontSize: 10.5, color: "7A3418", breakLine: true } },
-    { text: "Entered from diagnosing, authorised or repair-in-progress; leaves to repair-in-progress or back to awaiting authorisation. One of the two states where vehicles actually sit.", options: { fontSize: 8.5, color: WARN } },
-  ], txt(null, { x: M + 0.12, y: 4.25, w: ew - 0.24, h: 0.62, valign: "top", lineSpacingMultiple: 0.92 }));
-  s.addShape("rect", { x: M + ew + 0.2, y: 4.2, w: ew, h: 0.72, fill: { color: PAPER }, line: { color: EDGE, width: 1 }, objectName: "st-DECLINED" });
+    { text: "PARTS HOLD", options: { bold: true, fontSize: NAME_PT, color: "7A3418", breakLine: true } },
+    { text: "Entered from diagnosing, authorised or repair-in-progress; leaves to repair-in-progress or back to awaiting authorisation.", options: { fontSize: SUB_PT, color: WARN } },
+  ], txt(null, { x: M + 0.12, y: 4.21, w: ew - 0.24, h: 0.76, valign: "top", lineSpacingMultiple: 0.92 }));
+  s.addShape("rect", { x: M + ew + 0.2, y: 4.16, w: ew, h: 0.84, fill: { color: PAPER }, line: { color: EDGE, width: 1 }, objectName: "st-DECLINED" });
   s.addText([
-    { text: "DECLINED", options: { bold: true, fontSize: 10.5, color: INK, breakLine: true } },
-    { text: "Entered only from awaiting authorisation, when the customer says no; leaves to ready-for-delivery or straight to invoiced. The work does not happen, and the vehicle still has to go back.", options: { fontSize: 8.5, color: MUTE } },
-  ], txt(null, { x: M + ew + 0.32, y: 4.25, w: ew - 0.24, h: 0.62, valign: "top", lineSpacingMultiple: 0.92 }));
+    { text: "DECLINED", options: { bold: true, fontSize: NAME_PT, color: INK, breakLine: true } },
+    { text: "Entered only from awaiting authorisation, when the customer says no; leaves to ready-for-delivery or straight to invoiced.", options: { fontSize: SUB_PT, color: MUTE } },
+  ], txt(null, { x: M + ew + 0.32, y: 4.21, w: ew - 0.24, h: 0.76, valign: "top", lineSpacingMultiple: 0.92 }));
 
   const nw = (FW - 2 * 0.2) / 3;
   [["Deliberately not IN_PROGRESS / COMPLETE",
-    "The states that matter operationally are the blocking ones, because that is where vehicles actually sit and where the agent creates value."],
+    "The states that matter are the blocking ones — that is where vehicles actually sit, and where the agent creates value."],
    ["The authorisation rule",
     "Repair cannot legitimately begin before the customer has said yes. That gate is why the release-claim rail exists."],
    ["QC failure is an edge, not an error path",
-    "Quality control and road test can both send a job back to the bench, and supplementary work can re-open authorisation. A lifecycle that only moves forward does not describe a workshop."],
-  ].forEach(([n2, sb], i) => card(s, M + i * (nw + 0.2), 5.18, nw, 0.94, "std", n2, sb, { ns: 10, ss: 8.5 }));
+    "Quality control and road test can both send a job back to the bench, and supplementary work re-opens authorisation."],
+  ].forEach(([n2, sb], i) => card(s, M + i * (nw + 0.2), 5.14, nw, 1.30, "std", n2, sb, { ns: NAME_PT, ss: SUB_PT }));
 
   s.addText("Amber marks the two blocking states; green marks the terminal one. The second row flows right to left, so every arrow drawn here is a transition the engine actually allows.", txt(null, {
-    x: M, y: 6.3, w: FW, h: 0.3, fontSize: 9, italic: true, color: MUTE }));
+    x: M, y: 6.56, w: FW, h: 0.34, fontSize: 10, italic: true, color: MUTE }));
   return s;
 }
 
