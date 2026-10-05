@@ -596,13 +596,13 @@
         <mxCell id="comp-27" value="&lt;b&gt;NeMo Agent Toolkit&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="40" y="463" width="230" height="74" as="geometry"/>
         </mxCell>
-        <mxCell id="comp-28" value="&lt;font style=&quot;font-size:11px;&quot;&gt;A second front end onto the same ten tools, one toolkit function type each. Five of six question classes answer with citations; free-text search exhausts the ReAct loop budget on the 8B.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
+        <mxCell id="comp-28" value="&lt;font style=&quot;font-size:11px;&quot;&gt;A second front end onto the same ten tools, one toolkit function type each, driven by the model's own function calling rather than a text protocol.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="278" y="463" width="480" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-29" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;NeMo Agent Toolkit workflow&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FCFCFA;strokeColor=#AEB7AC;strokeWidth=1;fontColor=#1C2B25;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="766" y="463" width="400" height="74" as="geometry"/>
         </mxCell>
-        <mxCell id="comp-30" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running · 5 of 6 classes&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
+        <mxCell id="comp-30" value="&lt;font style=&quot;font-size:10.5px;&quot;&gt;running · 6 of 6 classes&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="1174" y="463" width="406" height="74" as="geometry"/>
         </mxCell>
         <mxCell id="comp-31" value="&lt;b&gt;NeMo Guardrails&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=4;spacingLeft=8;spacingTop=2;fontSize=11;fillColor=#FFFFFF;strokeColor=#76B900;strokeWidth=2;fontColor=#17301A;verticalAlign=middle;" vertex="1" parent="1">
