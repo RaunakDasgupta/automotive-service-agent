@@ -121,27 +121,99 @@ function slideTitleCard(pres) {
 }
 
 // ======================================================= 2 · architecture
+// Laid out like the NVIDIA agentic use-case slide this deck is presented
+// alongside: the problem and the outcome across the top, then a three-column
+// architecture - what arrives on the left, the platform in the middle, what a
+// person sees on the right - then governance across the full width, and the
+// stack it all runs on along the bottom. The colour argument is unchanged:
+// filled green is a served NVIDIA model or NVIDIA infrastructure, outlined
+// green is an NVIDIA framework, dashed green is NVIDIA we are not running,
+// plain is this project's own code.
+
+/** A legend chip. kind: "nv" filled, "fw" outlined, "off" dashed. */
+function chip(s, x, y, w, h, label, kind) {
+  const line = kind === "nv" ? { color: "446B29", width: 1.25 }
+    : kind === "fw" ? { color: NV, width: 1.5 }
+    : { color: NV, width: 1.5, dashType: "dash" };
+  s.addShape("rect", {
+    x, y, w, h, fill: { color: kind === "nv" ? NVF : PAPER }, line,
+    objectName: "legend-" + label.slice(0, 14),
+  });
+  s.addText(label, txt(null, {
+    x, y, w, h, align: "center", valign: "middle", fontSize: 10, bold: true,
+    charSpacing: 0.4, color: kind === "nv" ? "FFFFFF" : "4A7023",
+  }));
+}
+
+/** The objective / outcome panel: a tinted block behind an accent spine. */
+function panel(s, x, y, w, h, accent, fill, head, body) {
+  s.addShape("rect", { x, y, w, h, fill: { color: fill }, line: { color: fill }, objectName: "panel-" + head });
+  s.addShape("rect", { x, y, w: 0.075, h, fill: { color: accent }, line: { color: accent } });
+  s.addText(head, txt(null, {
+    x: x + 0.22, y: y + 0.06, w: w - 0.42, h: 0.24, fontSize: 11, bold: true,
+    color: INK, charSpacing: 0.9, fontFace: "Arial",
+  }));
+  s.addText(body, txt(null, {
+    x: x + 0.22, y: y + 0.31, w: w - 0.42, h: h - 0.38, fontSize: 10.5,
+    color: "3E5A50", lineSpacingMultiple: 0.98, valign: "top",
+  }));
+}
+
 function slideArchitecture(pres) {
   const s = pres.addSlide({ sectionTitle: "Architecture" });
-  slideTitle(s, "Architecture", "Green is NVIDIA: filled is a served model or infrastructure, outlined is a framework, plain is this project's own code");
 
-  const TOP = 1.16;
-  const LX = M, LW = 2.25;
-  const CX = 3.05, CW = 6.95;
-  const RX = 10.30, RW = W - M - 10.30;
+  s.addText("AGENTIC AI USE CASE", txt(null, {
+    x: M, y: 0.20, w: 9.0, h: 0.36, fontSize: 23, bold: true, color: INK,
+    fontFace: "Arial", charSpacing: 0.5,
+  }));
+  s.addText("Automotive Service Operations Intelligence Agent", txt(null, {
+    x: M, y: 0.56, w: 10.0, h: 0.26, fontSize: 14.5, bold: true, color: "3E5A50", fontFace: "Arial",
+  }));
 
-  band(s, CX, TOP, CW, 0.28, "SERVICE OPERATIONS INTELLIGENCE PLATFORM", { align: "center" });
+  // ---- the problem, and what the build is for
+  const pw = (W - 2 * M - 0.3) / 2;
+  panel(s, M, 0.86, pw, 1.14, NV, "EFF4EA", "OBJECTIVE",
+    "A service department's day is recorded in speech and free text at the bay. "
+    + "Turning that into the state of each repair order is done by hand and from "
+    + "memory, so updates are lost and a manager's question gets an answer nobody "
+    + "can trace back.");
+  const bullet = (t, last) => ({
+    text: t, options: { bullet: true, breakLine: !last, fontSize: 10.5, color: "3E5A50" },
+  });
+  panel(s, M + pw + 0.3, 0.86, pw, 1.14, WARN, "F7EDE6", "BUSINESS OUTCOME", [
+    bullet("Spoken and typed updates become repair-order state"),
+    bullet("Every figure in an answer traces to an order and an update id"),
+    bullet("Five of six question classes need no model call at all", true),
+  ]);
 
-  // ---- left: one line per card, so the type stays at 11pt
-  band(s, LX, TOP, LW, 0.28, "Inputs", { fill: LANE });
-  ["Spoken update", "Typed update", "Manager question"].forEach((n, i) =>
-    card(s, LX, TOP + 0.36 + i * 0.54, LW, 0.46, "std", n, null));
-  band(s, LX, TOP + 2.02, LW, 0.28, "Corpora", { fill: LANE });
-  ["Repair orders · 400", "Shift updates · 1,949", "Labour operations · 104",
-   "Staff · 50"].forEach((n, i) =>
-    card(s, LX, TOP + 2.38 + i * 0.51, LW, 0.44, "std", n, null));
+  // ---- section heading, and what the colours mean
+  s.addText("ARCHITECTURE", txt(null, {
+    x: M, y: 2.06, w: 4.0, h: 0.28, fontSize: 14, bold: true, color: INK,
+    fontFace: "Arial", charSpacing: 1.2, valign: "middle",
+  }));
+  const lw = 1.88, lg = 0.1;
+  [["NVIDIA COMPONENTS", "nv"], ["NVIDIA FRAMEWORK", "fw"], ["ROADMAP · BLOCKED", "off"]]
+    .forEach(([l, k], i) => chip(s, W - M - (3 - i) * (lw + lg) + lg, 2.06, lw, 0.28, l, k));
 
-  // ---- centre
+  const TOP = 2.42;
+  const LX = M, LW = 2.42;
+  const CX = 3.13, CW = 6.473;
+  const RX = 9.763, RW = W - M - 9.763;
+
+  // ---- left and right: one line a card, so the type stays at 11pt
+  const sideGroup = (x, w, head, items, y0) => {
+    band(s, x, y0, w, 0.22, head, { fill: LANE, fs: 10 });
+    items.forEach((it, i) => {
+      const [k, n] = Array.isArray(it) ? it : ["std", it];
+      card(s, x, y0 + 0.26 + i * 0.42, w, 0.39, k, n, null);
+    });
+  };
+  sideGroup(LX, LW, "INPUTS", ["Spoken update", "Typed update", "Manager question"], TOP);
+  sideGroup(LX, LW, "CORPORA", ["Repair orders · 400", "Shift updates · 1,949",
+    "Labour op codes · 104", "Staff · 50"], TOP + 1.58);
+
+  // ---- centre: the six lanes, read top to bottom
+  band(s, CX, TOP, CW, 0.24, "SERVICE OPERATIONS INTELLIGENCE AGENT", { align: "center", fs: 10.5 });
   const lanes = [
     ["1 · CAPTURE & UNDERSTANDING", [["nv", "Riva ASR"], ["nv", "Nemotron 8B"], ["std", "Entity resolver"], ["std", "Reconciler"]]],
     ["2 · EVENT LOG & DERIVED STATE", [["std", "Event log"], ["std", "Fold engine"], ["std", "Lifecycle gate"], ["std", "Diff card"]]],
@@ -150,36 +222,35 @@ function slideArchitecture(pres) {
     ["5 · REASONING & ANSWERING", [["std", "Query planner"], ["fw", "Switchyard"], ["std", "10 typed tools"], ["nv", "Narration"]]],
     ["6 · GUARDRAILS & VERIFICATION", [["fw", "NeMo Guardrails"], ["std", "Injection rail"], ["std", "Grounding rail"], ["std", "Release claim"]]],
   ];
-  let y = TOP + 0.36;
-  const bw = (CW - 3 * 0.08) / 4;
+  let y = TOP + 0.28;
+  const bw = (CW - 3 * 0.07) / 4;
   lanes.forEach(([hdr, items]) => {
-    band(s, CX, y, CW, 0.24, hdr, { fill: LANE, fs: 10 });
+    band(s, CX, y, CW, 0.20, hdr, { fill: LANE, fs: 10 });
     items.forEach(([k, n], i) => {
-      const x = CX + i * (bw + 0.08);
-      const fill = k === "nv" ? NVF : PAPER;
+      const x = CX + i * (bw + 0.07);
       const line = k === "nv" ? { color: "446B29", width: 1.5 }
         : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 };
-      s.addShape("rect", { x, y: y + 0.28, w: bw, h: 0.44, fill: { color: fill }, line, objectName: "lane-" + n });
-      s.addText(n, txt(null, { x: x + 0.06, y: y + 0.28, w: bw - 0.12, h: 0.44,
-        align: "center", valign: "middle", fontSize: NAME_PT, bold: true,
-        color: k === "nv" ? "FFFFFF" : INK, lineSpacingMultiple: 0.88 }));
+      s.addShape("rect", { x, y: y + 0.21, w: bw, h: 0.34, fill: { color: k === "nv" ? NVF : PAPER }, line, objectName: "lane-" + n });
+      s.addText(n, txt(null, {
+        x: x + 0.05, y: y + 0.21, w: bw - 0.1, h: 0.34, align: "center", valign: "middle",
+        fontSize: NAME_PT, bold: true, color: k === "nv" ? "FFFFFF" : INK, lineSpacingMultiple: 0.88,
+      }));
     });
-    y += 0.74;
+    y += 0.55;
   });
+  const MIDY = TOP + 1.26;
+  arrow(s, LX + LW + 0.02, MIDY, 0.12, 0.16);
+  arrow(s, CX + CW + 0.02, MIDY, 0.12, 0.16);
 
-  // ---- right
-  band(s, RX, TOP, RW, 0.28, "Experience", { fill: LANE });
-  ["Operations console · 6 tabs", "Review workbench · 7 panes",
-   "HTTP API · 27 routes"].forEach((n, i) =>
-    card(s, RX, TOP + 0.36 + i * 0.54, RW, 0.46, "std", n, null));
-  band(s, RX, TOP + 2.02, RW, 0.28, "Observability", { fill: LANE });
-  [["nv", "NVIDIA DCGM · 19 GPU series"], ["std", "Prometheus · 13 app series"],
-   ["std", "Grafana · 11 panels"], ["std", "Attu and sqlite-web"]].forEach(([k, n], i) =>
-    card(s, RX, TOP + 2.38 + i * 0.51, RW, 0.44, k, n, null));
+  sideGroup(RX, RW, "EXPERIENCE", ["Operations console · 6 tabs",
+    "Review workbench · 7 panes", "HTTP API · 27 routes"], TOP);
+  sideGroup(RX, RW, "OBSERVABILITY", [["nv", "NVIDIA DCGM · 19 series"],
+    ["std", "Prometheus · 13 series"], ["std", "Grafana · 11 panels"],
+    ["std", "Attu and sqlite-web"]], TOP + 1.58);
 
-  // ---- governance, with the blocked component as its last cell
+  // ---- governance, with the one blocked component as its last cell
   const GY = 6.06;
-  band(s, M, GY, W - 2 * M, 0.28, "TRACEABILITY, ASSURANCE & GOVERNANCE", { align: "center" });
+  band(s, M, GY, W - 2 * M, 0.22, "TRACEABILITY, ASSURANCE & GOVERNANCE", { align: "center", fs: 10.5 });
   const gw = (W - 2 * M - 5 * 0.1) / 6;
   const gov = [
     ["std", "Answer log", "706 logged"],
@@ -190,20 +261,33 @@ function slideArchitecture(pres) {
     ["off", "NemoClaw", "blocked"],
   ];
   gov.forEach(([k, n, sb], i) => {
-    const x = M + i * (gw + 0.1), yy = GY + 0.36;
+    const x = M + i * (gw + 0.1), yy = GY + 0.24;
     const blocked = k === "off";
-    s.addShape("rect", { x, y: yy, w: gw, h: 0.52,
-      fill: { color: k === "nv" ? NVF : PAPER },
+    s.addShape("rect", {
+      x, y: yy, w: gw, h: 0.42, fill: { color: k === "nv" ? NVF : PAPER },
       line: blocked ? { color: NV, width: 1.5, dashType: "dash" }
         : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 },
-      objectName: "gov-" + n });
+      objectName: "gov-" + n,
+    });
     s.addText([
       { text: n, options: { bold: true, fontSize: 10.5, color: k === "nv" ? "FFFFFF" : (blocked ? "4A7023" : INK), breakLine: true } },
       { text: sb, options: { fontSize: SUB_PT, color: k === "nv" ? "DCE8CF" : MUTE } },
-    ], txt(null, { x: x + 0.08, y: yy + 0.03, w: gw - 0.16, h: 0.46, valign: "top", lineSpacingMultiple: 0.9 }));
+    ], txt(null, { x: x + 0.08, y: yy + 0.03, w: gw - 0.16, h: 0.34, valign: "top", lineSpacingMultiple: 0.86 }));
   });
 
-  s.addNotes("Six lanes, read top to bottom. The write path fills lanes 1-3; a question runs through 4-6. NemoClaw is the one NVIDIA component of fourteen not running.");
+  // ---- and the stack it runs on
+  const IY = 6.76;
+  band(s, M, IY, 1.70, 0.24, "Infrastructure", { fs: 10, align: "center", fill: LANE });
+  [["NVIDIA Brev · L40S 48 GB", 2.33, 2.40], ["NVIDIA NIM · 3 served models", 4.81, 2.85]]
+    .forEach(([l, x, w]) => {
+      s.addShape("rect", { x, y: IY, w, h: 0.24, fill: { color: NVF }, line: { color: "446B29" }, objectName: "infra-" + l.slice(0, 12) });
+      s.addText(l, txt(null, { x, y: IY, w, h: 0.24, align: "center", valign: "middle", fontSize: 10, bold: true, color: "FFFFFF" }));
+    });
+  s.addText("Milvus · SQLite · Gradio · FastAPI · Prometheus · Grafana", txt(null, {
+    x: 7.76, y: IY, w: W - M - 7.76, h: 0.24, valign: "middle", fontSize: 10, color: MUTE,
+  }));
+
+  s.addNotes("Six lanes, read top to bottom. The write path fills lanes 1-3; a question runs through 4-6. Thirteen of the fourteen NVIDIA components are running; NemoClaw is blocked by a platform fault, so it is drawn dashed.");
   return s;
 }
 
@@ -214,79 +298,74 @@ function slideFlow(pres) {
     "One loop, not two paths: what a technician says becomes the state and the corpus a manager's question is then answered from");
 
   const FW = W - 2 * M;
-  const n = 6, gap = 0.1;
+  const n = 5, gap = 0.34;                 // the gap is where the arrow goes
   const cw = (FW - (n - 1) * gap) / n;
 
-  function chevrons(y, steps) {
+  // Five steps a row, not six, and plain boxes rather than chevrons. The
+  // chevron's point ate a quarter of each box's width, which pushed every
+  // caption into three cramped lines and left the direction to be inferred
+  // from the shape; an arrow in the gap says it outright.
+  function row(yy, h, steps) {
     steps.forEach(([k, name, sub], i) => {
       const x = M + i * (cw + gap);
-      const fill = k === "nv" ? NVF : (k === "fw" ? PAPER : PAPER);
       const line = k === "nv" ? { color: "446B29", width: 1.5 }
         : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 };
-      s.addShape(i === 0 ? "rect" : "chevron", {
-        x, y, w: cw, h: 0.92, fill: { color: fill }, line,
+      s.addShape("rect", {
+        x, y: yy, w: cw, h, fill: { color: k === "nv" ? NVF : PAPER }, line,
         objectName: "step-" + name.slice(0, 16),
       });
-      const nc = k === "nv" ? "FFFFFF" : INK;
-      const sc = k === "nv" ? "DCE8CF" : MUTE;
       s.addText([
-        { text: name, options: { bold: true, fontSize: 10.5, color: nc, breakLine: true } },
-        { text: sub, options: { fontSize: SUB_PT, color: sc } },
-      ], txt(null, {
-        x: x + (i === 0 ? 0.1 : 0.24), y: y + 0.07, w: cw - (i === 0 ? 0.2 : 0.38), h: 0.78,
-        valign: "top", lineSpacingMultiple: 0.9,
-      }));
+        { text: name, options: { bold: true, fontSize: 12, color: k === "nv" ? "FFFFFF" : INK, breakLine: true } },
+        { text: sub, options: { fontSize: 10.5, color: k === "nv" ? "DCE8CF" : MUTE } },
+      ], txt(null, { x: x + 0.12, y: yy + 0.08, w: cw - 0.24, h: h - 0.14, valign: "top", lineSpacingMultiple: 0.94 }));
+      if (i) arrow(s, x - gap + 0.09, yy + h / 2 - 0.08, 0.16, 0.16);
     });
   }
 
-  // ---- write half
-  band(s, M, 1.16, FW, 0.26, "CAPTURE  →  STATE   ·   what a technician says, becoming the record", { fs: 10.5 });
-  chevrons(1.48, [
-    ["std", "Capture", "spoken or typed"],
-    ["nv", "Riva ASR", "speech to text"],
-    ["nv", "Nemotron 8B", "prose → strict JSON"],
-    ["std", "Resolve", "orders, op codes, spoken digits"],
-    ["std", "Reconcile", "conflicts surfaced, not clobbered"],
-    ["fw", "Curate and embed", "quarantine, then index"],
+  // ---- what a technician says, becoming the record
+  band(s, M, 1.18, FW, 0.26, "CAPTURE  →  STATE   ·   what a technician says, becoming the record", { fs: 10.5 });
+  row(1.52, 0.90, [
+    ["std", "Capture", "spoken at the bay, or typed"],
+    ["nv", "Riva ASR", "speech to text, on the GPU"],
+    ["nv", "Nemotron 8B", "free prose → strict JSON"],
+    ["std", "Resolve & reconcile", "orders matched; conflicts surfaced"],
+    ["fw", "Curate & embed", "six Curator stages, then indexed"],
   ]);
 
-  // ---- the hinge
-  s.addShape("downArrow", { x: 6.47, y: 2.50, w: 0.42, h: 0.26, fill: { color: NV }, line: { color: NV } });
-  band(s, M, 2.82, FW, 0.26, "SYSTEM OF RECORD   ·   the only thing both halves share", { align: "center", fs: 10.5, fill: LANE });
+  // ---- the hinge both halves turn on
+  s.addShape("downArrow", { x: W / 2 - 0.15, y: 2.50, w: 0.30, h: 0.30, fill: { color: NV }, line: { color: NV } });
+  band(s, M, 2.88, FW, 0.26, "SYSTEM OF RECORD   ·   the only thing both halves share", { align: "center", fs: 10.5, fill: LANE });
   const hw = (FW - 0.2) / 2;
-  card(s, M, 3.14, hw, 0.60, "std", "Event log — 10,927 events",
-    "Append-only. Every repair order's state is folded from it on each read.", { ns: NAME_PT, ss: SUB_PT });
-  card(s, M + hw + 0.2, 3.14, hw, 0.60, "std", "Vector index — 1,949 @ 1024d",
-    "Derived, and rebuildable. Holds no fact the record does not.", { ns: NAME_PT, ss: SUB_PT });
-  s.addShape("downArrow", { x: 6.47, y: 3.78, w: 0.42, h: 0.26, fill: { color: NV }, line: { color: NV } });
+  card(s, M, 3.22, hw, 0.60, "std", "Event log — 10,927 events",
+    "Append-only. Every order's state is folded from it on each read.", { ns: 12, ss: 10.5 });
+  card(s, M + hw + 0.2, 3.22, hw, 0.60, "std", "Vector index — 1,949 @ 1024d",
+    "Derived, and rebuildable. Holds no fact the record does not.", { ns: 12, ss: 10.5 });
+  s.addShape("downArrow", { x: W / 2 - 0.15, y: 3.90, w: 0.30, h: 0.30, fill: { color: NV }, line: { color: NV } });
 
-  // ---- read half
-  band(s, M, 4.02, FW, 0.26, "QUESTION  →  CITED ANSWER   ·   and what a manager can then ask of it", { fs: 10.5 });
-  chevrons(4.34, [
+  // ---- and what a manager can then ask of it
+  band(s, M, 4.28, FW, 0.26, "QUESTION  →  CITED ANSWER   ·   and what a manager can then ask of it", { fs: 10.5 });
+  row(4.62, 0.90, [
     ["std", "Question", "console or HTTP API"],
     ["fw", "Rails", "injection, scope, NeMo self-check"],
-    ["std", "Plan", "routes 24 of 24 with no model"],
-    ["std", "Tool call", "one of ten, deterministic"],
+    ["std", "Plan → tool call", "routes 24 of 24 with no model"],
     ["nv", "Retrieve + rerank", "free-text search only"],
-    ["nv", "Compose or narrate", "figures computed, prose written"],
+    ["nv", "Compose or narrate", "figures computed, then prose"],
   ]);
 
-  // ---- verification + answer
+  // ---- nothing leaves without passing these
   const vw = (FW - 3 * 0.1) / 4;
   [["Grounding check", "every digit must be in the payload"],
    ["Negation check", "a flipped \"not\" inverts a safety answer"],
    ["Release-claim rail", "authorisation needs evidence"],
    ["Answer log", "route, tools, citations, seconds"],
-  ].forEach(([n2, sb], i) => card(s, M + i * (vw + 0.1), 5.40, vw, 0.62, "std", n2, sb, { ns: NAME_PT, ss: SUB_PT }));
+  ].forEach(([n2, sb], i) => card(s, M + i * (vw + 0.1), 5.66, vw, 0.60, "std", n2, sb, { ns: NAME_PT, ss: SUB_PT }));
 
-  s.addShape("rect", { x: M, y: 6.14, w: FW, h: 0.54, fill: { color: NVF }, line: { color: "446B29" }, objectName: "answer" });
+  s.addShape("rect", { x: M, y: 6.38, w: FW, h: 0.58, fill: { color: NVF }, line: { color: "446B29" }, objectName: "answer" });
   s.addText([
-    { text: "Cited answer   —   ", options: { bold: true, fontSize: 11.5, color: "FFFFFF" } },
+    { text: "Cited answer   —   ", options: { bold: true, fontSize: 12, color: "FFFFFF" } },
     { text: "every claim tied to a repair order and an update id, and logged — which is what the evaluator scores the next release against", options: { fontSize: 11, color: "DCE8CF" } },
-  ], txt(null, { x: M + 0.14, y: 6.14, w: FW - 0.28, h: 0.54, valign: "middle" }));
+  ], txt(null, { x: M + 0.14, y: 6.38, w: FW - 0.28, h: 0.58, valign: "middle" }));
 
-  s.addText("Five of six question classes never reach a model — that is why the deterministic measures sit at a 100% floor rather than a hopeful one", txt(null, {
-    x: M, y: 6.70, w: FW, h: 0.3, fontSize: 10, italic: true, color: MUTE }));
   s.addNotes("The loop: answers are logged with the payload they were built from, those rows become the evaluation dataset, and the scores gate the next change.");
   return s;
 }
