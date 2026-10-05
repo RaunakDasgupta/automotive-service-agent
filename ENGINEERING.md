@@ -2217,3 +2217,97 @@ in a sentence instead.
 Worth noting what caught it: not the geometry checker, which was perfectly
 happy with thirteen non-overlapping boxes, and not the file validator. Looking
 at the picture did.
+
+## 42. The toolkit picked the right tool every time, and called none of them
+
+Pass 51 closed with `tool_calling_agent  6 of 6`. Asked for the project's
+current test metrics, I ran the same six questions again and read the output
+rather than the exit code:
+
+    Workflow Result:
+    ['{"name": "list_ros", "parameters": {"filter": "safety"}}']
+
+Six of those, one per class, each in about three seconds, each exiting 0. Every
+one carried `tool_calls=[]`. Not one tool ran. The "six of six" was counting
+clean terminations, which is the same mistake as §13 and the rail harness in
+§37: a number was read off the wrapper instead of the thing inside it.
+
+The honest reading needs two numbers, not one - six of six on tool SELECTION,
+nought of six on EXECUTION - and the second one is the one that matters.
+
+### It was the server, not the client
+
+LangChain prints `Model 'nvidia/llama-3.1-nemotron-nano-8b-v1' is not known to
+support tools`, which invites you to blame the client. Asked directly:
+
+    curl localhost:8000/v1/chat/completions -d '{... "tools": [...],
+                                                 "tool_choice": "auto" ...}'
+
+    {"role": "assistant",
+     "content": "{\"name\": \"get_ro_state\", \"parameters\": {...}}"}
+
+No `tool_calls`, `finish_reason` "stop". vLLM's tool parsers ship inside the
+container, but this NIM release exposes no flag to turn one on. The model
+writes its calls as prose and there is nothing to configure.
+
+So the repair belongs at the model boundary, not in a different agent:
+`asoia_nim_toolshim` is one LLM provider that serves the same NIM over its
+OpenAI route and lifts a prose call into `tool_calls` before LangChain sees the
+message. The toolkit's own agent still orchestrates - that is the whole point of
+having it - it just stops being lied to about what the model said.
+
+### Five more faults, each hidden behind the one before it
+
+Nothing below was visible while no tool ran. They surfaced strictly in order,
+and each one looked like the end of the job until it was fixed.
+
+1. **`max_completion_tokens`.** langchain-openai 1.x sends it; this NIM's route
+   rejects it with a 400. The payload hook renames it back to `max_tokens`.
+2. **A payload of 30,000 characters against an 8,192-token context.** The
+   safety list and the handover both exceed it on their own. `_fit` trims the
+   longest list anywhere in the payload - the handover keeps its bulk in a dict
+   of groups, so trimming the top level trimmed nothing - and records
+   `truncated: {field: {shown, of}}` so a part cannot be reported as the whole.
+3. **The wrong tool.** The safety question chose `detect_anomalies`, whose
+   docstring says "cross-repair-order patterns". The docstrings were written for
+   people reading the code; the planner reads them as its only guide to what
+   answers what. `NAT_HINTS` adds a line per tool saying what it is for and what
+   it is not. This project's own router never had to choose - it routes on
+   keywords.
+4. **The same call, over and over.** Thirteen identical `detect_anomalies`
+   calls, then ten identical `search_updates` calls, each round putting the
+   whole payload back into the context until it burst. Shrinking the payload
+   bought one round. `_once` returns a short note instead of the data when the
+   same call repeats.
+5. **Prose about a call, parsed as a call.** The real engine of the loop. After
+   a tool returns, this model often writes "I need to call generate_handover
+   with shift AFTERNOON. Here is the function call: {...}". The parser took the
+   first `{` to the last `}`, found a valid call, and sent the agent round
+   again. Only a message that is NOTHING BUT the call is a call. With that one
+   condition every question settles at exactly one tool round.
+
+### What it does now, measured three times over
+
+Three runs of the same six questions, graded on criteria fixed before the run:
+did it choose the tool this project's own router uses, did that tool execute,
+and is the result prose about the shop rather than an apology, an echoed tool
+call, or the payload read back.
+
+    selection   18/18
+    execution   18/18
+    answer       3/18
+
+Before this pass those three numbers were 6/6, 0/6 and 0/6, and the record said
+six of six.
+
+So: **the tool calling is fixed and the answering is not.** One class - the
+state of a single repair order - composes properly in all three runs. The rest
+return the payload verbatim, an apology, or a tool call written out as text.
+That is an 8B asked to narrate a raw JSON payload inside a generic agent loop,
+and it is exactly the job this project's own read path does NOT give a model:
+five of six classes are rendered in Python, and the sixth gets a search payload
+and a narrow brief. The toolkit front end has no such renderer behind it.
+
+What this pass should not be read as claiming: that the NeMo Agent Toolkit now
+answers the six question classes. It runs them. The number that matters is
+3/18, it is written down, and the next pass can move it.

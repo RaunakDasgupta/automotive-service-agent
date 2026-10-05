@@ -1,151 +1,119 @@
-"""NeMo Agent Toolkit registration for the service-operations tools.
+#!/usr/bin/env python3
+"""pass 52 - the toolkit workflow picked the right tool and never called it.
 
-The tools in app/agent/tools.py are plain typed Python functions so they stay
-testable and reusable. This module wraps them for NeMo Agent Toolkit (aiqtoolkit)
-without changing them. If the toolkit is not installed, importing this module
-does nothing and the agent runs on its own router - so the demo never depends on
-the wrapper being present.
+    .venv/bin/python patches/quality_pass52.py            apply
+    .venv/bin/python patches/quality_pass52.py --check    verify, change nothing
+
+Pass 51 recorded the workflow at six of six question classes. Running the same
+six questions again shows what that grading actually measured:
+
+    Workflow Result:
+    ['{"name": "list_ros", "parameters": {"filter": "safety"}}']
+
+That is the model's TEXT, handed back as the final answer. Every run carried
+`tool_calls=[]`, no tool ever executed, and each exited 0 in three seconds -
+which is why grading on "did it terminate with a result" called it a pass. The
+honest reading is two numbers: six of six on tool SELECTION, nought of six on
+EXECUTION.
+
+The cause is the server, not the client. Asked directly with curl, with a
+proper OpenAI `tools` array and tool_choice auto, the NIM replies with
+
+    {"role": "assistant", "content": "{\"name\": \"get_ro_state\", ...}"}
+
+and no `tool_calls` field, finish_reason "stop". vLLM's tool-call parsers ship
+inside the container, but this NIM release exposes no way to turn one on, so
+there is nothing to configure: the model writes its calls as prose.
+
+So the fix is a shim at the model boundary, not a different agent. One LLM
+provider - `asoia_nim_toolshim` - serves the same NIM over its OpenAI route and
+lifts a prose tool call into `tool_calls` before LangChain sees the message.
+The toolkit's own agent still does the orchestrating, which is the point of
+having it; it just stops being lied to about what the model said.
+
+Three details the model made necessary, each observed in a real reply:
+
+  - the arguments arrive wrapped in the schema's own envelope
+    ({"properties": {...}}), so a lone "properties" key is unwrapped
+  - nulls stand for arguments the model declined to pass, so they are dropped
+    rather than sent to a field whose type will not take None
+  - the repair runs only when tools were actually bound, so an ordinary answer
+    that happens to be JSON is never mistaken for a call
+
+Two more faults only became visible once tools started running, which is the
+real argument for fixing this rather than restating the claim:
+
+  - langchain-openai 1.x sends `max_completion_tokens`; this NIM's OpenAI route
+    rejects it with a 400, so the payload hook renames it back to `max_tokens`
+  - a safety list is 30,000 characters of repair orders against an 8,192-token
+    context, and two of the six classes died on it. `_fit` trims the longest
+    list in a payload and records `truncated: {field, shown, of}`, so a partial
+    list cannot be reported as the whole shop.
+
+Streaming is disabled on the client: it would bypass the repair.
 """
 from __future__ import annotations
-from pydantic import BaseModel, Field
+import pathlib, sys
 
-from app.agent import tools as T
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+CHECK = "--check" in sys.argv
+NF = ROOT / "app/agent/nat_functions.py"
+WF = ROOT / "app/agent/workflow.yml"
 
-try:
-    # nvidia-nat is the package; `aiq` is a deprecated shim over it that warns
-    # on every import. Prefer the real namespace, fall back for older installs.
-    try:
-        from nat.builder.builder import Builder
-        from nat.builder.function_info import FunctionInfo
-        from nat.cli.register_workflow import register_function
-        from nat.data_models.function import FunctionBaseConfig
-    except ImportError:
-        from aiq.builder.builder import Builder
-        from aiq.builder.function_info import FunctionInfo
-        from aiq.cli.register_workflow import register_function
-        from aiq.data_models.function import FunctionBaseConfig
-    NAT_AVAILABLE = True
-except ImportError:                                    # toolkit not installed
-    NAT_AVAILABLE = False
+ANCHOR = "NAT_TYPES = {name: _register(name, fn, schema)"
 
-
-# --- argument schemas -------------------------------------------------------
-class RoInput(BaseModel):
-    ro_number: str = Field(description="Repair order number, e.g. RO-26-08165")
-
-
-class RoWindowInput(BaseModel):
-    ro_number: str = Field(description="Repair order number")
-    since_hours: int = Field(default=12, description="Look-back window in hours")
-
-
-class ListInput(BaseModel):
-    filter: str = Field(default="active",
-                        description="active|blocked|at_risk|safety|waiter|all, "
-                                    "or a lifecycle state such as PARTS_HOLD")
-    limit: int = Field(default=25)
-
-
-class StaffInput(BaseModel):
-    staff_id: str = Field(description="Staff id, e.g. EMP014")
-    days: int = Field(default=7)
-
-
-class ShiftInput(BaseModel):
-    shift: str = Field(default="AFTERNOON", description="MORNING or AFTERNOON")
-
-
-class DaysInput(BaseModel):
-    days: int = Field(default=7)
-
-
-class SearchInput(BaseModel):
-    query: str = Field(description="Natural-language search over technician updates")
-    k: int = Field(default=4)
-    ro_number: str | None = Field(default=None)
-
-
-class OpInput(BaseModel):
-    op_code: str = Field(description="Labour operation code, e.g. BRK-FR-PAD")
-
-
-class ShiftActivityInput(BaseModel):
-    day_offset: int = Field(default=0,
-                            description="0 today, -1 yesterday, -2 the day before")
-    shift: str = Field(default="", description="MORNING, AFTERNOON, or empty for both")
-    view: str = Field(default="people",
-                      description="people = who worked; vehicles = which cars")
-
-
-# Every tool, its schema, and a one-line description for the planner.
-REGISTRY = [
-    ("get_ro_state",            T.get_ro_state,            RoInput),
-    ("get_ro_timeline",         T.get_ro_timeline,         RoInput),
-    ("list_ros",                T.list_ros,                ListInput),
-    ("get_technician_activity", T.get_technician_activity, StaffInput),
-    ("generate_handover",       T.generate_handover,       ShiftInput),
-    ("detect_anomalies",        T.detect_anomalies,        DaysInput),
-    ("diff_ro",                 T.diff_ro,                 RoWindowInput),
-    ("search_updates",          T.search_updates,          SearchInput),
-    ("get_op_code_info",        T.get_op_code_info,        OpInput),
-    ("get_shift_activity",      T.get_shift_activity,      ShiftActivityInput),
-]
-
-
-if NAT_AVAILABLE:
-    import os
-    import types
-
-    def _register(tool_name, fn, schema):
-        """One NAT function type per tool.
-
-        The previous shape - one registered type yielding ten FunctionInfo -
-        exposed exactly one of them. `register_function` wraps an ASYNC
-        GENERATOR whose single yield is the context-manager boundary: what
-        comes before it is setup, what comes after is teardown, and the yielded
-        value is THE function. Yielding ten does not register ten; it registers
-        the first and drops the rest, and the agent is then told to call a tool
-        name that resolves to nothing.
-
-        The config class is built with types.new_class because
-        FunctionBaseConfig takes its registered name as a class keyword, which
-        the three-argument form of type() cannot pass.
-        """
-        cfg_cls = types.new_class(
-            f"{tool_name.title().replace('_', '')}Config",
-            (FunctionBaseConfig,),
-            {"name": f"asoia_{tool_name}"},
-            lambda ns: ns.update({
-                "__doc__": f"Configuration for the {tool_name} tool.",
-                "__annotations__": {"db_path": str},
-                "db_path": Field(
-                    default="data/generated/service.sqlite",
-                    description="SQLite database produced by notebook 01"),
-            }),
-        )
-
-        async def _build(config, builder: "Builder", _fn=fn, _schema=schema,
-                         _name=tool_name):
-            os.environ.setdefault("ASOIA_DB", config.db_path)
-
-            seen: set[str] = set()
+RUN_OLD = """            async def _run(payload):
+                return _fn(**payload.model_dump(exclude_none=True))
+"""
+DESC_OLD = "                description=(_fn.__doc__ or _name).strip())\n"
+DESC_NEW = "                description=_describe(_name, _fn))\n"
+RUN_NEW = """            seen: set[str] = set()
 
             async def _run(payload):
                 args = payload.model_dump(exclude_none=True)
                 return _once(seen, _name, args, _fn(**args))
+"""
 
-            _run.__annotations__ = {"payload": _schema, "return": dict}
+OLD_LLM = ("    _type: nim\n"
+           "    model_name: nvidia/llama-3.1-nemotron-nano-8b-v1\n"
+           "    base_url: http://localhost:8000/v1      "
+           "# self-hosted NIM; omit to use build.nvidia.com\n"
+           "    temperature: 0.2\n")      # the embedder is a nim too
+NEW_LLM = """    # asoia_nim_toolshim, not nim. Asked with the OpenAI `tools` array this
+    # NIM returns the call as assistant TEXT with no tool_calls field, so the
+    # agent saw no call to make and handed the JSON back as its answer. The
+    # provider registered in app/agent/nat_functions.py lifts it back out.
+    _type: asoia_nim_toolshim
+    model_name: nvidia/llama-3.1-nemotron-nano-8b-v1
+    base_url: http://localhost:8000/v1      # self-hosted NIM
+    # 0.0, not 0.2. Choosing between ten tools is a classification, and at 0.2
+    # the safety question picked list_ros on one run and detect_anomalies on
+    # the next - from an identical prompt.
+    temperature: 0.0
+"""
 
-            yield FunctionInfo.from_fn(
-                _run, input_schema=_schema,
-                description=_describe(_name, _fn))
+OLD_PROMPT = """    Call a tool when you need shop data. When the tools have answered the
+    question, reply with the answer and stop.
+"""
+NEW_PROMPT = """    Call a tool when you need shop data. When the tools have answered the
+    question, reply with the answer and stop.
 
-        register_function(config_type=cfg_cls)(_build)
-        return cfg_cls
+    Write that answer as plain prose. Never wrap it in JSON, and never read the
+    payload back field by field.
 
-    NAT_TYPES = {name: _register(name, fn, schema)
-                 for name, fn, schema in REGISTRY}
+    If a tool result carries "truncated", it did not fit - say how many of how
+    many you are describing, and never present the part as the whole.
 
+    Call one tool, then answer. Never call the same tool twice with the same
+    arguments: once it has returned, the answer is in what it returned, or it
+    is not there at all and you should say so.
+
+    A result of {"repeat_call": true} is not news and is never part of an
+    answer. It means you already have what you asked for: write the answer now,
+    from the earlier result.
+"""
+
+SHIM = r'''
 
 # --- the NIM writes its tool calls as prose ---------------------------------
 # Asked with the OpenAI `tools` array, this NIM replies
@@ -429,3 +397,32 @@ if NAT_AVAILABLE:
             )
     except ImportError:            # older toolkit, or langchain_openai missing
         pass
+'''
+
+nf = NF.read_text()
+wf = WF.read_text()
+
+if "asoia_nim_toolshim" in nf and "asoia_nim_toolshim" in wf:
+    print("  already   app/agent/nat_functions.py, app/agent/workflow.yml")
+    sys.exit(0)
+
+for path, text, anchor, what in ((NF, nf, ANCHOR, "the registration loop"),
+                                 (NF, nf, RUN_OLD, "the tool call"),
+                                 (NF, nf, DESC_OLD, "the tool description"),
+                                 (WF, wf, OLD_LLM, "the llm block"),
+                                 (WF, wf, OLD_PROMPT, "the prompt tail")):
+    if text.count(anchor) != 1:
+        print(f"FAIL: {path.name}  {what}: anchor found {text.count(anchor)} "
+              "times, expected 1.")
+        print("      Run passes 1-51 first. Stopping without changes.")
+        sys.exit(1)
+
+if not CHECK:
+    nf2 = nf.replace(RUN_OLD, RUN_NEW, 1).replace(DESC_OLD, DESC_NEW, 1)
+    NF.write_text(nf2.rstrip("\n") + "\n" + SHIM)
+    WF.write_text(wf.replace(OLD_LLM, NEW_LLM, 1).replace(OLD_PROMPT, NEW_PROMPT, 1))
+verb = "would patch" if CHECK else "patched  "
+print(f"  {verb} app/agent/nat_functions.py (asoia_nim_toolshim provider and "
+      f"the payload fitter, +{SHIM.count(chr(10))} lines)")
+print(f"  {verb} app/agent/workflow.yml     (nim -> asoia_nim_toolshim, "
+      "prose and truncation rules)")
