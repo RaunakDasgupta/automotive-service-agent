@@ -12,10 +12,18 @@ from pydantic import BaseModel, Field
 from app.agent import tools as T
 
 try:
-    from aiq.builder.builder import Builder
-    from aiq.builder.function_info import FunctionInfo
-    from aiq.cli.register_workflow import register_function
-    from aiq.data_models.function import FunctionBaseConfig
+    # nvidia-nat is the package; `aiq` is a deprecated shim over it that warns
+    # on every import. Prefer the real namespace, fall back for older installs.
+    try:
+        from nat.builder.builder import Builder
+        from nat.builder.function_info import FunctionInfo
+        from nat.cli.register_workflow import register_function
+        from nat.data_models.function import FunctionBaseConfig
+    except ImportError:
+        from aiq.builder.builder import Builder
+        from aiq.builder.function_info import FunctionInfo
+        from aiq.cli.register_workflow import register_function
+        from aiq.data_models.function import FunctionBaseConfig
     NAT_AVAILABLE = True
 except ImportError:                                    # toolkit not installed
     NAT_AVAILABLE = False

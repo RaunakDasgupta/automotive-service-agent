@@ -50,6 +50,13 @@ voice = ["nvidia-riva-client>=2.16"]
 # Flask app and peewee.
 admin = ["sqlite-web>=0.8"]
 
+# NeMo Agent Toolkit discovers third-party components through this group. It
+# is the whole reason `aiq run` can see service_ops_tools: the registration in
+# app/agent/nat_functions.py is correct, but the toolkit never imports a module
+# nothing points it at.
+[project.entry-points."nat.components"]
+asoia_service_ops = "app.agent.nat_functions"
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
