@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  # The app itself. Host networking, so localhost is the instance.
+  - job_name: asoia
+    static_configs:
+      - targets: ["localhost:9400"]
+
+  # The three NIMs publish Triton metrics on their own container port 8002.
+  # start_nims.sh maps each container's 8000 to a distinct host port, so these
+  # are only reachable if you also publish 8002 - left here, commented, because
+  # adding a second -p to each container is a deployment change, not a config one.
+  # - job_name: nim
+  #   static_configs:
+  #     - targets: ["localhost:8012", "localhost:8022", "localhost:8032"]
