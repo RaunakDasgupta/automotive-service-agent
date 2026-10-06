@@ -233,17 +233,40 @@ def _window_days(question: str) -> int | None:
     return None
 
 
-# Vehicles ARRIVING, which is a recorded column, as against vehicles being
-# worked on, which get_shift_activity answers from the updates logged. The
-# discriminator is the subject: "who came in this morning" is people, "how many
-# cars came in this week" is demand. Before this, the second fell through to
-# semantic search, retrieved four updates containing the word "shop", and was
-# answered "four" against a true 179.
-_INTAKE_RE = re.compile(
-    r"\b(how many|how much)\b[^?]*\b(cars?|vehicles?|jobs?|ros?|repair orders?|work)\b"
-    r"|\b(cars?|vehicles?|jobs?|repair orders?)\b[^?]*\b(came|come|coming) in(to)?\b"
-    r"|\b(booked|dropped) (in|off)\b|\bintake\b|\bhow busy\b"
-    r"|\bnew (jobs|ros|repair orders)\b", re.I)
+# Three different questions get asked about the same vehicles, and they are
+# told apart by the VERB, not by the noun:
+#
+#   ARRIVAL   what was booked in        -> get_intake(days)
+#   ACTIVITY  what was worked on        -> get_shift_activity(offset, days)
+#   STATE     what is blocked / unsafe  -> list_ros(filter)
+#
+# Pass 53 told them apart by the noun - "how many" plus a vehicle word - and so
+# sent "how many cars were worked on yesterday" to the intake tool over a seven
+# day window, and appended a spurious intake call to "how many cars are blocked"
+# as well. Both were wrong in the same way: a count is not a metric.
+#
+# A state question wins outright. It has already matched a filter, and there is
+# nothing to count over a window.
+_ARRIVAL_VERB = re.compile(
+    r"\b(came|come|comes|coming|arrive|arrives|arrived|arriving) in(to)?\b"
+    r"|\b(booked|dropped) (in|off)\b"
+    r"|\b(take|takes|took|taken) in\b"
+    r"|\bintake\b|\bhow busy\b|\bnew (jobs|ros|repair orders)\b", re.I)
+# "Who came in this morning" is people arriving for a shift, not demand.
+_ARRIVAL_SUBJECT = re.compile(
+    r"\b(cars?|vehicles?|jobs?|ros?|repair orders?|work|motors?)\b", re.I)
+_NO_SUBJECT_NEEDED = re.compile(r"\bintake\b|\bhow busy\b", re.I)
+
+# Already answered by a filter or by one repair order; a window adds nothing.
+_STATE_TOOLS = {"list_ros", "detect_anomalies", "generate_handover", "diff_ro",
+                "get_technician_activity", "get_ro_state", "get_ro_timeline"}
+
+
+def _is_arrival(question: str) -> bool:
+    if not _ARRIVAL_VERB.search(question):
+        return False
+    return bool(_NO_SUBJECT_NEEDED.search(question)
+                or _ARRIVAL_SUBJECT.search(question))
 
 
 RO_RE = re.compile(r"\bRO[- ]?\d{2}[- ]?\d{4,5}\b", re.I)
@@ -298,16 +321,22 @@ def plan_keyword(question: str) -> list[dict]:
     # semantic search over what people typed. Step aside for handover, diff and
     # staff-id questions: those already have the right tool, and "the afternoon
     # handover" names a shift without asking who worked it.
-    # Demand first: it is a count over a window, not a search and not a roster.
-    if _INTAKE_RE.search(question) and not ID_RE.search(question) and not ro:
-        plan.append({"name": "get_intake",
-                     "args": {"days": _window_days(question) or 7}})
-
+    answered = {c["name"] for c in plan}
     tf = _timeframe(question)
-    if (tf is not None
+    win = _window_days(question)
+
+    # Demand: a count over a window, not a search and not a roster.
+    if (_is_arrival(question) and not (answered & _STATE_TOOLS)
+            and not ID_RE.search(question) and not ro):
+        plan.append({"name": "get_intake", "args": {"days": win or 7}})
+
+    # Activity: what was worked on, over a day or a window. The window is why
+    # "what are the cars being worked on this week" has a tool at all; it used
+    # to reach semantic search and come back with three cars out of four notes.
+    if ((tf is not None or win)
+            and not (answered & _STATE_TOOLS)
             and not any(p["name"] == "get_intake" for p in plan)
             and not ID_RE.search(question)
-            and not any(p["name"] in ("generate_handover", "diff_ro") for p in plan)
             and re.search(r"\bwho\b|\bworked?\b|\bworking\b|\bon shift\b"
                           r"|\bon duty\b|\bcame (in|through)\b|\bclocked\b|\bstaff\b"
                           r"|\bteam\b|\btechnicians?\b|\bactivity\b"
@@ -316,7 +345,11 @@ def plan_keyword(question: str) -> list[dict]:
         # today" and "who worked today" hit the same tool over the same window,
         # but one wants vehicles and the other wants people - and until this,
         # both got a roster of technicians.
-        args = dict(tf)
+        args = dict(tf or {"day_offset": 0})
+        if win and win > 1:
+            args["days"] = win
+        if re.search(r"\bhow many\b|\bhow much\b", q):
+            args["brief"] = True
         args["view"] = ("vehicles" if re.search(
             r"\bcars?\b|\bvehicles?\b|\bmotors?\b|\bjobs?\b|\bros?\b"
             r"|\brepair orders?\b|\bwhat came (in|through)\b", q) else "people")
@@ -915,11 +948,21 @@ def _vehicles_summary(d: dict, when: str) -> str:
     Safety-critical jobs sort first, because that is what a manager scanning this
     list is looking for.
     """
-    L = [f"**{d.get('ros_worked')} vehicles had work booked {when}**, "
-         f"{_plural(d.get('ops_completed'), 'operation', 'operations')} across "
-         f"{_plural(d.get('hours_booked'), 'hour', 'hours')}."]
-    if d.get("ros_shown") != d.get("ros_worked"):
-        L.append(f"Showing **{d.get('ros_shown')}**, safety-critical first.")
+    with_ops = d.get("ros_with_ops")
+    L = [f"**{d.get('ros_worked')} vehicles were worked on {when}** - "
+         f"{_plural(d.get('ops_completed'), 'operation', 'operations')} completed "
+         f"across {_plural(d.get('hours_booked'), 'hour', 'hours')}"
+         + (f", on {with_ops} of them." if with_ops is not None else ".")]
+    if d.get("brief"):
+        # "How many" is a question about a number. Thirteen vehicle cards
+        # underneath one is not an answer, it is the payload.
+        safety = sum(1 for r in (d.get("by_ro") or []) if r.get("safety"))
+        if safety:
+            L.append(f"- Safety-critical work on **{safety}** of them.")
+        return "\n".join(L)
+    if with_ops and d.get("ros_shown") != with_ops:
+        L.append(f"Showing **{d.get('ros_shown')}** of those {with_ops}, "
+                 f"safety-critical first.")
 
     for r in d.get("by_ro") or []:
         head = f"\n**{r.get('ro_number')}**"
@@ -951,8 +994,10 @@ def _shift_summary(d: dict) -> str:
     # Lead with "today"/"yesterday" and a written date. A bare ISO date read
     # against the reader's own calendar makes a correct answer look stale,
     # which is exactly what happened with ASOIA_NOW pinned a day back.
-    day = ", ".join(str(x) for x in (d.get("day_label"), d.get("date_long")) if x) \
-        or str(d.get("date"))
+    parts = [d.get("day_label")]
+    if not (d.get("window_days") or 1) > 1:
+        parts.append(d.get("date_long"))
+    day = ", ".join(str(x) for x in parts if x) or str(d.get("date"))
     when = day if sh not in _SHIFT_WORDS else f"the {_SHIFT_WORDS[sh]} of {day}"
     if not d.get("found"):
         if d.get("error"):

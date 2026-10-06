@@ -188,7 +188,8 @@ def get_technician_activity(con, staff_id: str, days: int = 7,
 
 def get_shift_activity(con, day_offset: int = 0, shift: str | None = None,
                        now: datetime | None = None, view: str = "people",
-                       limit: int = 20) -> dict[str, Any]:
+                       limit: int = 20, days: int = 1,
+                       brief: bool = False) -> dict[str, Any]:
     """Who worked on one day - optionally one shift - and what they did.
 
     `updates.shift` and `events.shift` are columns, written when the work was
@@ -203,7 +204,14 @@ def get_shift_activity(con, day_offset: int = 0, shift: str | None = None,
     logged after midnight belongs to that calendar day's afternoon shift.
     """
     now = now or datetime.now()
+    # A window, not only a day. "What are the cars being worked on this week"
+    # had no tool at all: this one did a single date, so the question fell
+    # through to semantic search and came back with three cars out of four
+    # notes. days=1 is the original behaviour exactly.
+    days = max(1, int(days))
+    brief = bool(brief)
     day = (now + timedelta(days=day_offset)).date().isoformat()
+    first = (now + timedelta(days=day_offset - days + 1)).date().isoformat()
     shift = (shift or "").strip().upper() or None
     view = "vehicles" if str(view).lower().startswith("veh") else "people"
     if shift and shift not in ("MORNING", "AFTERNOON"):
@@ -211,8 +219,9 @@ def get_shift_activity(con, day_offset: int = 0, shift: str | None = None,
                 "error": f"The shop runs MORNING and AFTERNOON shifts; "
                          f"there is no {shift} shift on file."}
 
-    where = "WHERE date(at)=?" + (" AND upper(shift)=?" if shift else "")
-    args = (day, shift) if shift else (day,)
+    where = ("WHERE date(at) BETWEEN ? AND ?"
+             + (" AND upper(shift)=?" if shift else ""))
+    args = (first, day, shift) if shift else (first, day)
     urows = con.execute(
         "SELECT update_id, ro_number, staff_id, at, shift, text FROM updates "
         + where + " ORDER BY at", args).fetchall()
@@ -317,17 +326,27 @@ def get_shift_activity(con, day_offset: int = 0, shift: str | None = None,
     # "2026-09-24" against a reader's calendar saying the 25th reads as stale.
     # The label is computed against the same clock the window was, so the answer
     # is self-consistent whether or not ASOIA_NOW is pinned.
-    label = {0: "today", -1: "yesterday", -2: "the day before yesterday"}.get(
-        day_offset) or (now + timedelta(days=day_offset)).strftime("%A")
+    if days > 1:
+        label = (f"the {days} days to "
+                 + (now + timedelta(days=day_offset)).strftime("%d %B").lstrip("0"))
+    else:
+        label = {0: "today", -1: "yesterday", -2: "the day before yesterday"}.get(
+            day_offset) or (now + timedelta(days=day_offset)).strftime("%A")
 
     # Every figure below is computed here, in the layer that is allowed to
     # compute. A renderer must never derive one - see check_grounding.
     return {"found": bool(ordered), "date": day, "day_offset": day_offset,
+            "window_days": days, "from_date": first, "brief": brief,
             "day_label": label,
             "date_long": (now + timedelta(days=day_offset)).strftime("%A %d %B"),
             "view": view, "shift": shift or "ALL",
             "people_count": len(ordered), "shown": len(ordered[:limit]),
-            "by_ro": ranked[:limit], "ros_shown": len(ranked[:limit]),
+            # ros_worked counts every repair order TOUCHED in the window;
+            # ros_with_ops counts those with a completed operation, which is
+            # what by_ro lists. The renderer printed the first and then
+            # "showing" the second, which read as a display cap and was not.
+            "by_ro": ranked[:limit], "ros_with_ops": len(ranked),
+            "ros_shown": len(ranked[:limit]),
             "ros_worked": len(ros),
             "updates_posted": sum(p["updates_posted"] for p in ordered),
             "ops_completed": sum(p["ops_completed"] for p in ordered),

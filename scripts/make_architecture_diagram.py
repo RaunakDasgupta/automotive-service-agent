@@ -319,7 +319,7 @@ def page_architecture() -> Page:
             (S_STD, "Citation set", "every claim tied to an update id"),
         ]),
         ("5 · REASONING &amp; ANSWERING", [
-            (S_STD, "Query planner", "picks the tool; 30 of 30 without a model"),
+            (S_STD, "Query planner", "picks the tool; 37 of 37 without a model"),
             (S_NV, "NeMo Switchyard", "nano local ⇄ Nemotron Super hosted"),
             (S_STD, "Tool layer · 11 tools", "deterministic SQL and vector reads"),
             (S_STD, "Answer composers", "every figure computed, not generated"),
@@ -559,7 +559,7 @@ def page_read_path() -> Page:
 
     plan = main(S_STD, "Query planner",
                 "keyword-first. The model router exists and is deliberately "
-                "not paid for: the planner already routes 30 of 30")
+                "not paid for: the planner already routes 37 of 37")
     switch = main(S_NV, "NeMo Switchyard",
                   "nano locally, Nemotron Super hosted on escalation. Off "
                   "unless the deployment turns it on")

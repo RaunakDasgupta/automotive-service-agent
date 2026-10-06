@@ -29,11 +29,16 @@ Six measures, chosen because each covers a failure this project actually had:
 
   REFUSAL       action requests must be refused before any tool runs.
 
-  RETRIEVAL     recall@k and MRR over the real index (needs --with-llm). The
-                query is the CUSTOMER'S OWN COMPLAINT from the repair order, and
-                a hit is any returned passage belonging to that repair order.
-                Deliberately not the note text itself: retrieving a document by
-                quoting it back measures nothing.
+  RETRIEVAL     recall@k and MRR over the real index (needs --with-llm). A hit
+                is a returned passage belonging to the repair order the query
+                came from, and the query is never the note text: retrieving a
+                document by quoting it back measures nothing.
+
+                Scored on the question a person actually asks - the complaint
+                AND the car. The complaint ALONE is reported too, against the
+                ceiling it can reach: 400 repair orders share 36 complaint
+                texts, so that query names about twelve jobs at once and no
+                retriever can pick one out of twelve with six slots.
 
   RERANK        the same two numbers with the reranker off, and the difference.
                 retrieve-18/rerank-6 was tuned by hand and never measured against
@@ -55,40 +60,54 @@ import _env  # noqa: E402,F401  - .env, like stack.sh; see scripts/_env.py
 # (question, the tool that should answer it). Includes phrasings that were once
 # routed wrongly - pass 9's waiter filter, pass 11's shift questions, pass 17's
 # vehicle view - so a regression shows up as a score, not a surprise.
-ROUTING: list[tuple[str, str]] = [
-    ("Which vehicles cannot be released on safety grounds?", "list_ros"),
-    ("Anything dangerous out there?",                        "list_ros"),
-    ("What is unsafe to release?",                           "list_ros"),
-    ("Which jobs are blocked waiting for parts?",            "list_ros"),
-    ("What is held up on parts?",                            "list_ros"),
-    ("Which jobs will miss their promised time?",            "list_ros"),
-    ("What is running late?",                                "list_ros"),
-    ("Are there any customers waiting on site?",             "list_ros"),
-    ("Any waiters in today?",                                "list_ros"),
-    ("Give me the afternoon handover, worst first.",         "generate_handover"),
-    ("Hand over to the morning shift.",                      "generate_handover"),
-    ("Any unusual patterns in the shop this week?",          "detect_anomalies"),
-    ("Are any parts holding up more than one job at once?",  "detect_anomalies"),
-    ("Is the same part blocking several jobs?",              "detect_anomalies"),
-    ("What has EMP014 done this week?",                      "get_technician_activity"),
-    ("How has EMP021 been getting on?",                      "get_technician_activity"),
-    ("Who worked in the afternoon yesterday?",               "get_shift_activity"),
-    ("Who was in this morning?",                             "get_shift_activity"),
-    ("What happened overnight?",                             "get_shift_activity"),
-    ("Which technicians were on duty today?",                "get_shift_activity"),
-    ("What cars were worked on today?",                      "get_shift_activity"),
-    ("Which vehicles came through yesterday?",               "get_shift_activity"),
-    ("has anyone seen a whistling noise on a Passat",        "search_updates"),
-    ("any notes about a burning smell",                      "search_updates"),
-    # Demand. Every one of these used to fall through to semantic search: the
-    # first was answered "four" against a true 179, from four notes that
-    # happened to contain the word "shop".
-    ("How many cars came into the shop this week?",          "get_intake"),
-    ("How many vehicles came in today?",                     "get_intake"),
-    ("How busy were we this month?",                         "get_intake"),
-    ("How much work came in over the last 3 days?",          "get_intake"),
-    ("How many new jobs did we take in?",                    "get_intake"),
-    ("What was our intake this week?",                       "get_intake"),
+# The expected PLAN, not merely the expected tool. Scoring "is the right tool
+# somewhere in the plan" reported 30/30 while the planner was also appending a
+# spurious get_intake to three of these: "how many cars are blocked" matched a
+# state filter AND a count, and both ran. A measure that cannot see an extra
+# tool cannot see that class of fault at all.
+ROUTING: list[tuple[str, tuple[str, ...]]] = [
+    ("Which vehicles cannot be released on safety grounds?", ("list_ros",)),
+    ("Anything dangerous out there?",                        ("list_ros",)),
+    ("What is unsafe to release?",                           ("list_ros",)),
+    ("Which jobs are blocked waiting for parts?",            ("list_ros",)),
+    ("What is held up on parts?",                            ("list_ros",)),
+    ("Which jobs will miss their promised time?",            ("list_ros",)),
+    ("What is running late?",                                ("list_ros",)),
+    ("Are there any customers waiting on site?",             ("list_ros",)),
+    ("Any waiters in today?",                                ("list_ros",)),
+    ("Give me the afternoon handover, worst first.",         ("generate_handover",)),
+    ("Hand over to the morning shift.",                      ("generate_handover",)),
+    ("Any unusual patterns in the shop this week?",          ("detect_anomalies",)),
+    # Genuinely two tools: a part holding up several jobs is an anomaly, and
+    # the jobs it is holding up are a filter.
+    ("Are any parts holding up more than one job at once?",  ("detect_anomalies", "list_ros")),
+    ("Is the same part blocking several jobs?",              ("detect_anomalies",)),
+    ("What has EMP014 done this week?",                      ("get_technician_activity",)),
+    ("How has EMP021 been getting on?",                      ("get_technician_activity",)),
+    ("Who worked in the afternoon yesterday?",               ("get_shift_activity",)),
+    ("Who was in this morning?",                             ("get_shift_activity",)),
+    ("What happened overnight?",                             ("get_shift_activity",)),
+    ("Which technicians were on duty today?",                ("get_shift_activity",)),
+    ("What cars were worked on today?",                      ("get_shift_activity",)),
+    ("Which vehicles came through yesterday?",               ("get_shift_activity",)),
+    ("has anyone seen a whistling noise on a Passat",        ("search_updates",)),
+    ("any notes about a burning smell",                      ("search_updates",)),
+    # Demand: what was booked IN.
+    ("How many cars came into the shop this week?",          ("get_intake",)),
+    ("How many vehicles came in today?",                     ("get_intake",)),
+    ("How busy were we this month?",                         ("get_intake",)),
+    ("How much work came in over the last 3 days?",          ("get_intake",)),
+    ("How many new jobs did we take in?",                    ("get_intake",)),
+    ("What was our intake this week?",                       ("get_intake",)),
+    # The three that collide with demand, and did. Each of these was answered
+    # by the wrong tool, or by two tools, after pass 53.
+    ("how many cars were worked on yesterday?",              ("get_shift_activity",)),
+    ("what are the cars being worked on this week?",         ("get_shift_activity",)),
+    ("who came in this morning?",                            ("get_shift_activity",)),
+    ("how many cars are blocked waiting for parts?",         ("list_ros",)),
+    ("how many jobs will miss their promised time?",         ("list_ros",)),
+    ("how many vehicles are unsafe to release?",             ("list_ros",)),
+    ("how many customers are waiting on site?",              ("list_ros",)),
 ]
 
 REFUSALS = [
@@ -99,7 +118,7 @@ REFUSALS = [
 ]
 
 # Questions scored for grounding. Deterministic paths only, so no NIMs needed.
-GROUNDED_SET = [q for q, tool in ROUTING if tool != "search_updates"]
+GROUNDED_SET = [q for q, plan in ROUTING if "search_updates" not in plan]
 
 # And the complement, which is the point. These are the only answers in the
 # project whose words are generated rather than assembled, so they are the only
@@ -107,7 +126,7 @@ GROUNDED_SET = [q for q, tool in ROUTING if tool != "search_updates"]
 # Excluding them from GROUNDED_SET is correct - _spy forbids model calls there -
 # but nothing measured them, and "grounding 100%" read as though it covered the
 # system. eval_narrated() is that missing half.
-NARRATED_SET = [q for q, tool in ROUTING if tool == "search_updates"]
+NARRATED_SET = [q for q, plan in ROUTING if "search_updates" in plan]
 
 NUM_RE = re.compile(r"(?<![\w.\-])\d+(?:\.\d+)?(?![\w.\-\d])")
 
@@ -169,8 +188,8 @@ def eval_routing() -> tuple[float, list[str]]:
     from app.agent.agent import plan_keyword
     hits, misses = 0, []
     for q, want in ROUTING:
-        tools = [c["name"] for c in plan_keyword(q)]
-        if want in tools:
+        tools = tuple(c["name"] for c in plan_keyword(q))
+        if tools == want:
             hits += 1
         else:
             misses.append(f'"{q}" -> {tools or ["(nothing)"]}, wanted {want}')
@@ -240,38 +259,63 @@ def eval_retrieval(sample: int, k: int) -> tuple[float, float]:
     from app.state import db as dbm
     from app.retrieval.index import search_updates
     con = dbm.connect()
+    from collections import Counter
     rows = con.execute(
-        "SELECT r.ro_number, r.concern FROM ros r "
+        "SELECT r.ro_number, r.concern, r.make, r.model FROM ros r "
         "WHERE r.concern IS NOT NULL AND length(r.concern) > 25 "
         "AND EXISTS (SELECT 1 FROM updates u WHERE u.ro_number = r.ro_number) "
         "ORDER BY r.ro_number LIMIT ?", (sample,)).fetchall()
     if not rows:
         print("\nRETRIEVAL  - no repair orders with a concern and updates; skipped.")
         return 0.0, 0.0
-    hits, rr, failures = 0, 0.0, []
+
+    # What this benchmark can award at all. 400 repair orders share 36 complaint
+    # texts, so the complaint alone names about twelve jobs and k slots cannot
+    # hold them. Computed from the data on every run, so it can never go stale:
+    # a score is meaningless without the maximum it is scored against, and six
+    # attempts across two passes were spent chasing a floor set above this.
+    share = Counter(r["concern"].strip().lower() for r in con.execute(
+        "SELECT concern FROM ros WHERE concern IS NOT NULL"))
+    ceiling = 100 * sum(min(1.0, k / share[r["concern"].strip().lower()])
+                        for r in rows) / len(rows)
+
+    def run(q_of):
+        hits, rr, failures = 0, 0.0, []
+        for r in rows:
+            got = [p.get("ro_number") for p in
+                   search_updates(q_of(r), k=k).get("passages", [])]
+            if r["ro_number"] in got:
+                hits += 1
+                rr += 1.0 / (got.index(r["ro_number"]) + 1)
+            elif len(failures) < 3:
+                failures.append(f'"{q_of(r)[:56]}" -> {got[:3]}')
+        return hits, round(rr / len(rows), 3), failures
+
     t0 = time.perf_counter()
-    for r in rows:
-        try:
-            res = search_updates(r["concern"], k=k)
-        except Exception as e:
-            print(f"\nRETRIEVAL  - the index or the NIMs are unavailable "
-                  f"({type(e).__name__}: {str(e)[:90]}). Skipped.")
-            return 0.0, 0.0
-        got = [p.get("ro_number") for p in res.get("passages", [])]
-        if r["ro_number"] in got:
-            hits += 1
-            rr += 1.0 / (got.index(r["ro_number"]) + 1)
-        elif len(failures) < 3:
-            failures.append(f'"{r["concern"][:56]}" -> {got[:3]}')
+    try:
+        # How a person actually asks: the complaint AND the car. "Has anyone
+        # seen a whistling noise on a Passat" is the real question, and it is
+        # the only one of the two that identifies a single repair order.
+        named, named_mrr, failures = run(
+            lambda r: f'{r["concern"]} on the {r["make"]} {r["model"]}')
+        blind, blind_mrr, _ = run(lambda r: r["concern"])
+    except Exception as e:
+        print(f"\nRETRIEVAL  - the index or the NIMs are unavailable "
+              f"({type(e).__name__}: {str(e)[:90]}). Skipped.")
+        return 0.0, 0.0
     secs = time.perf_counter() - t0
-    print(f"\nRETRIEVAL  ({len(rows)} queries, k={k}, {secs:.1f}s "
-          f"= {secs / len(rows):.2f}s each)")
-    recall = _line(f"recall@{k}", hits, len(rows))
-    mrr = round(rr / len(rows), 3)
-    print(f"  {'MRR':22s} {_bar(mrr * 100)} {mrr:.3f}")
+    print(f"\nRETRIEVAL  ({2 * len(rows)} queries, k={k}, {secs:.1f}s "
+          f"= {secs / (2 * len(rows)):.2f}s each)")
+    recall = _line(f"recall@{k}, car named", named, len(rows))
+    print(f"  {'MRR':22s} {_bar(named_mrr * 100)} {named_mrr:.3f}")
+    bl = _line(f"complaint alone", blind, len(rows))
+    twins = sum(share[r["concern"].strip().lower()] for r in rows) / len(rows)
+    print(f"      a complaint alone names about {twins:.0f} jobs at once, so the "
+          f"ceiling is {ceiling:.1f}% - that score is "
+          f"{100 * bl / ceiling:.0f}% of what is on offer")
     for f in failures:
         print(f"      miss  {f}")
-    return recall, mrr
+    return recall, named_mrr
 
 
 # --------------------------------------------------------------- rerank

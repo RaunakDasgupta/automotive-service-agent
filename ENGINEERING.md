@@ -2425,3 +2425,95 @@ moved rather than staying still:
     recall         50.0%  ->  52.5%   floor 60%, still below
 
 A new question class that is not in the measure is a claim, not a result.
+
+## 44. Three questions about the same cars, and a benchmark with a ceiling
+
+Two answers from one session:
+
+    what are the cars being worked on this week?
+      -> three cars, from four notes, via semantic search
+
+    how many cars were worked on yesterday?
+      -> "179 vehicles came into the shop in the 7 days to 28 September"
+
+The second is pass 53's. Its intake rule matched the noun - "how many" plus a
+vehicle word - so it caught every counting question about cars whatever the
+verb, and answered a question about work done yesterday with arrivals over a
+week. It also appended a spurious `get_intake` to "how many cars are blocked",
+"how many jobs will miss their promised time" and "how many vehicles are unsafe
+to release", each of which already had the right tool.
+
+The routing measure reported 30/30 the whole time, because it asked whether the
+wanted tool was IN the plan and never whether anything else was. One pass after
+writing "a new question class that is not in the measure is a claim, not a
+result", the measure was blind to the class of fault the new class introduced.
+
+### The verb, not the noun
+
+    ARRIVAL   what was booked in        -> get_intake(days)
+    ACTIVITY  what was worked on        -> get_shift_activity(offset, days)
+    STATE     what is blocked / unsafe  -> list_ros(filter)
+
+A state question wins outright: it has matched a filter already and there is
+nothing to count over a window. "Who came in this morning" is people, and stays
+with activity, because arrival now needs a vehicle subject as well as an arrival
+verb. `get_shift_activity` gained a window, which is why "what are the cars
+being worked on this week" has a tool at all - that function did one date, so
+the question fell through to search and came back with three cars out of 204.
+
+The measure now scores the exact plan over 37 questions, the three collisions
+among them. An extra tool is a failure, which is what it always was.
+
+### Two numbers described as one thing
+
+    **26 vehicles had work booked yesterday**
+    Showing **13**, safety-critical first.
+
+13 is not a display cap on 26. 26 is every repair order touched in the window;
+13 is those with a completed operation, which is what the list holds. The
+payload now carries both and the sentence says which is which. The window label
+also said the date twice - "the 7 days to 28 September, Monday 28 September" -
+and a "how many" question now gets a number and a safety line rather than
+thirteen vehicle cards. A count is not a request for the payload.
+
+### The benchmark could never have passed
+
+400 repair orders share 36 complaint texts. The retrieval measure used the
+complaint as the query and one specific repair order as the target, so it asked
+the index to pick one job out of about twelve identical ones using six slots.
+
+    highest score available   53.0%
+    measured                  52.5%
+
+Six retrieval fixes across passes 50 and 53 were spent closing half a point,
+against a floor of 60% that was unreachable by arithmetic. Nobody had computed
+the ceiling, including me, twice.
+
+The measure now scores the question a person actually asks - the complaint and
+the car, "a whistling noise on a Passat", which names one job:
+
+    complaint + car   83.3%   MRR 0.400     scored, floor 60%
+    complaint alone   52.5%   ceiling 53.0%, 99% of what is on offer
+
+Both are printed and the ceiling is computed from the data on every run, so it
+cannot go stale. Changing what a measure means in order to pass it is exactly
+the move to distrust, so the old number stays visible beside the ceiling, and
+the reason the old query was ill-posed is arithmetic rather than opinion.
+
+### The dataset was checked and left alone
+
+It models a working week - 106 arrivals on a Monday against 4 on a Sunday - and
+drop-offs between 7am and 11am. The 36 shared complaints are the one flaw, and
+regenerating to give every job distinct wording would invalidate every measured
+number in this repository and the index with it, to fix a benchmark that a
+well-posed question fixes for free. The cost is not worth the benefit, and
+saying which flaw was accepted is part of the record.
+
+### All six measures pass, for the first time
+
+    routing       30/30 lenient  -> 37/37 exact plan   100%
+    grounding     28/28          -> 35/35              100%
+    traceability  762/762        -> 954/954            100%
+    refusal         4/4          ->   4/4              100%
+    narration       2/2          ->   2/2              100%
+    recall         52.5% (floor 60, unreachable) -> 83.3% (floor 60)

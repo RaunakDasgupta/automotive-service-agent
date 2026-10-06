@@ -347,7 +347,7 @@ function slideFlow(pres) {
   row(4.62, 0.90, [
     ["std", "Question", "console or HTTP API"],
     ["fw", "Rails", "injection, scope, NeMo self-check"],
-    ["std", "Plan → tool call", "routes 30 of 30 with no model"],
+    ["std", "Plan → tool call", "routes 37 of 37 with no model"],
     ["nv", "Retrieve + rerank", "free-text search only"],
     ["nv", "Compose or narrate", "figures computed, then prose"],
   ]);

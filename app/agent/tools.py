@@ -99,13 +99,16 @@ def get_op_code_info(op_code: str) -> dict:
 
 
 def get_shift_activity(day_offset: int = 0, shift: str = "",
-                       view: str = "people") -> dict:
-    """What happened on a day and shift. day_offset 0 is today, -1 yesterday.
-    shift MORNING or AFTERNOON, or omit for the whole day. view "people" for who
-    worked, "vehicles" for which cars came through and what was done to each.
+                       view: str = "people", days: int = 1,
+                       brief: bool = False) -> dict:
+    """What was WORKED ON over a day or a window. day_offset 0 is today, -1
+    yesterday; days 1 that day alone, 7 the week ending there. shift MORNING or
+    AFTERNOON, or omit for the whole day. view "people" for who worked,
+    "vehicles" for which cars were worked on and what was done to each. Not the
+    same as what was booked in, which is get_intake.
     """
     return Q.get_shift_activity(con(), day_offset=day_offset, shift=shift,
-                                view=view, now=_now())
+                                view=view, days=days, brief=brief, now=_now())
 
 
 
@@ -180,7 +183,9 @@ SPECS = [
                     "description":"0 today, -1 yesterday, -2 the day before"},
       "shift":{"type":"string","enum":["MORNING","AFTERNOON",""]},
       "view":{"type":"string","enum":["people","vehicles"],
-              "description":"people = who worked; vehicles = which cars"}}}}},
+              "description":"people = who worked; vehicles = which cars"},
+      "days":{"type":"integer",
+              "description":"1 that day alone, 7 the week ending there"}}}}},
  {"type":"function","function":{"name":"get_intake",
   "description":get_intake.__doc__,
   "parameters":{"type":"object","properties":{
