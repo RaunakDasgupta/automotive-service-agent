@@ -61,6 +61,9 @@ HARNESS = (
     "scripts/make_eval_dataset.py",
     "scripts/eval_standard.py",
     "scripts/evaluate.py",
+    # Added when latency became gated. It feeds `perf`, so an agent that can
+    # edit it can report whatever milliseconds it likes.
+    "scripts/timings.py",
 )
 LOCK = ROOT / "evals/harness.lock"
 BASELINE = ROOT / "evals/baseline.json"
@@ -73,6 +76,9 @@ DB = ROOT / "data/generated/service.sqlite"
 # checking less. citations is a total that moves with the dataset, so it is
 # printed and never gated - a floor on it would only invite padding.
 LOWER_IS_BETTER = {"spurious_tools", "unresolved_citations", "unsupported_figures"}
+# Every perf metric is lower-is-better, so they are matched by suffix rather
+# than listed - a new question in timings.py should not silently arrive ungated.
+PERF_SUFFIXES = ("_ms", "_tokens")
 COUNTS = {"citations", "arg_rules_checked", "figures_per_row"}
 INFORMATIONAL = {"citations"}
 
@@ -133,18 +139,33 @@ def newest_run() -> dict | None:
 
 # ------------------------------------------------------------------ comparing
 def _fmt(kind: str, k: str, v: float) -> str:
+    if kind == "perf":
+        return f"{v:8.0f}ms" if k.endswith("_ms") else f"{v:8.0f}  "
     if kind == "fast":
         return f"{v:6.1f}%"
     return f"{v:6.2f}" if k in COUNTS else f"{v * 100:6.1f}%"
 
 
 def _delta(kind: str, k: str, v: float, old: float) -> float:
-    if kind == "fast" or k in COUNTS:
+    if kind in ("fast", "perf") or k in COUNTS:
         return v - old
     return (v - old) * 100.0
 
 
-def _tol(kind: str, k: str) -> float:
+def _tol(kind: str, k: str, old: float = 0.0) -> float:
+    if kind == "perf":
+        # Measured over three consecutive runs on an idle L40S: the model path
+        # varied 0% (1797/1799/1795), prompt and completion tokens 0%, and the
+        # Python paths 1-2% above 6ms. The 2ms question swings 20% relatively,
+        # which is a fraction of a millisecond absolutely - hence the 5ms floor,
+        # so a sub-millisecond wobble cannot fail a run.
+        #
+        # 15% is therefore about ten times the observed noise. It is deliberately
+        # loose: a latency gate that cries wolf gets switched off, and the thing
+        # worth catching is a change that doubles a stage, not one that costs 3%.
+        if k.endswith("_tokens"):
+            return max(old * 0.10, 1.0)
+        return max(old * 0.15, 5.0)
     if kind == "fast":
         return 0.05
     return 0.005 if k in COUNTS else 0.0005
@@ -163,8 +184,10 @@ def compare(kind: str, got: dict, base: dict) -> tuple[list[str], list[str]]:
             lines.append(f"  {k:24s} {_fmt(kind, k, v)}   (new)")
             continue
         d = _delta(kind, k, v, old)
-        tol = _tol(kind, k)
-        worse = (v > old + tol) if k in LOWER_IS_BETTER else (v < old - tol)
+        tol = _tol(kind, k, old)
+        inverted = k in LOWER_IS_BETTER or (
+            kind == "perf" and k.endswith(PERF_SUFFIXES))
+        worse = (v > old + tol) if inverted else (v < old - tol)
         if worse and k not in INFORMATIONAL:
             regressions.append(f"{k} {_fmt(kind, k, old).strip()} -> "
                                f"{_fmt(kind, k, v).strip()} ({d:+.2f})")
@@ -201,6 +224,52 @@ def ensure_db(quiet: bool = False) -> None:
     r = subprocess.run([sys.executable, "-m", "app.data.generate"], cwd=ROOT)
     if r.returncode != 0 or not DB.exists():
         raise SystemExit("could not generate the dataset")
+
+
+PERF_JSON = ROOT / "run/evals/.perf.json"
+
+
+def run_perf(repeat: int = 3) -> dict:
+    """The latency profile, flattened to a handful of gated numbers.
+
+    Per-question keys were the obvious choice and are not used: six questions
+    times three numbers is eighteen gates that all move together, and a gate
+    nobody reads is a gate nobody maintains. These six say the things that have
+    different fixes - a slow Python path is SQL, a slow model stage is
+    generation length, and a grown prompt is retrieval pulling more than it
+    needs.
+    """
+    if PERF_JSON.exists():
+        PERF_JSON.unlink()
+    print("timing the pipeline (needs the NIMs up):", flush=True)
+    subprocess.run([sys.executable, "scripts/timings.py", "--repeat",
+                    str(repeat), "--json", str(PERF_JSON)],
+                   cwd=ROOT, timeout=3600)
+    if not PERF_JSON.exists():
+        return {}
+    qs = (json.loads(PERF_JSON.read_text()) or {}).get("questions", [])
+    py = [q for q in qs if q.get("path") == "python"]
+    llm = [q for q in qs if q.get("path") == "llm"]
+    out: dict = {}
+    if py:
+        out["worst_python_ms"] = max(q["best_ms"] for q in py)
+    if llm:
+        out["llm_best_ms"] = max(q["best_ms"] for q in llm)
+        out["llm_model_ms"] = max(q.get("stages_ms", {}).get("model", 0.0)
+                                  for q in llm)
+        for field, key in (("prompt_tokens", "llm_prompt_tokens"),
+                           ("completion_tokens", "llm_completion_tokens")):
+            vals = [q.get(field) for q in llm if q.get(field)]
+            if vals:
+                out[key] = float(max(vals))
+    if qs:
+        out["total_best_ms"] = sum(q["best_ms"] for q in qs)
+    # A truncated answer is a correctness problem wearing a latency costume:
+    # it is fast because it stopped early. Surfaced here because timings.py is
+    # the only thing that sees finish_reason.
+    if any(q.get("finish_reason") == "length" for q in qs):
+        print("  WARNING: an answer hit max_tokens - it is short, not fast")
+    return out
 
 
 def cmd_fast(args: argparse.Namespace) -> int:
@@ -258,6 +327,18 @@ def cmd_gate(args: argparse.Namespace) -> int:
     regressions, lines = compare("full", row.get("scores", {}),
                                  base.get("full", {}))
     _verdict("FULL SUITE", regressions, lines)
+    perf_regressions: list[str] = []
+    if not args.no_perf:
+        print()
+        got_perf = run_perf(args.repeat)
+        if not got_perf:
+            perf_regressions.append("timings.py produced no profile")
+        else:
+            perf_regressions, perf_lines = compare("perf", got_perf,
+                                                   baseline().get("perf", {}))
+            _verdict("LATENCY", perf_regressions, perf_lines)
+    regressions += perf_regressions
+
     cc = row.get("cross_check")
     print(f"\n  cross-check: {cc}")
     print(f"  suite exit:  {rc}")
@@ -295,6 +376,7 @@ def cmd_accept(args: argparse.Namespace) -> int:
                    cwd=ROOT, timeout=3600)
     fast = (json.loads(out.read_text()) or {}).get("scores", {}) \
         if out.exists() else {}
+    perf = {} if args.no_perf else run_perf(args.repeat)
     BASELINE.write_text(json.dumps({
         "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "commit": git("rev-parse", "HEAD"),
@@ -303,9 +385,11 @@ def cmd_accept(args: argparse.Namespace) -> int:
         "full": {k: v for k, v in (row.get("scores") or {}).items()
                  if v is not None},
         "fast": fast,
+        "perf": perf,
     }, indent=2, sort_keys=True) + "\n")
     print(f"\n  wrote {BASELINE.relative_to(ROOT)}  "
-          f"({len(row.get('scores') or {})} full, {len(fast)} fast)")
+          f"({len(row.get('scores') or {})} full, {len(fast)} fast, "
+          f"{len(perf)} perf)")
     return 0
 
 
@@ -357,7 +441,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     b = baseline()
     print(f"  taken {b.get('recorded_at')} at {str(b.get('commit', ''))[:12]} "
           f"from run {b.get('from_run')}")
-    for kind in ("fast", "full"):
+    for kind in ("fast", "full", "perf"):
         blk = b.get(kind) or {}
         if blk:
             print(f"\n  {kind} ({len(blk)} metrics)")
@@ -377,10 +461,18 @@ def main() -> int:
     g = sub.add_parser("gate", help="full suite vs baseline (GPU box)")
     g.add_argument("--no-build", action="store_true",
                    help="score the existing answers instead of regenerating")
+    g.add_argument("--no-perf", action="store_true",
+                   help="skip the latency profile (correctness only)")
+    g.add_argument("--repeat", type=int, default=3,
+                   help="timing runs per question")
     g.set_defaults(fn=cmd_gate)
     a = sub.add_parser("accept", help="adopt the latest run as the baseline")
     a.add_argument("--force", action="store_true",
                    help="accept even if the cross-check disagreed")
+    a.add_argument("--no-perf", action="store_true",
+                   help="do not record a latency baseline")
+    a.add_argument("--repeat", type=int, default=3,
+                   help="timing runs per question")
     a.set_defaults(fn=cmd_accept)
     r = sub.add_parser("relock", help="re-lock after changing the measure")
     r.add_argument("--i-am-changing-the-measure", action="store_true")
