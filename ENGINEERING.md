@@ -2734,3 +2734,116 @@ something other than accuracy.
     accuracy_scored   89.2%  ->  94.6%    35 of 37, floor 90%
     answer_accuracy  100.0%  -> 100.0%    over 41 figures rather than 33
     figures_per_row             ->  1.17
+
+## 48. A coding agent cannot improve what nothing scores
+
+A NemoClaw launchable was deployed with the aim of improving this agent, and
+the obvious reading of that - wire it to the GPU box so it can make the agent
+better - does not describe anything that can happen. NemoClaw is a
+coding-agent sandbox platform: OpenClaw, Hermes or Deep Agents in containers
+behind an OpenShell gateway. It has no inference path into this application.
+`nemoclaw-asoia` is an `n2d-standard-4` with `gpu: "-"`, so it cannot serve the
+chat NIM or the embedding model either, and making the gradio app depend on an
+SSO-gated CPU box would add a failure mode to the demo path in exchange for
+nothing.
+
+What a coding agent genuinely does is edit code. That is worth having exactly
+when something decides whether an edit helped.
+
+### The transport is GitHub, and that was a cost decision
+
+The `openshell` Python package can drive sandboxes over gRPC, and this box has
+it installed (0.1.2). It is not used. The gateway's only ingress is Pomerium
+browser SSO - `/healthz` answers 200 from inside the GPU box, every other path
+redirects to `auth.apps.run.brev.nvidia.com` - and a headless client cannot
+complete a browser sign-in. Pushing a branch needs nothing that does not
+already work.
+
+So: the sandbox proposes on a branch, this box pulls it and decides.
+`scripts/openshell_gateway.py check` still reports the gateway unwired, which
+is the accurate state and not an outstanding task.
+
+### No second scorer was written
+
+`scripts/evaluate.py` without `--with-llm` was already the model-free half:
+routing, grounding, traceability, refusal, with retrieval, rerank and
+narration skipped. Three properties make a score from the sandbox comparable
+to a score from here, rather than merely similar:
+
+  * the dataset is seeded - `app.data.generate`, seed 20260924 - so a sandbox
+    that rebuilds it gets the same 400 repair orders, not a fresh random shop;
+  * the clock anchors to the newest event in the log rather than the wall
+    clock (section 25), so "this week" means the same week in both places
+    without anyone remembering to pin `ASOIA_NOW`;
+  * `eval_grounding`'s spy RAISES if a deterministic path calls the model, so
+    `composed in Python 35/35` is evidence the run needed no model rather than
+    a claim that it did not.
+
+The third is the one that matters for trusting the arrangement at all. A
+CPU-only sandbox scoring a subset is only honest if something proves the subset
+really is model-free, and an exception that fires is proof where a comment is
+not.
+
+### The lock, and why it is not bureaucracy
+
+An agent optimising against a scorer will eventually edit the scorer, usually
+while believing it is fixing a bug in it. `evals/harness.lock` checksums the
+five files that turn behaviour into a number - `evals/truth.py`,
+`evals/asoia_byob.py`, `scripts/make_eval_dataset.py`,
+`scripts/eval_standard.py`, `scripts/evaluate.py` - and both `fast` and `gate`
+refuse to print any score while one of them differs. A number produced by a
+modified measure cannot be compared against a baseline taken with the old one.
+
+Changing the measure stays allowed; it happened in eight separate passes here.
+It takes `relock`, which is a deliberate act, and which says in its own output
+that the baseline no longer compares.
+
+Verified rather than asserted. Appending a single comment line to
+`evals/truth.py` made `fast` exit 2 with `evals/truth.py has changed since the
+lock was taken`; `git checkout` restored it and `status` reported the measure
+intact.
+
+### The gate is three agreements
+
+`gate` passes only when the suite's exit code is 0, the cross-check between
+the two implementations says `agree`, and nothing regressed against the
+baseline. A metric *missing* from a run counts as a regression rather than a
+pass - the same reasoning as the coverage floor in section 46, since the
+cheapest route to a green run is to stop measuring something.
+
+Three metrics are inverted and two are counts gated upward:
+
+    spurious_tools, unresolved_citations, unsupported_figures   lower is better
+    arg_rules_checked, figures_per_row                          gated UPWARD
+    citations                                                   printed, never gated
+
+`arg_rules_checked` and `figures_per_row` say how much the measure looks at,
+and letting them fall is how a suite stays green while checking less.
+`citations` is a total that moves with the dataset, so a floor on it would
+invite padding rather than prevent anything.
+
+### What this loop cannot do, said plainly
+
+Most gated metrics are already at 100% - `plan_exact`, `arg_agreement`,
+`answer_accuracy`, `relevance`, `traceability`, `figures_supported`,
+`refused_before_tools` - and `accuracy_scored` sits at its 94.6% ceiling. An
+autonomous agent pointed at a saturated metric will overfit, or quietly weaken
+the measure, which is precisely what the lock exists to catch. Telling it to
+"improve the numbers" would be an instruction to do damage.
+
+So `AGENT_LOOP.md` names the three places with measured headroom instead: the
+NeMo Agent Toolkit path, which selects the right tool 18/18 and executes 18/18
+but composes a good answer only 3/18; retrieval recall at 83.3% on the
+realistic complaint-plus-car query, with the complaint-only ceiling of 53.0%
+flagged as not worth chasing; and `figures_per_row` 1.17 with
+`arg_rules_checked` 1.19, where more SQL-derived truth per answer makes the
+suite harder to satisfy by accident.
+
+The honest value of this pass is therefore mostly its second half. It is a gate
+that fails a change trading one of those hundreds for a different one - which
+is the failure every measure in this repository has had at least once.
+
+    gate exit             0
+    cross-check           agree
+    all 19 metrics        flat against the baseline at 8c77cc9
+    tamper test           fast exited 2 and named the edited file
