@@ -48,6 +48,12 @@ BENCHMARKS = {
     "asoia_grounding": "evals/data/answers.jsonl",
     "asoia_traceability": "evals/data/answers.jsonl",
     "asoia_refusal": "evals/data/refusals.jsonl",
+    # Added after routing scored 30/30 through a pass that called the right
+    # tool with the wrong arguments, and through another that ran two tools
+    # where one was asked for.
+    "asoia_tool_calls": "evals/data/answers.jsonl",
+    "asoia_accuracy": "evals/data/answers.jsonl",
+    "asoia_relevance": "evals/data/answers.jsonl",
 }
 
 
@@ -104,8 +110,12 @@ def run_one(name: str, dataset: str, out_dir: pathlib.Path) -> dict:
 def cross_check(scores: dict) -> list[str]:
     """Do the two implementations of the shared measures agree?
 
-    routing_accuracy and traceability are defined identically in evaluate.py and
-    in evals/asoia_byob.py, and computed from different inputs by different code.
+    plan_exact and traceability are defined identically in evaluate.py and in
+    evals/asoia_byob.py, and computed from different inputs by different code.
+    plan_exact and not routing_accuracy: evaluate.py scores the whole plan, so
+    comparing it against the benchmark that asks only whether the right tool is
+    somewhere in the plan was comparing two different questions and calling
+    agreement.
     Agreement is real evidence. Disagreement means one of them is wrong, and the
     point of having two is to be told so rather than to average them.
     """
@@ -117,7 +127,7 @@ def cross_check(scores: dict) -> list[str]:
     if not tmp.exists():
         return [f"evaluate.py produced no json (rc={r.returncode})"]
     ev = json.loads(tmp.read_text()).get("scores", {})
-    for ours, theirs in (("routing_accuracy", "routing"),
+    for ours, theirs in (("plan_exact", "routing"),
                          ("traceability", "traceability")):
         a = scores.get(ours)
         b = ev.get(theirs)
@@ -137,7 +147,8 @@ def show_history(n: int = 10) -> int:
         return 0
     rows = [json.loads(l) for l in HISTORY.read_text().splitlines() if l.strip()]
     print(f"{len(rows)} run(s) recorded; last {min(n, len(rows))}:\n")
-    keys = ["routing_accuracy", "figures_supported", "traceability",
+    keys = ["plan_exact", "arg_agreement", "answer_accuracy", "relevance",
+            "routing_accuracy", "figures_supported", "traceability",
             "refused_before_tools"]
     print("  " + "when".ljust(21) + "".join(k[:18].rjust(20) for k in keys))
     for r in rows[-n:]:

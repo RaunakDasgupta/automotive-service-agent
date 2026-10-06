@@ -382,7 +382,7 @@ const COMPONENTS = [
   ["fw", "NeMo Agent Toolkit", "A second front end onto the same eleven tools; its calls arrive as text.", "tools run 18/18 \u00b7 answers 3/18"],
   ["fw", "NeMo Guardrails", "Input rail judged by the local model.", "self check input"],
   ["fw", "NeMo Curator", "Six stages; the sixth quarantines injection.", "run before indexing"],
-  ["fw", "NeMo Evaluator", "Six measures as BYOB benchmarks, run over run.", "Evaluator result schema"],
+  ["fw", "NeMo Evaluator", "Seven BYOB benchmarks, run over run.", "Evaluator result schema"],
   ["fw", "NeMo Relay", "How an answer was produced, not just what it said.", "per-stage trace spans"],
   ["fw", "NeMo Switchyard", "Efficient model local, capable one hosted.", "off unless enabled"],
   ["off", "NemoClaw / OpenShell", "Would add a containment boundary and a sandboxed compute tool.", "BLOCKED — platform fault"],

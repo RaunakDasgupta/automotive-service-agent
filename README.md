@@ -52,7 +52,7 @@ a dashed outline is present but not integrated.
 | **NeMo Agent Toolkit** | The agent as a toolkit workflow over the same 11 tools, one function type each; this NIM writes its tool calls as text, so a provider shim lifts them into `tool_calls` | runs — tools execute 18/18, answers 3/18 (§42) |
 | **NeMo Guardrails** | `self check input` rail, evaluated by the local nano NIM | `ASOIA_NEMO_RAILS` |
 | **NeMo Curator** | Six-stage curation; the sixth quarantines the injection vector before indexing | `scripts/curate.py` |
-| **NeMo Evaluator** | The six measures as BYOB benchmarks in Evaluator's own result schema | `evals/asoia_byob.py` |
+| **NeMo Evaluator** | Seven BYOB benchmarks in Evaluator's own result schema - routing, grounding, traceability, refusal, tool calls, accuracy, relevance | `evals/asoia_byob.py` |
 | **NeMo Relay** | Per-stage trace spans — which tool, which model, how long | `ASOIA_TRACE` |
 | **NeMo Switchyard** | Loopback routing proxy: nano local, `nemotron-3-super-120b` hosted on escalation | off by default |
 | **NVIDIA DCGM** | GPU telemetry: utilisation, framebuffer, power, temperature, clocks | `:9401` |

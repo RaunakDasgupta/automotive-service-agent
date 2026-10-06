@@ -304,6 +304,14 @@ def plan_keyword(question: str) -> list[dict]:
     for pat, tool, args in KEYWORDS:
         if re.search(pat, q, re.I):
             a = dict(args)
+            if tool == "generate_handover":
+                # "Hand over to the morning shift" was answered with the
+                # afternoon handover, every time, because this call was built
+                # with no arguments at all and the tool's own default is
+                # AFTERNOON. Routing scored it correct: the right tool ran.
+                sh = _timeframe(question) or {}
+                if sh.get("shift"):
+                    a["shift"] = sh["shift"]
             if tool == "get_technician_activity":
                 m = ID_RE.search(question)
                 if not m:

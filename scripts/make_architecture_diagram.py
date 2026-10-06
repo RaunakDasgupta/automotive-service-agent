@@ -368,7 +368,7 @@ def page_architecture() -> Page:
         (S_NV, "NeMo Relay",
          "per-stage trace spans: tool, model, timing"),
         (S_NV, "NeMo Evaluator",
-         "six measures as BYOB benchmarks, run over run"),
+         "seven BYOB benchmarks, run over run"),
         (S_NVB, "Riva · Magpie TTS",
          "synthesises the spoken updates the ASR leg is tested with"),
         (S_STD, "Acceptance gates",
@@ -669,7 +669,8 @@ COMPONENTS = [
     ("NeMo Curator", "Six-stage curation. Five find nothing in generated "
      "data; the sixth quarantines the injection vector before indexing.",
      "heuristic filters + a custom quarantine stage", "running", S_NV),
-    ("NeMo Evaluator", "The six measures as BYOB benchmarks, emitted in "
+    ("NeMo Evaluator", "Seven BYOB benchmarks - routing, grounding, "
+     "traceability, refusal, tool calls, accuracy, relevance - emitted in "
      "Evaluator's own result schema so one run is comparable with the last.",
      "BYOB benchmarks, scored from recorded answers", "running", S_NV),
     ("NeMo Relay", "Records how an answer was produced — which tool, which "
