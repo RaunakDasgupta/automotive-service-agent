@@ -48,50 +48,80 @@ OUT = pathlib.Path("evals/data")
 
 
 # --- independent ground truth ----------------------------------------------
-# Computed with direct SQL that does not touch app.agent.tools. A benchmark
-# scored against the thing it is testing is not a benchmark, so the number an
-# answer is checked against has to come from somewhere else.
+# Every value comes from evals/truth.py, which derives it in SQL from the raw
+# event log and never imports `app`. Two implementations in two languages that
+# agree is evidence; one implementation checked against itself is not.
 #
-# Only the questions whose truth is a straightforward query are here. A count of
-# blocked or unsafe repair orders is derived by folding the event log, and a
-# second fold written here would be the same code twice rather than independent
-# evidence - which is the mistake the rail harness made in section 13. Those
-# questions carry no truth and are not scored for accuracy, and saying which
-# ones are unscored is part of the measure.
+# Coverage is a measure in its own right. asoia_accuracy reports
+# accuracy_scored, eval_standard.py fails below 80%, and the four questions
+# that carry no truth are named here rather than left to be inferred from a
+# gap:
+#
+#   the two handover questions  - the answer is five prioritised groups with no
+#                                 single headline figure to check
+#   the two free-text searches  - narrated prose over retrieved notes; there is
+#                                 no correct number for "has anyone seen a
+#                                 whistling noise"
+#
+# Adding a deterministic question without adding its truth here lowers coverage
+# and fails the run. That is the mechanism that keeps this number moving.
 def _truths(now):
-    import sqlite3, os
-    from datetime import timedelta
+    import sqlite3, os, sys
+    sys.path.insert(0, ".")
+    from evals import truth as T
     db = os.environ.get("ASOIA_DB", "data/generated/service.sqlite")
     con = sqlite3.connect(db)
 
-    def one(sql, *args):
-        return con.execute(sql, args).fetchone()[0]
+    safety = T.n_safety(con)
+    blocked = T.n_blocked(con)
+    at_risk = T.n_at_risk(con, now)
+    waiter = T.n_waiter(con)
+    shared = T.n_shared_part_holds(con, now)
 
-    def arrived(days):
-        since = (now - timedelta(days=days)).isoformat()
-        return one("SELECT count(*) FROM ros WHERE checked_in_at >= ? "
-                   "AND checked_in_at <= ?", since, now.isoformat())
+    def lead(v):
+        return (v, True)
 
-    def touched(day_offset, days=1):
-        last = (now + timedelta(days=day_offset)).date().isoformat()
-        first = (now + timedelta(days=day_offset - days + 1)).date().isoformat()
-        return one(
-            "SELECT count(*) FROM (SELECT ro_number FROM updates "
-            "WHERE date(at) BETWEEN ? AND ? UNION "
-            "SELECT ro_number FROM events WHERE date(at) BETWEEN ? AND ? "
-            "AND actor_id IS NOT NULL)", first, last, first, last)
+    def anywhere(v):
+        return (v, False)
 
     return {
-        "How many cars came into the shop this week?":     arrived(7),
-        "How many vehicles came in today?":                arrived(1),
-        "How busy were we this month?":                    arrived(30),
-        "How much work came in over the last 3 days?":     arrived(3),
-        "How many new jobs did we take in?":               arrived(7),
-        "What was our intake this week?":                  arrived(7),
-        "how many cars were worked on yesterday?":         touched(-1),
-        "what are the cars being worked on this week?":    touched(0, 7),
-        "What cars were worked on today?":                 touched(0),
-        "Which vehicles came through yesterday?":          touched(-1),
+        "Which vehicles cannot be released on safety grounds?": lead(safety),
+        "Anything dangerous out there?":                        lead(safety),
+        "What is unsafe to release?":                           lead(safety),
+        "how many vehicles are unsafe to release?":             lead(safety),
+        "Which jobs are blocked waiting for parts?":            lead(blocked),
+        "What is held up on parts?":                            lead(blocked),
+        "how many cars are blocked waiting for parts?":         lead(blocked),
+        "Which jobs will miss their promised time?":            lead(at_risk),
+        "What is running late?":                                lead(at_risk),
+        "how many jobs will miss their promised time?":         lead(at_risk),
+        "Are there any customers waiting on site?":             lead(waiter),
+        "Any waiters in today?":                                lead(waiter),
+        "how many customers are waiting on site?":              lead(waiter),
+        # The anomalies answer leads with its window, not with a count.
+        "Any unusual patterns in the shop this week?":          anywhere(shared),
+        "Are any parts holding up more than one job at once?":  anywhere(shared),
+        "Is the same part blocking several jobs?":              anywhere(shared),
+        "What has EMP014 done this week?":      lead(T.n_ops_by(con, "EMP014", now)),
+        "How has EMP021 been getting on?":      lead(T.n_ops_by(con, "EMP021", now)),
+        "Who worked in the afternoon yesterday?":
+            lead(T.n_people(con, now, -1, shift="AFTERNOON")),
+        "Who was in this morning?":   lead(T.n_people(con, now, 0, shift="MORNING")),
+        "who came in this morning?":  lead(T.n_people(con, now, 0, shift="MORNING")),
+        "What happened overnight?":
+            lead(T.n_people(con, now, -1, shift="AFTERNOON")),
+        "Which technicians were on duty today?": lead(T.n_people(con, now, 0)),
+        "What cars were worked on today?":       lead(T.n_touched(con, now, 0)),
+        "Which vehicles came through yesterday?": lead(T.n_touched(con, now, -1)),
+        "how many cars were worked on yesterday?": lead(T.n_touched(con, now, -1)),
+        "what are the cars being worked on this week?":
+            lead(T.n_touched(con, now, 0, 7)),
+        "How many cars came into the shop this week?": lead(T.n_arrived(con, now, 7)),
+        "How many vehicles came in today?":            lead(T.n_arrived(con, now, 1)),
+        "How busy were we this month?":                lead(T.n_arrived(con, now, 30)),
+        "How much work came in over the last 3 days?": lead(T.n_arrived(con, now, 3)),
+        "How many new jobs did we take in?":           lead(T.n_arrived(con, now, 7)),
+        "What was our intake this week?":              lead(T.n_arrived(con, now, 7)),
     }
 
 
@@ -125,7 +155,8 @@ def main() -> int:
                 "expected_plan": plan,
                 "plan": [{"name": c.get("name"), "args": c.get("args") or {}}
                          for c in (a.tool_calls or []) if c.get("name")],
-                "truth": TRUTH.get(q),
+                "truth": (TRUTH.get(q) or (None, True))[0],
+                "truth_headline": (TRUTH.get(q) or (None, True))[1],
                 "response": a.text or "",
                 "payload": json.dumps(a.results, default=str),
                 "citations": list(a.citations or []),
@@ -139,7 +170,9 @@ def main() -> int:
             # scores zero on every measure, which is the honest outcome.
             rows.append({
                 "id": i, "question": q, "expected_tool": plan[0],
-                "expected_plan": plan, "plan": [], "truth": TRUTH.get(q),
+                "expected_plan": plan, "plan": [],
+                "truth": (TRUTH.get(q) or (None, True))[0],
+                "truth_headline": (TRUTH.get(q) or (None, True))[1],
                 "response": "", "payload": "{}", "citations": [], "tools": [],
                 "composed": "", "route": "",
                 "error": f"{type(e).__name__}: {str(e)[:160]}",

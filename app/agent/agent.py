@@ -874,7 +874,17 @@ def _anomaly_summary(d: dict) -> str:
     """Cross-RO patterns. Every figure is read from the payload, never derived."""
     L = [f"Patterns across the last {d.get('window_days')} days."]
     if d.get("shared_part_holds"):
-        L.append("\n**One part blocking several jobs** - order once, clear several")
+        # "One part blocking several jobs" was hardcoded, in a renderer whose
+        # own docstring says every figure is read from the payload. It would
+        # have said "One part" with five of them, and it was only ever right by
+        # the accident of there being exactly one. The count comes from the
+        # summary rather than from len() of the list, because the list is
+        # truncated to ten and the summary is not.
+        n = (d.get("summary") or {}).get("shared_part_holds") or len(d["shared_part_holds"])
+        L.append(f"\n**{n} part is blocking more than one job**"
+                 if n == 1 else
+                 f"\n**{n} parts are each blocking more than one job**")
+        L[-1] += " - order once, clear several"
         for x in d["shared_part_holds"]:
             L.append(f"- `{x.get('part_no')}` is holding **{x.get('ro_count')}** repair "
                      f"orders: {', '.join(x.get('ros') or [])}")

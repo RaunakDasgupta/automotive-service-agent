@@ -265,13 +265,18 @@ def accuracy(inp: ScorerInput) -> dict:
     text = inp.response or ""
     first = next((ln for ln in text.splitlines() if ln.strip()), "")
     present = want in NUM_RE.findall(text)
+    # Not every correct answer leads with its number: the anomalies answer opens
+    # with the window it covers and reports the count below. The dataset says
+    # which, so this does not have to guess from the shape of the prose.
+    leads = inp.metadata.get("truth_headline", True)
     return {
         "answer_accuracy": 1.0 if present else 0.0,
         "accuracy_scored": 1.0,
         # The pass-53 failure stated a real number from the wrong question. A
         # headline that leads with a figure that is not the answer is worse
         # than one that omits it.
-        "headline_correct": 1.0 if want in NUM_RE.findall(first) else 0.0,
+        "headline_correct": (1.0 if (want in NUM_RE.findall(first)) else 0.0)
+                            if leads else 1.0,
     }
 
 
