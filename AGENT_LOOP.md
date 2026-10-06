@@ -47,6 +47,12 @@ The dataset is seeded (20260924) and the clock anchors to the newest event in
 the log, so your shop is the same shop the gate will score. Do not pin
 `ASOIA_NOW` and do not reseed - that is what makes your numbers comparable.
 
+**Your counts will not match the gate's, and that is expected.** Your database
+is freshly generated and pristine; the GPU box's has accumulated `updates` from
+demo and voice use. Measured: the same code scores 891 resolving citations here
+and 954 there. Every *gated* metric is a rate, and those matched exactly - but
+do not read a differing total as a regression you caused.
+
 ## What you may not edit
 
 These five files are the measure:
