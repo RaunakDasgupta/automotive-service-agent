@@ -148,11 +148,23 @@ small a sample and wrongly concluded it did not.
 ## Where the headroom actually is
 
 Be aware of this before you start: **most gated metrics are already at 100%.**
-`plan_exact`, `arg_agreement`, `answer_accuracy`, `relevance`, `traceability`,
+`plan_exact`, `arg_agreement`, `answer_accuracy`, `traceability`, `cited`,
 `figures_supported` and `refused_before_tools` are saturated, and
 `accuracy_scored` is at 94.6%, which is its ceiling - the two remaining
 questions are free-text searches with no correct number to check, and they are
 covered by grounding and relevance instead.
+
+**`free_of_meta` is 97.3% and that one is real.** The answer to "any notes about
+a burning smell" opens by referring to the records rather than answering, which
+`SYSTEM_SEARCH` explicitly forbids, and `relevance` is 99.1% because it is the
+mean of three. This is the only unsaturated quality metric with a genuine defect
+behind it, so it is the best target in this list - but read section 50 and 51 of
+`ENGINEERING.md` first: five fixes were measured and all of them made something
+worse. A prompt rule broadened to ban the bare form produced "There are four
+notes about a burning smell" and then listed the four. If you try a
+deterministic fix on the agent side, implement the check independently of
+`_META` in `evals/asoia_byob.py` - if the agent filters on the same regex the
+benchmark scores, the benchmark stops being evidence.
 
 So "raise the numbers" is nearly exhausted, and an agent pointed at a saturated
 metric will overfit or quietly weaken the measure. The real work is:
