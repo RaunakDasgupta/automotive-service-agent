@@ -75,8 +75,24 @@ def _instrument():
         try:
             return timed_chat(*a, **k)
         finally:
-            USAGE.clear()
-            USAGE.update({x: y for x, y in m.items() if y is not None})
+            # ACCUMULATE across every model call this one answer made.
+            #
+            # These counts were REPLACED per call while the "model" stage is a
+            # sum over all of them, so a retried answer reported the LAST
+            # call's tokens against ALL of the calls' time. The meta retry made
+            # that visible: "any notes about a burning smell" printed 127
+            # tokens in 3317ms = 38 tok/s, where the same model does 68 tok/s
+            # on the question beside it. Nothing was slow; the numerator and
+            # the denominator came from different places.
+            USAGE["calls"] = USAGE.get("calls", 0) + 1
+            for field in ("prompt_tokens", "completion_tokens"):
+                if m.get(field) is not None:
+                    USAGE[field] = USAGE.get(field, 0) + m[field]
+            # "length" anywhere is worth knowing - a first answer that hit the
+            # cap is cut short even if the retry was not.
+            if m.get("finish_reason") is not None \
+                    and USAGE.get("finish_reason") != "length":
+                USAGE["finish_reason"] = m["finish_reason"]
     return chat_with_usage
 
 
@@ -113,6 +129,7 @@ def main() -> int:
         times, a, last_stages, last_usage = [], None, {}, {}
         for _ in range(args.repeat):
             STAGES.clear()
+            USAGE.clear()        # accumulated now, so it is reset per run
             t = time.perf_counter()
             try:
                 a = ask(q, chat_fn=chat_fn) if chat_fn else ask(q)
@@ -141,11 +158,16 @@ def main() -> int:
             if last_usage:
                 out = last_usage.get("completion_tokens")
                 gen = last_stages.get("model")
+                calls = last_usage.get("calls", 1)
                 rate = (f", {out / (gen / 1000):.0f} tok/s"
                         if out and gen else "")
+                # Both totals now, so the rate divides like with like. The call
+                # count is printed because two calls for one answer is the
+                # thing worth noticing, and a rate alone hides it.
+                over = f" over {calls} model calls" if calls > 1 else ""
                 print(f"{'':7s} {'':>8s} {'':>8s}  prompt "
                       f"{last_usage.get('prompt_tokens')} tokens -> "
-                      f"{out} generated{rate}"
+                      f"{out} generated{rate}{over}"
                       + ("   ** TRUNCATED at max_tokens **"
                          if last_usage.get("finish_reason") == "length" else ""))
         records.append({
@@ -155,6 +177,7 @@ def main() -> int:
             "stages_ms": {k: round(v, 1) for k, v in last_stages.items()},
             "prompt_tokens": last_usage.get("prompt_tokens"),
             "completion_tokens": last_usage.get("completion_tokens"),
+            "model_calls": last_usage.get("calls"),
             "finish_reason": last_usage.get("finish_reason"),
         })
         if best > 1500:

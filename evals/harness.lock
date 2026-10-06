@@ -1,12 +1,12 @@
 {
-  "commit": "f187be89f6de23f7311a320906bba483ddcc2112",
+  "commit": "45ffc7d02c064abe62c53dff3bb297c388dc2fab",
   "files": {
     "evals/asoia_byob.py": "eaca7696efa81b974e03fe6af77e88bc3f74cee251bb6ead74c149fdaae8307b",
     "evals/truth.py": "915ebd32eb3f0f9fc8941b369f86de9d9acb906cedd4a03dfff05b7c1eab589a",
     "scripts/eval_standard.py": "8a16b5d9804b0dea09358325bf7fcf8af8783c177db1e3eff628745b7fa2386d",
     "scripts/evaluate.py": "e15cc7547cd12d70267edac84988c1d3063edbdf0aa32b6b0068b5619145d4ae",
     "scripts/make_eval_dataset.py": "7872888798804ef2f5f5370ef09c8eb8a76758ea08b0f01ac0f9e4923520544f",
-    "scripts/timings.py": "fa0c066cfdc35addb2a6df105d02014c1709e2a4e9bd772e14bbab1c4b554ee5"
+    "scripts/timings.py": "d1240573501ccf696bc37205226a41cf5d49a32e244d62c6a47b6af0df616488"
   },
-  "locked_at": "2026-10-06T15:28:34"
+  "locked_at": "2026-10-06T19:08:18"
 }

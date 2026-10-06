@@ -78,7 +78,7 @@ DB = ROOT / "data/generated/service.sqlite"
 LOWER_IS_BETTER = {"spurious_tools", "unresolved_citations", "unsupported_figures"}
 # Every perf metric is lower-is-better, so they are matched by suffix rather
 # than listed - a new question in timings.py should not silently arrive ungated.
-PERF_SUFFIXES = ("_ms", "_tokens")
+PERF_SUFFIXES = ("_ms", "_tokens", "_calls")
 COUNTS = {"citations", "arg_rules_checked", "figures_per_row"}
 INFORMATIONAL = {"citations"}
 
@@ -140,7 +140,7 @@ def newest_run() -> dict | None:
 # ------------------------------------------------------------------ comparing
 def _fmt(kind: str, k: str, v: float) -> str:
     if kind == "perf":
-        return f"{v:8.0f}ms" if k.endswith("_ms") else f"{v:8.0f}  "
+        return f"{v:8.0f}ms" if k.endswith("_ms") else f"{v:8.0f}  "  # counts
     if kind == "fast":
         return f"{v:6.1f}%"
     return f"{v:6.2f}" if k in COUNTS else f"{v * 100:6.1f}%"
@@ -163,6 +163,10 @@ def _tol(kind: str, k: str, old: float = 0.0) -> float:
         # 15% is therefore about ten times the observed noise. It is deliberately
         # loose: a latency gate that cries wolf gets switched off, and the thing
         # worth catching is a change that doubles a stage, not one that costs 3%.
+        if k.endswith("_calls"):
+            # A call count is a small integer and exactly reproducible, so any
+            # increase is a real change rather than noise.
+            return 0.0
         if k.endswith("_tokens"):
             return max(old * 0.10, 1.0)
         return max(old * 0.15, 5.0)
@@ -262,6 +266,13 @@ def run_perf(repeat: int = 3) -> dict:
             vals = [q.get(field) for q in llm if q.get(field)]
             if vals:
                 out[key] = float(max(vals))
+    if llm:
+        # SUMMED, not maxed. The retry fires on one answer today; the thing
+        # worth catching is a second answer starting to retry, and a maximum
+        # would stay at 2 while that happened.
+        calls = [q.get("model_calls") for q in llm if q.get("model_calls")]
+        if calls:
+            out["llm_model_calls"] = float(sum(calls))
     if qs:
         out["total_best_ms"] = sum(q["best_ms"] for q in qs)
     # A truncated answer is a correctness problem wearing a latency costume:
