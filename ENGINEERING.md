@@ -2606,3 +2606,78 @@ its blind spot, and now runs against `plan_exact`.
     traceability      100%      arg_agreement     100%
     refused           100%      answer_accuracy   100%   (10 of 37 scored)
                                 relevance         100%   (94.1% before the fix)
+
+## 46. A benchmark that scored the rows it chose
+
+`asoia_accuracy` scored 10 of 37 questions and reported 100%.
+
+The reason the other 27 went unscored is in section 45, in my own words: their
+answers are derived by folding the event log, and "a second fold written into
+the scorer would be the same code twice rather than independent evidence".
+
+That is too conservative, and it was load-bearing. Section 13's lesson is that
+a check sharing a HELPER with the thing it checks proves nothing. It is not
+that a second implementation is worthless - two implementations in two
+languages that agree is how differential testing works, and it is available
+here for the asking.
+
+### The same quantities, in SQL, from the event semantics
+
+`evals/truth.py` imports nothing from `app`:
+
+    blocked   the last STATE_CHANGED is AWAITING_AUTHORISATION or PARTS_HOLD
+    safety    a MEASUREMENT_TAKEN that is out_of_spec and safety_related
+    at_risk   promised_time against now, with flat-rate hours still to do
+              rebuilt from OP_PENDING minus OP_COMPLETED, joined to labour_ops
+    waiter    ros.wait_type, excluding invoiced
+    people    distinct actors across updates and events in a window
+    parts     a part whose LATEST availability is still BACKORDER, NLA or
+              NEXT_DAY, wanted by more than one open repair order
+
+The independence has a limit worth stating rather than glossing: these queries
+were written after reading what the event types mean, so a misunderstanding of
+the DATA would be shared by both implementations. What they cannot share is a
+bug in `app/state/engine.py`, which is the thing this benchmark exists to find.
+
+Six of seven agreed on the first run. `at_risk` agreed at 27 both ways, and
+that one needed pending operations and flat-rate hours reconstructed from
+scratch - the strongest single piece of evidence in this pass that the fold is
+right.
+
+The seventh took three attempts, all of them wrong in the same way: 46, then
+10, then 1. "Ordered and never received" counts the wrong thing; "ordered in
+the last seven days and not received" counts a different wrong thing; the
+quantity actually reported is a part whose latest availability is still
+outstanding on an open job, with no window at all. Each correction came from
+re-reading what the event means. None came from nudging the number towards the
+agent's, which is the only way this exercise can be worth anything.
+
+### What the coverage immediately found
+
+At 33 of 37 scored, `answer_accuracy` fell from 100% to 91.9%. Three rows, one
+cause:
+
+    **One part blocking several jobs** - order once, clear several
+
+Hardcoded, in a renderer whose own docstring reads "Every figure is read from
+the payload, never derived". With five shared parts it would still have said
+"One part". It was correct only by the accident of there being exactly one, and
+the ten-row benchmark could not see it. It now reads the count from the payload
+summary rather than `len()` of the list, which is truncated at ten.
+
+    answer_accuracy   100%  ->  91.9%  ->  100%,  at 89.2% coverage
+
+A measure that goes down when you widen it was not measuring what you thought.
+
+### What keeps it rising
+
+`accuracy_scored` is gated: `eval_standard.py` fails below 80%. Adding a
+deterministic question without adding its truth breaks the run, because without
+a floor coverage only ever falls - the cheapest way to add a question is to add
+one that nothing checks.
+
+The four still unscored are named in `make_eval_dataset.py` rather than left to
+be inferred from a gap: the two handover questions, whose answer is five
+prioritised groups with no single headline figure, and the two free-text
+searches, where there is no correct number for "has anyone seen a whistling
+noise on a Passat".

@@ -141,6 +141,24 @@ def cross_check(scores: dict) -> list[str]:
     return problems
 
 
+
+MIN_ACCURACY_COVERAGE = 0.80
+# A benchmark that scores 10 of 37 rows and reports 100% is reporting the rows
+# it chose. accuracy_scored is the share of questions carrying an independently
+# derived number, and it is gated: add a deterministic question without adding
+# its truth to make_eval_dataset.py and this run fails. Without a floor the
+# coverage only ever falls, because the cheapest way to add a question is to
+# add one nothing checks.
+def check_coverage(scores: dict) -> list[str]:
+    got = scores.get("accuracy_scored")
+    if got is None:
+        return ["accuracy_scored is missing - the accuracy benchmark did not run"]
+    if got + 1e-9 < MIN_ACCURACY_COVERAGE:
+        return [f"accuracy coverage {got * 100:.1f}% is below the "
+                f"{MIN_ACCURACY_COVERAGE * 100:.0f}% floor - a question was added "
+                f"without a truth value in make_eval_dataset.py"]
+    return []
+
 def show_history(n: int = 10) -> int:
     if not HISTORY.exists():
         print("No runs recorded yet.")
@@ -236,12 +254,21 @@ def main() -> int:
         print(line)
 
     problems = [] if args.no_cross_check else cross_check(scores)
+    shortfall = check_coverage(scores)
+    if shortfall:
+        print("\nACCURACY COVERAGE:")
+        for s in shortfall:
+            print("  " + s)
+    else:
+        print(f"\n  accuracy coverage {scores.get('accuracy_scored', 0) * 100:.1f}% "
+              f"(floor {MIN_ACCURACY_COVERAGE * 100:.0f}%)")
+    problems += shortfall
     if problems:
         print("\nTHE TWO IMPLEMENTATIONS DISAGREE:")
         for p in problems:
             print("  " + p)
-    elif not args.no_cross_check:
-        print("\n  routing and traceability agree with scripts/evaluate.py")
+    if not problems and not args.no_cross_check:
+        print("  routing and traceability agree with scripts/evaluate.py")
 
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
     with HISTORY.open("a") as fh:
