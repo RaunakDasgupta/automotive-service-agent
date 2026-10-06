@@ -108,6 +108,19 @@ paths 1-2% above 6 ms. The gate allows 15% or 5 ms on times and 10% on tokens -
 roughly ten times the observed noise - because a latency gate that cries wolf
 gets switched off. It is there to catch a change that doubles a stage.
 
+### Do not try to shorten the narration prompt
+
+Five variants were measured and every one was worse; section 50 of
+`ENGINEERING.md` has the numbers. The short version: the system prompt is 46% of
+the narration prompt and compressing it made the answer 27% LONGER and the turn
+20% slower, because the restatement being removed is what stops the model
+listing each note with a quote. Changing only the sentence budget - one line,
+"two to four" to "two or three" - took one answer from 48 words to 83.
+
+Instructing this 8B model to be shorter makes it longer. If you have a new idea
+here, measure it on both search questions before you believe it, and expect the
+latency gate rather than the correctness suite to be the thing that fails you.
+
 ### The measured profile, so you optimise the right thing
 
 ```
