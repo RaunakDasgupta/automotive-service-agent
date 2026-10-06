@@ -2950,3 +2950,96 @@ grew - which is the reason the ablation runs 120 and the reason
     complaint alone            52.5%   against a 53.0% ceiling
     rerank gain                +5.0 points, +0.018 MRR, +0.01s per query
     narration grounded        100.0%   (2/2, both reached the model)
+
+## 50. Five ways to shorten the narration prompt, all worse
+
+Asked to optimise the prompt and reduce generation length, with section 49's
+profile pointing at generation as the largest stage. Five variants were built
+and measured. **Every one of them was worse, and the code is unchanged.** This
+section exists so the next person - or the sandbox agent - does not spend the
+afternoon rediscovering it.
+
+First, where the tokens actually were, measured with the model's own tokenizer
+rather than estimated:
+
+    system prompt         511   46%
+    payload + question    598   54%
+    chat template          37
+    total                1146
+
+So the instructions were nearly half the prompt, which is what made compressing
+them look obvious.
+
+### The variants
+
+    A  committed baseline      1146 tok   Q1 4 cites / 48 words   Q2 1 cite / 70 words
+    B  payload: drop score,
+       query, count            1084 tok   Q1 0 CITES / 23 words
+    C  system prompt
+       compressed to 465       1100 tok   Q1 cites bunched at the end, and it
+                                          calls UPD-00001-08022 a Passat when
+                                          that note is a Kia Sportage
+    D  B and C together        1038 tok   gate REJECTED - see below
+    E  payload: drop score
+       only                    1106 tok   Q1 0 CITES / 68 words
+                               1008 tok   Q2 4 cites / 63 words
+    F  budget line only,
+       "two or three ... four
+       at most"                1146 tok   Q1 4 cites / 83 words, with
+                                          "it is not the whole story as ..."
+                               1047 tok   Q2 opens "There is one note about"
+
+### What D measured, and what caught it
+
+    llm_prompt_tokens      1146 -> 1038     -9.4%   the intended win
+    llm_completion_tokens    99 ->  126    +27.3%
+    llm_model_ms           1453 -> 1838    +26.5%
+    llm_best_ms            1800 -> 2162    +20.1%
+    total_best_ms          1995 -> 2358    +18.2%
+
+    all 19 correctness metrics        FLAT
+    cross-check                       agree
+    gate                              RC=1, four latency regressions
+
+**A 9.4% shorter prompt produced a 27% longer answer and a 20% slower one.**
+The direction is the finding. The verbosity being removed was load-bearing: the
+restatement in SYSTEM_SEARCH is what suppresses note-by-note listing, and
+without it the model enumerates each passage with a quote - which is both longer
+and the exact thing the prompt's remaining text still forbids.
+
+F is the sharpest version of the same lesson. It changes *one line* - the
+sentence budget, from "two to four, six at most" to "two or three, four at
+most" - and Q1 goes from 48 words to 83, acquiring meta-commentary about what
+the notes do and do not cover. Instructing this 8B model to be shorter made it
+longer. Generation length here is a property of the model's behaviour on a
+given prompt, not a dial the instruction turns.
+
+### Two gaps in the measure, found by accident
+
+Worth more than the failed optimisation.
+
+**The correctness suite did not notice.** All 19 metrics were flat on a variant
+whose answer lists four notes one by one and attributes a Kia's symptom to a
+Passat. `relevance`, `answers_the_form`, `entity_coverage` and `free_of_meta`
+all scored 100% on it. Only the latency gate from section 49 failed the run -
+which is the first time that gate has earned itself, four hours after being
+written.
+
+**`free_of_meta` passes "Notes indicate".** The committed baseline's answer to
+the burning-smell question opens `Notes indicate air conditioning concerns on
+four vehicles`, and later `[UPD-00001-08061] provides the most detailed
+information, stating that ...`. SYSTEM_SEARCH bans exactly this - "Do not write
+'the updates', 'the notes', 'the passages'" - and the benchmark scores it 100%.
+This is measured on the gated baseline, not on a variant, so it is a live gap.
+
+A zero-citation answer also appeared twice, in B and E. Whether the suite would
+fail one was NOT measured, because the variant that reached the gate had four
+citations. That is worth closing before it matters.
+
+### What is left
+
+Not the prompt. Generation is 1838 ms of a 2162 ms answer at 69 tok/s, and the
+instruction does not shorten it. The remaining options are a different model, or
+accepting the latency on the grounds that streaming already hides it from the
+reader - five of six questions never reach a model at all, so this is one path
+in six.
