@@ -3043,3 +3043,124 @@ instruction does not shorten it. The remaining options are a different model, or
 accepting the latency on the grounds that streaming already hides it from the
 reader - five of six questions never reach a model at all, so this is one path
 in six.
+
+## 51. Closing a check that could not see what was in front of it
+
+Pass 60 failed to optimise the prompt and found two holes in the measure on the
+way past. Both are closed here, in `evals/asoia_byob.py`. No application code
+changed.
+
+### free_of_meta needed an article and one of two verbs
+
+`SYSTEM_SEARCH` bans five nouns as referents - updates, notes, passages,
+records, reports. The patterns enforcing it were each written against one
+phrasing that had actually shipped:
+
+    \bthe updates (provided|mention|also)\b
+    \bthe notes (provided|mention)\b
+
+`Notes indicate air conditioning concerns on four vehicles` is one article and
+one verb away from both, so the gated baseline scored `free_of_meta` 100% on an
+answer that opens by talking about the records instead of answering. A check
+assembled from the last few failures catches the last few failures.
+
+The referent is now matched generally: the five nouns with or without an
+article, any reporting verb, the bare `the <noun>` form the prompt names,
+`according to the notes`, and the existential `There are four notes about ...`.
+
+That last pattern is not speculative. It is what the model produced the moment
+the article-and-verb forms were closed off, during an attempt to fix this from
+the prompt side. Closing one phrasing and not its neighbour is how this check
+came to report 100% in the first place, and adding the neighbour only because it
+was observed is the same mistake deferred - so the general form went in rather
+than a third literal.
+
+### Why the old patterns were narrow, which is the interesting part
+
+`SYSTEM_SEARCH` also tells the model to quote the technician's own words, and
+those words contain the banned nouns. `Notes on the RO.` appears verbatim in the
+corpus, hundreds of times. A blanket ban on the word would fail an answer for
+obeying a different rule in the same prompt.
+
+So the fix is not to match more aggressively but to know what is quoted: quoted
+spans are stripped before matching. That distinction is the whole difference
+between a check that closes the gap and one that trades it for false positives.
+
+### Measured before adoption, and the first version was wrong
+
+The first version of the count pattern flagged `12 updates`, `20 updates`,
+`34 updates`, `143 updates` - seven Python-composed answers reporting updates
+posted as a figure, which is a fact those answers exist to state. A count of
+records is meta only when it counts what MATCHED the question, so the count now
+has to be followed by a referring word (`about`, `mentioning`, `covering`).
+
+After that narrowing, over all 37 answers:
+
+    flagged                               1   the one real violation
+    quoted technician text                clean
+    "Sam Osei recorded a blowing noise"   clean
+    "12 updates posted"                   clean
+
+### traceability passed an answer with no citations at all
+
+`traceability` asks whether the citations RESOLVE, and an empty list has no
+unresolved member, so an answer carrying no citation scored 1.0 vacuously. Two
+variants in pass 60 produced exactly that - a confident narration of four
+passages with no citation anywhere - and this benchmark would have called them
+perfectly traceable. Pass 60 recorded that as untested rather than guessing; it
+is now tested, and it was true.
+
+`cited` is the floor: an answer built from a payload must point at it. A trivial
+payload is exempt, because there is then nothing to cite and demanding a
+citation would fail an honest "nothing on record" answer. At adoption 0 of 37
+answers carry no citation, so it holds today, and the point of a floor is that
+it keeps holding.
+
+### What it cost, said plainly
+
+    free_of_meta   100.0%  ->  97.3%    36 of 37
+    relevance      100.0%  ->  99.1%    it is the mean of three
+    cited             new  -> 100.0%
+    traceability   100.0%  -> 100.0%    unchanged, as it should be
+    everything else                     flat, latency included
+
+`free_of_meta` did not regress. It became honest. The 100% was an artefact of a
+check that could not see the violation, and 97.3% is the first real measurement.
+The baseline was retaken at the lower number, which is the opposite of the
+ratchet in section 47 and correct for the same reason: a number should say what
+is true, and a floor is only worth having under a number that does.
+
+### The defect itself is open, and five fixes were measured
+
+The answer to `any notes about a burning smell` still opens by referring to the
+records. Every attempt to fix it made something worse:
+
+    prompt rule broadened     "There are four notes about a burning smell",
+                              then the four notes listed one by one
+    header "RECORDS:"         "Notes indicate ..."
+    header "---"              "There is one note about ..."
+    header "WHAT THE
+      TECHNICIANS WROTE:"     "The notes on the repair order (RO) mention ..."
+
+The question's own vocabulary - "any *notes* about a burning smell" - is what
+drives it, and section 50 already records that prompt edits here backfire. So
+the measure is correct and the defect is written down rather than hidden, which
+is the right order to leave them in. The remaining honest options are a
+deterministic retry on the agent side, implemented separately from this regex so
+the benchmark stays independent evidence, or a different model.
+
+### A flaw in how this repository generates patches
+
+Worth recording because every pass uses the method. `quality_pass61.py` was
+generated from `difflib` opcodes widened for uniqueness, and the first version
+reproduced a DIFFERENT file while reporting success. Six opcodes with two lines
+of context each had overlapping contexts: applying one hunk consumed text the
+next hunk's anchor expected, and `str.replace(old, new, 1)` is a **silent no-op**
+when `old` is already gone. Every anchor was verified before any replace, so
+nothing failed loudly.
+
+The generator now merges changed regions closer together than their combined
+context before widening - six regions became three hunks - and the
+revert-and-reapply check caught the original fault, which is the only reason it
+is known. A patch script that is never tested by reverting is a patch script
+that has not been tested.
