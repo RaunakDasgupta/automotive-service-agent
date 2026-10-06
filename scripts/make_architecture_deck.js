@@ -219,7 +219,7 @@ function slideArchitecture(pres) {
     ["2 · EVENT LOG & DERIVED STATE", [["std", "Event log"], ["std", "Fold engine"], ["std", "Lifecycle gate"], ["std", "Diff card"]]],
     ["3 · PREPARATION & INDEXING", [["fw", "NeMo Curator"], ["nv", "NV-EmbedQA E5"], ["std", "Milvus upsert"], ["std", "Index audit"]]],
     ["4 · RETRIEVAL & GROUNDING", [["std", "Vector search"], ["nv", "NV-RerankQA 4B"], ["std", "Context assembly"], ["std", "Citations"]]],
-    ["5 · REASONING & ANSWERING", [["std", "Query planner"], ["fw", "Switchyard"], ["std", "10 typed tools"], ["nv", "Narration"]]],
+    ["5 · REASONING & ANSWERING", [["std", "Query planner"], ["fw", "Switchyard"], ["std", "11 typed tools"], ["nv", "Narration"]]],
     ["6 · GUARDRAILS & VERIFICATION", [["fw", "NeMo Guardrails"], ["std", "Injection rail"], ["std", "Grounding rail"], ["std", "Release claim"]]],
   ];
   let y = TOP + 0.28;
@@ -347,7 +347,7 @@ function slideFlow(pres) {
   row(4.62, 0.90, [
     ["std", "Question", "console or HTTP API"],
     ["fw", "Rails", "injection, scope, NeMo self-check"],
-    ["std", "Plan → tool call", "routes 24 of 24 with no model"],
+    ["std", "Plan → tool call", "routes 30 of 30 with no model"],
     ["nv", "Retrieve + rerank", "free-text search only"],
     ["nv", "Compose or narrate", "figures computed, then prose"],
   ]);
@@ -379,7 +379,7 @@ const COMPONENTS = [
   ["nv", "Riva — TTS", "Synthesises the speech the ASR leg is tested with.", "Magpie TTS · gRPC"],
   ["nv", "NVIDIA DCGM", "GPU utilisation, framebuffer, power, temperature.", "19 series · :9401"],
   ["nv", "NVIDIA Brev", "The deployment target carrying all three NIMs.", "L40S 48 GB"],
-  ["fw", "NeMo Agent Toolkit", "A second front end onto the same ten tools; its calls arrive as text.", "tools run 18/18 \u00b7 answers 3/18"],
+  ["fw", "NeMo Agent Toolkit", "A second front end onto the same eleven tools; its calls arrive as text.", "tools run 18/18 \u00b7 answers 3/18"],
   ["fw", "NeMo Guardrails", "Input rail judged by the local model.", "self check input"],
   ["fw", "NeMo Curator", "Six stages; the sixth quarantines injection.", "run before indexing"],
   ["fw", "NeMo Evaluator", "Six measures as BYOB benchmarks, run over run.", "Evaluator result schema"],

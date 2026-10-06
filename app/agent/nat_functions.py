@@ -69,6 +69,12 @@ class OpInput(BaseModel):
     op_code: str = Field(description="Labour operation code, e.g. BRK-FR-PAD")
 
 
+class IntakeInput(BaseModel):
+    days: int = Field(default=7,
+                      description="Window ending now: 1 today, 7 this week, "
+                                  "30 this month")
+
+
 class ShiftActivityInput(BaseModel):
     day_offset: int = Field(default=0,
                             description="0 today, -1 yesterday, -2 the day before")
@@ -89,6 +95,7 @@ REGISTRY = [
     ("search_updates",          T.search_updates,          SearchInput),
     ("get_op_code_info",        T.get_op_code_info,        OpInput),
     ("get_shift_activity",      T.get_shift_activity,      ShiftActivityInput),
+    ("get_intake",               T.get_intake,              IntakeInput),
 ]
 
 
@@ -252,6 +259,10 @@ if NAT_AVAILABLE:
         "get_ro_timeline": "The event history of ONE repair order.",
         "get_technician_activity": "What ONE member of staff has done.",
         "get_op_code_info": "What one labour operation code means.",
+        "get_intake":
+            "How many vehicles came INTO the shop over a window, and what "
+            "became of them. Use for 'how many cars came in this week' and "
+            "'how busy were we'. Not which cars were worked on.",
     }
 
     def _describe(name, fn):

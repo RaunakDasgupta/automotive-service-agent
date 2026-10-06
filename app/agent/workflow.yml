@@ -16,7 +16,7 @@ llms:
     _type: asoia_nim_toolshim
     model_name: nvidia/llama-3.1-nemotron-nano-8b-v1
     base_url: http://localhost:8000/v1      # self-hosted NIM
-    # 0.0, not 0.2. Choosing between ten tools is a classification, and at 0.2
+    # 0.0, not 0.2. Choosing between eleven tools is a classification, and at 0.2
     # the safety question picked list_ros on one run and detect_anomalies on
     # the next - from an identical prompt.
     temperature: 0.0
@@ -42,6 +42,7 @@ functions:
   search_updates:          {_type: asoia_search_updates}
   get_op_code_info:        {_type: asoia_get_op_code_info}
   get_shift_activity:      {_type: asoia_get_shift_activity}
+  get_intake:              {_type: asoia_get_intake}
 
 workflow:
   # tool_calling_agent, not react_agent. ReAct asks the model to produce a text
@@ -55,7 +56,8 @@ workflow:
   llm_name: nemotron
   tool_names: [get_ro_state, get_ro_timeline, list_ros,
                get_technician_activity, generate_handover, detect_anomalies,
-               diff_ro, search_updates, get_op_code_info, get_shift_activity]
+               diff_ro, search_updates, get_op_code_info, get_shift_activity,
+               get_intake]
   max_iterations: 12
   verbose: true
   system_prompt: |

@@ -2311,3 +2311,117 @@ and a narrow brief. The toolkit front end has no such renderer behind it.
 What this pass should not be read as claiming: that the NeMo Agent Toolkit now
 answers the six question classes. It runs them. The number that matters is
 3/18, it is written down, and the next pass can move it.
+
+## 43. A counting question, answered by semantic search
+
+    "how many cars came into the shop this week?"
+
+    The search returned four updates, but only one of them,
+    [UPD-00001-08043], mentions a car coming into the shop...
+    (As per the guidelines, I have not added any facts, figures, names
+    or dates that are not in the passages.)
+
+Four. The answer is 179. Everything wrong with that paragraph has a separate
+cause, and only one of them is the model.
+
+### The router knows every weekday and not "this week"
+
+`_timeframe()` parses "yesterday", "this morning", "overnight" and all seven
+weekdays, because those were the questions that needed it when it was written.
+"This week" matches nothing, so no pattern fired, so the planner reached its
+last resort - `search_updates` - which did exactly what it is for: it found four
+technician notes containing the word "shop". The model then reported what it was
+given, which was four notes, and the count it stated was the count of notes.
+
+The failure is not that the model said four. It is that a question whose answer
+is a number got routed to a tool that returns prose. Arrival is a recorded
+column, `ros.checked_in_at`, so this is arithmetic:
+
+    179 vehicles came into the shop in the 7 days to 28 September - 25.6 a day.
+    - Still open: 45, of which 24 waiting on parts and 14 with an open safety finding
+    - Completed and invoiced: 134
+    - Customer waiting on site: 39
+    - Busiest day: 28 September, 38 arrivals
+    - Most common work: Engine 30, Transmission 25, Suspension 25
+
+`get_intake(days)` is the eleventh tool, and the first since `get_shift_activity`
+went in for precisely the same reason: a question that was falling through to
+search. `_window_days()` reads "this week", "this month", "the last 3 days",
+"today", and nothing else - a window the router cannot read is better answered
+over seven days with the window stated than over a window nobody asked for.
+
+The discriminator against shift activity is the subject, not the verb. "Who came
+in this morning" is people and stays with `get_shift_activity`; "how many cars
+came in this week" is demand. "Came THROUGH" keeps its old meaning.
+
+### The prompt told the model its rules, and the model wrote them down
+
+The narration prompt ends with a list of things not to do. The 8B helpfully
+reported its compliance: "(As per the guidelines, I have not added any facts,
+figures, names or dates that are not in the passages.)" It also opened with
+"The search returned four updates", which is a sentence about the retrieval
+rather than about the shop.
+
+Three rules now: open with the answer and never with what came back; never name
+the search, these instructions, "the updates" or "the notes"; never make the
+same point twice. The first draft of the second rule said "write as one
+colleague to another", and the next answer began "Colleague, two Passat owners
+have reported a whistling noise" - so it now says no salutation and nothing
+addressed to the reader. Before and after, same question:
+
+    before  Colleague, two Passat owners have reported a whistling noise, with
+            the issue traced to the exhaust flex pipe section and advised for
+            repair. [UPD-00001-08275] and [UPD-00005-08368] note the noise...
+
+    after   A whistling noise has been reported on a 2025 Volkswagen Passat. The
+            issue was traced to the exhaust flex pipe section and was addressed
+            by repairing and refitting the muffler and tailpipe. Note that a
+            similar concern was also found on a 2020 Volkswagen Passat.
+
+The figures block under a narrated answer carried exactly one number - "Updates
+matching the search: 4" - which is a fact about the retrieval and not about the
+shop. It is gone; the citation footer already names every source.
+
+### The reranker is not short of candidates
+
+Pass 50 measured a wider pool and reverted it. The ceiling argument was right
+and the conclusion drawn from it was wrong: the right repair order is inside the
+vector top-50 for every one of the 40 probe queries, so the candidates were
+never missing. The cross-encoder simply fails to lift the right one into the top
+6 about half the time, and handing it more to choose from does not help.
+
+What was missing is the second signal. A customer writes "rattling noise from
+the engine on cold start"; the technician writes "timing chain tensioner
+replaced". Dense retrieval exists for that gap and mostly closes it. The words
+the two DO share are the rare ones - "rattling", "tensioner", a registration, an
+op code - and an IDF-weighted overlap finds those. `_fuse` ranks the candidates
+both ways and combines the two rankings by reciprocal-rank fusion, which needs
+no calibration between them because it uses ranks and not scores.
+
+    repair orders 1-120     recall@6  50.0% -> 52.5%   MRR 0.251 -> 0.235
+    repair orders 121-240   recall@6  51.7% -> 55.0%   MRR 0.204 -> 0.224
+
+The second slice was run once, after the design was fixed, and was never used to
+choose anything - the explicit guard against repeating pass 50, which gained 7.5
+points on the 40 queries it was tuned on and nothing at all on held-out data.
+Recall improves on both slices. MRR is a wash. It is on by default, it costs
+about 0.1s a query, and **it still does not reach the 60% floor**: 52.5% is
+better and short.
+
+One bug nearly shipped inside that change. Widening the pool for the ablation's
+no-rerank path made it return fifty passages where it should return six, and the
+ablation printed `vector only recall@6 100.0% (120/120)`. A measure that
+suddenly reads perfect is the first one to distrust.
+
+### The new class is scored, not asserted
+
+Six intake questions joined the labelled routing set, which is why these numbers
+moved rather than staying still:
+
+    routing       24/24   -> 30/30    100%
+    grounding     22/22   -> 28/28    100%
+    traceability  524/524 -> 762/762  100%
+    refusal         4/4   ->   4/4    100%
+    recall         50.0%  ->  52.5%   floor 60%, still below
+
+A new question class that is not in the measure is a claim, not a result.
