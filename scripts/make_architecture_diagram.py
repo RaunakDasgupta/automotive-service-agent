@@ -26,7 +26,7 @@ know what a thing is, not which module it lives in; the file paths are in
 README.md and ENGINEERING.md where they belong.
 
 The counts marked VERIFIED were read off the running box on 2026-10-05:
-10 tools, 27 HTTP routes, 13 application metric series plus 19 DCGM GPU series,
+11 tools, 27 HTTP routes, 13 application metric series plus 19 DCGM GPU series,
 and the table row counts.
 
 The output is uncompressed draw.io XML, so it is diffable and opens in
@@ -319,9 +319,9 @@ def page_architecture() -> Page:
             (S_STD, "Citation set", "every claim tied to an update id"),
         ]),
         ("5 · REASONING &amp; ANSWERING", [
-            (S_STD, "Query planner", "picks the tool; 24 of 24 without a model"),
+            (S_STD, "Query planner", "picks the tool; 30 of 30 without a model"),
             (S_NV, "NeMo Switchyard", "nano local ⇄ Nemotron Super hosted"),
-            (S_STD, "Tool layer · 10 tools", "deterministic SQL and vector reads"),
+            (S_STD, "Tool layer · 11 tools", "deterministic SQL and vector reads"),
             (S_STD, "Answer composers", "every figure computed, not generated"),
             (S_NVB, "Nemotron narration", "prose only, from tool payloads"),
         ]),
@@ -559,11 +559,11 @@ def page_read_path() -> Page:
 
     plan = main(S_STD, "Query planner",
                 "keyword-first. The model router exists and is deliberately "
-                "not paid for: the planner already routes 24 of 24")
+                "not paid for: the planner already routes 30 of 30")
     switch = main(S_NV, "NeMo Switchyard",
                   "nano locally, Nemotron Super hosted on escalation. Off "
                   "unless the deployment turns it on")
-    tool = main(S_STD, "Tool layer · one of 10 typed tools",
+    tool = main(S_STD, "Tool layer · one of 11 typed tools",
                 "deterministic SQL and vector reads. No subprocess, no eval "
                 "of model output, no model-directed sockets")
 
@@ -657,7 +657,7 @@ COMPONENTS = [
      "with. Replaced the operating system's own voice, which was the last "
      "non-NVIDIA model in the speech path.",
      "Magpie TTS Multilingual · hosted over gRPC", "running", S_NVB),
-    ("NeMo Agent Toolkit", "A second front end onto the same ten tools, one "
+    ("NeMo Agent Toolkit", "A second front end onto the same eleven tools, one "
      "toolkit function type each. This NIM writes its tool calls as text, so "
      "a provider shim lifts them into the protocol before the agent sees "
      "them.",

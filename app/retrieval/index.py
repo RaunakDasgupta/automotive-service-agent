@@ -16,7 +16,7 @@ config change rather than a code change:
 Nothing in this file knows which one is in use.
 """
 from __future__ import annotations
-import os, time
+import os, re, time
 from typing import Any
 
 from app.state import db as dbm
@@ -122,6 +122,78 @@ RERANK_POOL = int(os.environ.get("ASOIA_RERANK_POOL", "18"))
 
 
 
+
+# --- lexical fusion ---------------------------------------------------------
+# A customer says "rattling noise from the engine on cold start"; the technician
+# writes "timing chain tensioner replaced, noise gone". Dense retrieval is the
+# right tool for that gap and it mostly closes it - the right repair order is
+# inside the vector top-50 for every one of the 40 probe queries - but the
+# cross-encoder then fails to lift it into the top 6 half the time. The parts of
+# a complaint that ARE shared with the note are the rare words: "rattling",
+# "tensioner", a registration, an op code. An IDF-weighted overlap finds those,
+# and reciprocal-rank fusion combines the two rankings without either having to
+# be calibrated against the other.
+# On by default, on evidence from two slices rather than one. recall@6:
+#
+#     repair orders 1-120 (the standard sample)   50.0% -> 52.5%
+#     repair orders 121-240 (never used to decide) 51.7% -> 55.0%
+#
+# MRR is a wash: 0.251 -> 0.235 on the first, 0.204 -> 0.224 on the second. It
+# costs about 0.1s a query. Recall is the measure under its floor, it improves
+# on both slices, and the second slice was run once, after the design was
+# fixed, precisely so this would not be another pass-50 - which gained 7.5
+# points on its tuning set and nothing at all on held-out data.
+#
+# It does NOT reach the 60% floor. 52.5% is better and still short.
+HYBRID = os.environ.get("ASOIA_HYBRID", "1") == "1"
+HYBRID_POOL = int(os.environ.get("ASOIA_HYBRID_POOL", "50"))
+_RRF_K = 60          # the usual constant; ranks, not scores, so it is scale-free
+_DF: dict[str, int] | None = None
+_NDOCS = 0
+_TOKEN = re.compile(r"[a-z0-9]+")
+
+
+def _tokens(s: str) -> list[str]:
+    return _TOKEN.findall(str(s).lower())
+
+
+def _corpus_df() -> tuple[dict[str, int], int]:
+    """Document frequencies over the update corpus, computed once."""
+    global _DF, _NDOCS
+    if _DF is None:
+        from app.state import db as dbm
+        df: dict[str, int] = {}
+        n = 0
+        with dbm.connect() as con:
+            for (txt,) in con.execute("SELECT text FROM updates"):
+                n += 1
+                for w in set(_tokens(txt)):
+                    df[w] = df.get(w, 0) + 1
+        _DF, _NDOCS = df, max(1, n)
+    return _DF, _NDOCS
+
+
+def _lexical(query: str, text: str) -> float:
+    """IDF-weighted overlap. Rare shared words count, "the" and "noise" barely."""
+    df, n = _corpus_df()
+    q = set(_tokens(query))
+    if not q:
+        return 0.0
+    seen = set(_tokens(text))
+    import math
+    return sum(math.log(1 + n / (1 + df.get(w, 0))) for w in q & seen)
+
+
+def _fuse(query: str, hits: list[dict], keep: int) -> list[dict]:
+    """Reciprocal-rank fusion of the dense order and the lexical order."""
+    dense = {id(h): i for i, h in enumerate(hits)}
+    lex = sorted(hits, key=lambda h: -_lexical(query, h.get("text", "")))
+    lexrank = {id(h): i for i, h in enumerate(lex)}
+    fused = sorted(hits, key=lambda h: -(1.0 / (_RRF_K + dense[id(h)] + 1)
+                                         + 1.0 / (_RRF_K + lexrank[id(h)] + 1)))
+    return fused[:keep]
+
+
 def search(query: str, k: int = 8, rerank_to: int | None = 4,
            ro_number: str | None = None, category: str | None = None,
            **_legacy) -> list[dict]:
@@ -130,14 +202,23 @@ def search(query: str, k: int = 8, rerank_to: int | None = 4,
     # Retrieve wide, rerank narrow. cand must be used for BOTH the limit and the
     # slice below - slicing back to k would hide the wide pool from the reranker.
     #
-    # The pool floor is 50 and not 18 because 18 was capping the reranker below
-    # its own ceiling. Vector-stage recall of the right repair order, 40 queries:
-    # top-18 72.5%, top-30 92.5%, top-50 100%. Handing it 18 meant the answer was
-    # simply absent a quarter of the time, whatever the reranker then did.
-    # Measured end to end at k=6: 50.0% -> 57.5% on those 40, and 41.7% -> 49.2%
-    # on 120 held-out queries. Costs about 0.2s per search.
+    # The floor is RERANK_POOL, which is 18 - see the constant for why a wider
+    # pool was measured and rejected. This comment used to say "the pool floor
+    # is 50", which the revert left behind: the code said 18 and the comment
+    # argued for 50 directly above it.
+    #
+    # Vector-stage recall of the right repair order, 40 queries: top-18 72.5%,
+    # top-30 92.5%, top-50 100%. The answer is in a wide pool nearly always; the
+    # cross-encoder is what cannot find it. That is the argument for fusing a
+    # lexical signal in before reranking rather than for handing it more.
     cand = max(k, (rerank_to or 0) * 3, RERANK_POOL if rerank_to else 0)
-    hits = backend().search(qv, k=cand, ro_number=ro_number)
+    # Only when something will narrow it again. Widening the no-rerank path
+    # made it return fifty passages where it should return six, and the
+    # ablation duly reported vector-only recall@6 of 100%.
+    wide = max(cand, HYBRID_POOL) if (HYBRID and rerank_to) else cand
+    hits = backend().search(qv, k=wide, ro_number=ro_number)
+    if HYBRID and rerank_to and len(hits) > cand:
+        hits = _fuse(query, hits, cand)
     if category:
         hits = [h for h in hits if h.get("category") == category]
 

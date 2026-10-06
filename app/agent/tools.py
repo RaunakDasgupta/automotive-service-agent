@@ -108,6 +108,18 @@ def get_shift_activity(day_offset: int = 0, shift: str = "",
                                 view=view, now=_now())
 
 
+
+def get_intake(days: int = 7) -> dict:
+    """How many vehicles came INTO the shop over the last `days`, and what
+    became of them: still open, completed, blocked, open safety, waiters, the
+    busiest day and the split by category. Use for "how many cars came in this
+    week", "how busy were we", "how much work did we take in". Arrival is a
+    recorded column, so this is exact. Not the same as which cars were WORKED
+    ON, which is get_shift_activity.
+    """
+    return Q.get_intake(con(), days=days, now=_now())
+
+
 TOOLS: dict[str, Callable[..., dict]] = {
     "get_ro_state": get_ro_state,
     "get_ro_timeline": get_ro_timeline,
@@ -119,6 +131,7 @@ TOOLS: dict[str, Callable[..., dict]] = {
     "search_updates": search_updates,
     "get_op_code_info": get_op_code_info,
     "get_shift_activity": get_shift_activity,
+    "get_intake": get_intake,
 }
 
 # OpenAI-style schemas, used both for NIM function calling and by NAT.
@@ -168,6 +181,11 @@ SPECS = [
       "shift":{"type":"string","enum":["MORNING","AFTERNOON",""]},
       "view":{"type":"string","enum":["people","vehicles"],
               "description":"people = who worked; vehicles = which cars"}}}}},
+ {"type":"function","function":{"name":"get_intake",
+  "description":get_intake.__doc__,
+  "parameters":{"type":"object","properties":{
+      "days":{"type":"integer",
+              "description":"window ending now; 1 today, 7 this week, 30 this month"}}}}},
 ]
 
 

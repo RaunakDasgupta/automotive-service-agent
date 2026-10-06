@@ -334,3 +334,75 @@ def get_shift_activity(con, day_offset: int = 0, shift: str | None = None,
             "hours_booked": round(sum(p["hours_booked"] for p in ordered), 2),
             "people": ordered[:limit], "ros": ros, "ro_context": ctx,
             "citations": cits[:40]}
+
+
+def get_intake(con, days: int = 7, now: datetime | None = None) -> dict[str, Any]:
+    """How much work came INTO the shop over a window, and what became of it.
+
+    "How many cars came in this week" used to fall through to semantic search
+    over update text, which retrieved four notes containing the word "shop" and
+    left an 8B to guess - it reported four. The arrival of a vehicle is a
+    recorded column, `ros.checked_in_at`, so the count is exact and the model
+    never sees this question.
+
+    Arrival is not the same as work: `get_shift_activity` answers what came
+    THROUGH the shop on a day, from the updates logged against it. This answers
+    what was BOOKED IN, which is the question a manager asks about demand.
+    """
+    now = now or datetime.now()
+    days = max(1, int(days))
+    since = now - timedelta(days=days)
+    rows = con.execute(
+        "SELECT ro_number, checked_in_at, make, model, model_year, category, "
+        "       pay_type, wait_type, registration "
+        "FROM ros WHERE checked_in_at >= ? AND checked_in_at <= ? "
+        "ORDER BY checked_in_at", (since.isoformat(), now.isoformat())).fetchall()
+
+    by_day: dict[str, int] = {}
+    by_category: dict[str, int] = {}
+    waiters = 0
+    still_open = 0
+    blocked = 0
+    safety = 0
+    citations: list[str] = []
+    for r in rows:
+        day = str(r["checked_in_at"])[:10]
+        by_day[day] = by_day.get(day, 0) + 1
+        cat = r["category"] or "Uncategorised"
+        by_category[cat] = by_category.get(cat, 0) + 1
+        if r["wait_type"] == "WAITER":
+            waiters += 1
+        _, snap = _snapshot(con, r["ro_number"])
+        if not snap:
+            continue
+        if snap.state is not ROState.INVOICED:
+            still_open += 1
+            if snap.is_blocked:
+                blocked += 1
+            if snap.has_open_safety:
+                safety += 1
+        ev = dbm.events_for_ro(con, r["ro_number"])
+        if ev:
+            citations.append(ev[0].event_id)
+
+    busiest = max(by_day.items(), key=lambda kv: (kv[1], kv[0])) if by_day else None
+    return {
+        "found": True,
+        "window_days": days,
+        "since": since.isoformat(timespec="minutes"),
+        "until": now.isoformat(timespec="minutes"),
+        "count": len(rows),
+        "per_day_average": round(len(rows) / days, 1),
+        "still_open": still_open,
+        # Not "completed": get_ro_state returns a LIST under that name and the
+        # figures block walks it, so an int here crashed every intake answer.
+        "invoiced": len(rows) - still_open,
+        "blocked": blocked,
+        "open_safety": safety,
+        "waiters": waiters,
+        "busiest_day": ({"date": busiest[0], "count": busiest[1]} if busiest else None),
+        "by_day": [{"date": d, "count": n} for d, n in sorted(by_day.items())],
+        "by_category": [{"category": c, "count": n} for c, n in
+                        sorted(by_category.items(), key=lambda kv: -kv[1])],
+        "citations": citations[:40],
+    }

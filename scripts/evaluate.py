@@ -80,6 +80,15 @@ ROUTING: list[tuple[str, str]] = [
     ("Which vehicles came through yesterday?",               "get_shift_activity"),
     ("has anyone seen a whistling noise on a Passat",        "search_updates"),
     ("any notes about a burning smell",                      "search_updates"),
+    # Demand. Every one of these used to fall through to semantic search: the
+    # first was answered "four" against a true 179, from four notes that
+    # happened to contain the word "shop".
+    ("How many cars came into the shop this week?",          "get_intake"),
+    ("How many vehicles came in today?",                     "get_intake"),
+    ("How busy were we this month?",                         "get_intake"),
+    ("How much work came in over the last 3 days?",          "get_intake"),
+    ("How many new jobs did we take in?",                    "get_intake"),
+    ("What was our intake this week?",                       "get_intake"),
 ]
 
 REFUSALS = [

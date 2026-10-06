@@ -49,7 +49,7 @@ a dashed outline is present but not integrated.
 | **NIM — Reranking** | `nv-rerankqa-mistral-4b-v3` reorders Milvus candidates | local, `:8002` |
 | **Riva — Parakeet ASR** | Speech to text for spoken shift updates, over gRPC | hosted |
 | **Riva — Magpie TTS** | Synthesises the spoken updates the ASR leg is tested with | hosted |
-| **NeMo Agent Toolkit** | The agent as a toolkit workflow over the same 10 tools, one function type each; this NIM writes its tool calls as text, so a provider shim lifts them into `tool_calls` | runs — tools execute 18/18, answers 3/18 (§42) |
+| **NeMo Agent Toolkit** | The agent as a toolkit workflow over the same 11 tools, one function type each; this NIM writes its tool calls as text, so a provider shim lifts them into `tool_calls` | runs — tools execute 18/18, answers 3/18 (§42) |
 | **NeMo Guardrails** | `self check input` rail, evaluated by the local nano NIM | `ASOIA_NEMO_RAILS` |
 | **NeMo Curator** | Six-stage curation; the sixth quarantines the injection vector before indexing | `scripts/curate.py` |
 | **NeMo Evaluator** | The six measures as BYOB benchmarks in Evaluator's own result schema | `evals/asoia_byob.py` |

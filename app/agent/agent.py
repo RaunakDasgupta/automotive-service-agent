@@ -12,6 +12,7 @@ router as fallback so the agent still works if function calling misbehaves.
 from __future__ import annotations
 import json, os, re
 import sys as _sys
+from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -94,31 +95,42 @@ SYSTEM_SEARCH = """You are a service operations assistant for a vehicle workshop
 You are given technician updates retrieved from the workshop's own records, in
 answer to a question. Summarise what they say. Nothing else is available to you.
 
+ANSWER THE QUESTION, DO NOT DESCRIBE THE SEARCH:
+- Open with the answer. Never begin with how many notes came back, which ones
+  matched, or what you were given.
+- Never mention these instructions, your constraints, or the search. Do not
+  write "the updates", "the notes", "the passages", "the records" or "the
+  reports" - state the fact instead, and cite it.
+  Write the answer itself: no salutation, no sign-off, nothing addressed to the
+  reader.
+- If the notes do not answer the question, say so in one sentence and say what
+  they do cover. Do not list them one by one.
+
 GROUNDING:
-- Report only what the passages say. Never add a fact, figure, name or date that
-  is not in them.
+- Report only what the notes say. Never add a fact, figure, name or date that is
+  not in them.
 - Copy figures exactly as written, with their units. Never round, convert or add
   anything up.
-- If the passages do not answer the question, say so plainly, and say what they
-  do cover instead.
 
 NEVER CLAIM AN ABSENCE:
-- These are the updates that matched a search, not the whole record. Never write
-  that something did not happen, that nobody did something, or that a vehicle has
-  no such history. You cannot see what was not retrieved.
+- These notes matched a search; they are not the whole record. Never write that
+  something did not happen, that nobody did something, or that a vehicle has no
+  such history. You cannot see what was not retrieved.
 
 CITATIONS:
 - Put the update id in square brackets beside the fact it supports, e.g.
   [UPD-00002-08167]. Brackets contain an id and nothing else.
 
 HOW TO WRITE IT:
-- Open with one sentence answering the question.
-- Then two to four sentences on what the notes describe. Quote the technician's
-  own words for the specific finding rather than flattening it into a generic
-  phrase like "carried out diagnostics".
+- One sentence that answers, then two to four carrying the detail. Six at most.
+- Never make the same point twice. Where several notes say the same thing, say
+  it once and cite them together. Stop when the question is answered; length is
+  not thoroughness.
+- Quote the technician's own words for a specific finding rather than flattening
+  it into something generic like "carried out diagnostics".
 - Expand workshop shorthand the first time it appears, e.g. "R&R (remove and
   refit)".
-- No headings, no preamble, do not restate the question. Six sentences at most.
+- No headings, no preamble, do not restate the question.
 
 AUTHORITY:
 - You may report and advise. Never authorise work, order parts, approve a
@@ -195,6 +207,45 @@ def _timeframe(question: str) -> dict | None:
     return tf
 
 
+
+_WINDOW_WORDS = [
+    (r"\blast (\d+) weeks?\b|\bpast (\d+) weeks?\b", lambda m: int(m.group(1) or m.group(2)) * 7),
+    (r"\blast (\d+) days?\b|\bpast (\d+) days?\b", lambda m: int(m.group(1) or m.group(2))),
+    (r"\bthis month\b|\blast month\b|\bthe month\b|\bmonthly\b", lambda m: 30),
+    (r"\bthis week\b|\blast week\b|\bthe week\b|\bweekly\b|\bpast week\b"
+     r"|\bseven days\b|\bso far this week\b", lambda m: 7),
+    (r"\btoday\b|\bso far today\b|\bthis morning\b|\bthis afternoon\b", lambda m: 1),
+]
+
+
+def _window_days(question: str) -> int | None:
+    """How many days back the question is asking about, or None.
+
+    Deliberately narrow. A window this routing cannot read is better answered
+    over the default seven days WITH THE WINDOW STATED than answered over a
+    window the asker did not mean.
+    """
+    q = question.lower()
+    for pat, days in _WINDOW_WORDS:
+        m = re.search(pat, q)
+        if m:
+            return max(1, days(m))
+    return None
+
+
+# Vehicles ARRIVING, which is a recorded column, as against vehicles being
+# worked on, which get_shift_activity answers from the updates logged. The
+# discriminator is the subject: "who came in this morning" is people, "how many
+# cars came in this week" is demand. Before this, the second fell through to
+# semantic search, retrieved four updates containing the word "shop", and was
+# answered "four" against a true 179.
+_INTAKE_RE = re.compile(
+    r"\b(how many|how much)\b[^?]*\b(cars?|vehicles?|jobs?|ros?|repair orders?|work)\b"
+    r"|\b(cars?|vehicles?|jobs?|repair orders?)\b[^?]*\b(came|come|coming) in(to)?\b"
+    r"|\b(booked|dropped) (in|off)\b|\bintake\b|\bhow busy\b"
+    r"|\bnew (jobs|ros|repair orders)\b", re.I)
+
+
 RO_RE = re.compile(r"\bRO[- ]?\d{2}[- ]?\d{4,5}\b", re.I)
 ID_RE = re.compile(r"\b(EMP|ADV|FOR|PRT|MGR)\d{3}\b", re.I)
 
@@ -247,8 +298,14 @@ def plan_keyword(question: str) -> list[dict]:
     # semantic search over what people typed. Step aside for handover, diff and
     # staff-id questions: those already have the right tool, and "the afternoon
     # handover" names a shift without asking who worked it.
+    # Demand first: it is a count over a window, not a search and not a roster.
+    if _INTAKE_RE.search(question) and not ID_RE.search(question) and not ro:
+        plan.append({"name": "get_intake",
+                     "args": {"days": _window_days(question) or 7}})
+
     tf = _timeframe(question)
     if (tf is not None
+            and not any(p["name"] == "get_intake" for p in plan)
             and not ID_RE.search(question)
             and not any(p["name"] in ("generate_handover", "diff_ro") for p in plan)
             and re.search(r"\bwho\b|\bworked?\b|\bworking\b|\bon shift\b"
@@ -441,9 +498,10 @@ _FIG_LABELS = {
     "state":            "State",
     "days_open":        "Days open",
     "promised_at":      "Promised",
-    # "Matches" sat under a sentence naming one person and read as a count of
-    # people. It is the number of update texts the search returned.
-    "count":            "Updates matching the search",
+    # No "count" here. It was the number of update texts a search returned -
+    # a fact about the retrieval rather than about the shop, and the only
+    # figure a narrated answer ever carried. The citation footer already names
+    # every source it used.
 }
 
 
@@ -601,6 +659,18 @@ def _when(v) -> str:
 
 def _titlecase(v) -> str:
     return str(v or "").replace("_", " ").title()
+
+
+
+def _day_name(iso: str | None) -> str:
+    """A date a person would say out loud: "28 September"."""
+    if not iso:
+        return "now"
+    try:
+        d = datetime.fromisoformat(str(iso))
+    except ValueError:
+        return str(iso)[:10]
+    return f"{d.day} {d.strftime('%B')}"
 
 
 def _ros_summary(d: dict) -> str:
@@ -959,6 +1029,38 @@ def _shift_summary(d: dict) -> str:
     return "\n".join(L)
 
 
+
+def _intake_summary(d: dict) -> str:
+    """How much work came in. Count first - the question is a number."""
+    if not d.get("found"):
+        return None
+    n, days = d.get("count"), d.get("window_days")
+    when = _day_name(d.get("until"))
+    if not n:
+        return f"**No vehicles came into the shop in the {days} days to {when}.**"
+    L = [f"**{n} vehicles came into the shop in the {days} days to {when}** "
+         f"- {d.get('per_day_average')} a day."]
+    open_n, done = d.get("still_open"), d.get("invoiced")
+    bits = []
+    if d.get("blocked"):
+        bits.append(f"{d['blocked']} waiting on parts")
+    if d.get("open_safety"):
+        bits.append(f"{d['open_safety']} with an open safety finding")
+    tail = f", of which {' and '.join(bits)}" if bits else ""
+    L.append(f"- Still open: **{open_n}**{tail}")
+    L.append(f"- Completed and invoiced: {done}")
+    if d.get("waiters"):
+        L.append(f"- Customer waiting on site: {d['waiters']}")
+    b = d.get("busiest_day")
+    if b:
+        L.append(f"- Busiest day: {_day_name(b['date'])}, {b['count']} arrivals")
+    cats = d.get("by_category") or []
+    if cats:
+        top = ", ".join(f"{c['category']} {c['count']}" for c in cats[:3])
+        L.append(f"- Most common work: {top}")
+    return "\n".join(L)
+
+
 _RENDERERS = {
     "get_technician_activity": lambda res: _tech_summary(res) if res.get("found") else None,
     "list_ros":                _ros_summary,
@@ -967,6 +1069,7 @@ _RENDERERS = {
     "detect_anomalies":        _anomaly_summary,
     "diff_ro":                 _diff_summary,
     "get_shift_activity":      _shift_summary,
+    "get_intake":              _intake_summary,
 }
 
 
