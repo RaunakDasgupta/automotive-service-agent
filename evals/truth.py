@@ -114,6 +114,18 @@ def n_waiter(con) -> int:
                if w == "WAITER" and st.get(ro, "CHECKED_IN") != "INVOICED")
 
 
+def n_open(con) -> int:
+    """Repair orders not yet invoiced.
+
+    A repair order with no STATE_CHANGED at all has never left CHECKED_IN, so
+    it is open - which is why this counts from the ros table and looks the
+    state up, rather than counting rows in the state query.
+    """
+    st = _states(con)
+    return sum(1 for (ro,) in con.execute("SELECT ro_number FROM ros")
+               if st.get(ro, "CHECKED_IN") != "INVOICED")
+
+
 def n_arrived(con, now, days) -> int:
     since = (now - timedelta(days=days)).isoformat()
     return con.execute("SELECT count(*) FROM ros WHERE checked_in_at >= ? "
