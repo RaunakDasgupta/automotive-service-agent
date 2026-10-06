@@ -46,6 +46,55 @@ import _env  # noqa: E402,F401  - .env, like stack.sh; see scripts/_env.py
 OUT = pathlib.Path("evals/data")
 
 
+
+# --- independent ground truth ----------------------------------------------
+# Computed with direct SQL that does not touch app.agent.tools. A benchmark
+# scored against the thing it is testing is not a benchmark, so the number an
+# answer is checked against has to come from somewhere else.
+#
+# Only the questions whose truth is a straightforward query are here. A count of
+# blocked or unsafe repair orders is derived by folding the event log, and a
+# second fold written here would be the same code twice rather than independent
+# evidence - which is the mistake the rail harness made in section 13. Those
+# questions carry no truth and are not scored for accuracy, and saying which
+# ones are unscored is part of the measure.
+def _truths(now):
+    import sqlite3, os
+    from datetime import timedelta
+    db = os.environ.get("ASOIA_DB", "data/generated/service.sqlite")
+    con = sqlite3.connect(db)
+
+    def one(sql, *args):
+        return con.execute(sql, args).fetchone()[0]
+
+    def arrived(days):
+        since = (now - timedelta(days=days)).isoformat()
+        return one("SELECT count(*) FROM ros WHERE checked_in_at >= ? "
+                   "AND checked_in_at <= ?", since, now.isoformat())
+
+    def touched(day_offset, days=1):
+        last = (now + timedelta(days=day_offset)).date().isoformat()
+        first = (now + timedelta(days=day_offset - days + 1)).date().isoformat()
+        return one(
+            "SELECT count(*) FROM (SELECT ro_number FROM updates "
+            "WHERE date(at) BETWEEN ? AND ? UNION "
+            "SELECT ro_number FROM events WHERE date(at) BETWEEN ? AND ? "
+            "AND actor_id IS NOT NULL)", first, last, first, last)
+
+    return {
+        "How many cars came into the shop this week?":     arrived(7),
+        "How many vehicles came in today?":                arrived(1),
+        "How busy were we this month?":                    arrived(30),
+        "How much work came in over the last 3 days?":     arrived(3),
+        "How many new jobs did we take in?":               arrived(7),
+        "What was our intake this week?":                  arrived(7),
+        "how many cars were worked on yesterday?":         touched(-1),
+        "what are the cars being worked on this week?":    touched(0, 7),
+        "What cars were worked on today?":                 touched(0),
+        "Which vehicles came through yesterday?":          touched(-1),
+    }
+
+
 def main() -> int:
     import evaluate as EV                      # the labelled sets, one source
     from app.agent.agent import ask
@@ -57,14 +106,26 @@ def main() -> int:
 
     print(f"{len(EV.ROUTING)} labelled questions, {len(EV.REFUSALS)} action requests")
 
+    from app.agent.tools import _now as _clock
+    TRUTH = _truths(_clock())
+
     rows = []
     for i, (q, want) in enumerate(EV.ROUTING):
+        plan = list(want) if isinstance(want, (list, tuple)) else [want]
         try:
             a = ask(q)
             rows.append({
                 "id": i,
                 "question": q,
-                "expected_tool": want,
+                # The primary tool, for the scorer that asks only that, and the
+                # whole plan for the one that scores the arguments too. Pass 54
+                # made this field a tuple and the routing scorer, which does
+                # `target in tools`, quietly started failing every row.
+                "expected_tool": plan[0],
+                "expected_plan": plan,
+                "plan": [{"name": c.get("name"), "args": c.get("args") or {}}
+                         for c in (a.tool_calls or []) if c.get("name")],
+                "truth": TRUTH.get(q),
                 "response": a.text or "",
                 "payload": json.dumps(a.results, default=str),
                 "citations": list(a.citations or []),
@@ -77,7 +138,8 @@ def main() -> int:
             # A question that raises is a data point, not a reason to stop. It
             # scores zero on every measure, which is the honest outcome.
             rows.append({
-                "id": i, "question": q, "expected_tool": want,
+                "id": i, "question": q, "expected_tool": plan[0],
+                "expected_plan": plan, "plan": [], "truth": TRUTH.get(q),
                 "response": "", "payload": "{}", "citations": [], "tools": [],
                 "composed": "", "route": "",
                 "error": f"{type(e).__name__}: {str(e)[:160]}",

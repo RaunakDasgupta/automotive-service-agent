@@ -2517,3 +2517,92 @@ saying which flaw was accepted is part of the record.
     refusal         4/4          ->   4/4              100%
     narration       2/2          ->   2/2              100%
     recall         52.5% (floor 60, unreachable) -> 83.3% (floor 60)
+
+## 45. Four benchmarks that a wrong answer could pass
+
+The testing framework here is NVIDIA NeMo Evaluator (0.2.8), used as BYOB
+benchmarks in `evals/asoia_byob.py`, driven by `scripts/eval_standard.py`, with
+every run kept in `run/evals/history.jsonl`. It had four: routing, grounding,
+traceability, refusal.
+
+Each of them can be satisfied by an answer that is wrong.
+
+  - **routing** asked whether the right tool was IN the plan. It cannot see a
+    right tool called with the wrong arguments, and cannot see a second tool
+    that should never have run. Both of those shipped in pass 53.
+  - **grounding** asks whether every figure appears in the payload. An answer
+    that quotes its payload perfectly while answering a different question
+    passes - which is exactly what "179 vehicles came into the shop" did when
+    asked how many were worked on yesterday.
+  - nothing compared a stated number with a number computed independently.
+  - nothing asked whether the text was an answer at all.
+
+### Three more
+
+`asoia_tool_calls` scores the whole call: the right tools, no others, with the
+arguments the question asked for. The expectations are derived from the
+QUESTION rather than from a gold table - "this week" means days=7, "yesterday"
+means day_offset=-1, "morning" means shift=MORNING, a vehicle noun means
+view=vehicles. A table of expected arguments is one more thing to keep in step
+with the router; the words in the question are the ground truth about what was
+asked. It reports `plan_exact`, `spurious_tools`, `arg_agreement` and
+`arg_rules_checked`, the last so that a perfect score from zero applicable
+rules is visible rather than flattering.
+
+`asoia_accuracy` asks whether the answer states the right number, and states it
+first. The truth comes from `make_eval_dataset.py` by direct SQL that never
+touches `app.agent.tools`, because a number checked against the thing that
+produced it is not a check. It covers 10 of the 37 questions - the ones whose
+truth is a straightforward query. A count of blocked repair orders needs the
+event log folded, and a second fold written into the scorer would be the same
+code twice rather than independent evidence, which is the mistake section 13
+records. `accuracy_scored` reports that coverage, because a measure that
+silently skips rows reads as a pass.
+
+`asoia_relevance` is the output relevance coefficient: the mean of three, each
+a failure this project has actually shipped.
+
+    answers_the_form   a "how many" whose first line carries no number
+    entity_coverage    the share of what the question named that the answer says
+    free_of_meta       no "the search returned", no "as per the guidelines",
+                       no apology
+
+### What they found in the first run
+
+    "Hand over to the morning shift."  ->  **Shift handover - Afternoon**
+
+Every handover was the afternoon one. The keyword route built that call with no
+arguments at all, so the tool fell back to its own default, and "Give me the
+afternoon handover" had been passing by coincidence for as long as both have
+existed. Routing scored it correct every time: the right tool ran.
+
+Three lines in `plan_keyword` fix it, and `handover.shift` is now one of the
+arguments scored.
+
+### And one thing the scorer had wrong
+
+`entity_coverage` first read 82.4%. Six of its seven misses were correct
+answers being marked down for being more precise than the question - "this
+week" answered by "the 7 days to 28 September". The entity is the window, not
+the word, so each now carries the forms that satisfy it. The seventh was the
+handover.
+
+A new measure's first disagreement is as likely to be the measure as the
+system, and the way to tell is to read every row it failed rather than the
+average it produced.
+
+### A benchmark that had been scoring nothing
+
+Pass 54 made evaluate.py's expected tool a tuple. The dataset builder wrote
+that into `expected_tool`, and `asoia_routing` tests it with `target in tools` -
+so for two passes the benchmark compared a list against a list of strings and
+would have scored zero on every row. It did not, because the dataset had not
+been rebuilt since; the moment it was, it would have. The cross-check that was
+supposed to catch this compared the benchmark against the measure that shared
+its blind spot, and now runs against `plan_exact`.
+
+    routing_accuracy  100%      plan_exact        100%
+    figures_supported 100%      spurious_tools      0
+    traceability      100%      arg_agreement     100%
+    refused           100%      answer_accuracy   100%   (10 of 37 scored)
+                                relevance         100%   (94.1% before the fix)
