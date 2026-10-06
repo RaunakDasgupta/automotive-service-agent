@@ -193,8 +193,11 @@ def ensure_db(quiet: bool = False) -> None:
     if DB.exists():
         return
     if not quiet:
+        # flush: the subprocess writes straight to the terminal, so an
+        # unflushed print lands AFTER its output and reads as though the
+        # database had been generated after being scored.
         print("no database yet - generating it (seeded 20260924, so this is "
-              "the same shop the gate will score)")
+              "the same shop the gate will score)", flush=True)
     r = subprocess.run([sys.executable, "-m", "app.data.generate"], cwd=ROOT)
     if r.returncode != 0 or not DB.exists():
         raise SystemExit("could not generate the dataset")
@@ -283,7 +286,7 @@ def cmd_accept(args: argparse.Namespace) -> int:
               f"'agree'.\nA baseline taken from a run whose two implementations "
               f"disagree is a\nbaseline nobody can trust. Fix it, or --force.")
         return 2
-    print("taking the model-free subset for the fast baseline:")
+    print("taking the model-free subset for the fast baseline:", flush=True)
     ensure_db()
     out = ROOT / "run/evals/.fast.json"
     if out.exists():

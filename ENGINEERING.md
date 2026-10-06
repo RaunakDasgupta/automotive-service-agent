@@ -2784,6 +2784,21 @@ CPU-only sandbox scoring a subset is only honest if something proves the subset
 really is model-free, and an exception that fires is proof where a comment is
 not.
 
+Running it on a third machine - a laptop with no GPU, no NIM, no Milvus server
+and no key, which is the closest available proxy for the sandbox - found the
+limit of the first property. All four rates came back identical, but the
+citation total did not: 891 there against 954 here. The seed makes the
+*generated* rows identical; it does not make the databases identical, because
+this box's has accumulated `updates` from demo and voice use and a freshly
+generated one has none.
+
+Every gated metric is a rate, so the comparison holds. But this is the reason
+`citations` is printed and never gated, which had been justified on the weaker
+ground that a floor would invite padding - the real reason is that it moves
+with accumulated state and a gate on it would fail honest runs.
+AGENT_LOOP.md now tells the sandbox agent this outright, because the
+alternative is an agent reading a differing total as a regression it caused.
+
 ### The lock, and why it is not bureaucracy
 
 An agent optimising against a scorer will eventually edit the scorer, usually
