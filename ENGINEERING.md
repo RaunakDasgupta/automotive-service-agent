@@ -2862,3 +2862,91 @@ is the failure every measure in this repository has had at least once.
     cross-check           agree
     all 19 metrics        flat against the baseline at 8c77cc9
     tamper test           fast exited 2 and named the edited file
+
+## 49. Measured, printed, and never compared
+
+`scripts/timings.py` has printed a per-stage latency profile for a long time.
+Nothing ever compared one run to the last. Asked to use the pass-58 loop to
+improve *performance*, the honest answer was that it could not: an agent told
+to make the agent faster could trade correctness for milliseconds, or spend 40%
+more time for no measurable gain, and every gate would stay green. A number
+that is reported but not gated is a number that only moves in the direction
+nobody is watching.
+
+So `timings.py` gained `--json`, `gate` reads it, and six numbers are gated,
+all lower-is-better:
+
+    worst_python_ms   llm_best_ms            llm_model_ms
+    total_best_ms     llm_prompt_tokens      llm_completion_tokens
+
+Per-question keys were the obvious design and were not used. Six questions
+times three numbers is eighteen gates that all move together, and a gate nobody
+reads is a gate nobody maintains. These six were chosen because they have
+*different fixes*, which is the only reason to separate them: a slow Python
+path is SQL or the event fold, a slow model stage is generation length, and a
+grown prompt is retrieval pulling more than it needs.
+
+`timings.py` also joined the lock. It now feeds a gate, so an agent that can
+edit it can report whatever milliseconds it likes - the same argument that put
+the other five files there in section 48.
+
+### The thresholds were measured before they were chosen
+
+Three consecutive runs on an idle L40S, deliberately before picking any number:
+
+    search question      1797 / 1799 / 1795 ms      0%
+    prompt_tokens        1146 / 1146 / 1146         0%
+    completion_tokens        99 /   99 /   99       0%
+    python paths >6ms                            1-2%
+    the 2ms path                                  20%   (0.4ms absolutely)
+
+Latency on this box is far more stable than expected, and both token counts are
+deterministic. That is what made a tight gate defensible at all; a plan to gate
+wall-clock time loosely and tokens tightly survived contact with the data
+rather than being guessed.
+
+The gate allows 15% or 5ms on times and 10% on tokens - about ten times the
+observed noise. Deliberately loose: a latency gate that cries wolf gets
+switched off, and the thing worth catching is a stage that doubles, not one
+that costs 3%. The 5ms floor exists because the 2ms question swings 20%
+relatively while moving four tenths of a millisecond.
+
+Verified against ten synthetic cases rather than assumed. +4ms passes, +14%
+passes, +16% fails, a doubled model stage fails, a prompt grown to 1400 tokens
+fails, 5% prompt growth passes, everything 30% faster passes, and a metric that
+*disappears* fails rather than reading as a pass - the same rule as the
+correctness side, for the same reason.
+
+### What the profile actually says
+
+    python paths      2-62 ms    no model call at all
+    search question   1797 ms    model 1453, rerank 108, embed 0 (cached), rest 235
+                                 prompt 1146 tokens -> 99 generated, 68 tok/s
+
+Five of the six questions never reach a model, so a slow one there is SQL and
+not the GPU - and the GPU is where everyone looks first. For the sixth,
+generation is 1453 of 1797 ms, and `completion_tokens` is 99 against a
+`max_tokens` of 400: the answer is that length, not truncated. Making it faster
+therefore means making it shorter, which is a quality decision and not a free
+win, and saying so is the point of splitting the stages at all.
+
+A truncated answer is now surfaced explicitly - `finish_reason == "length"`
+prints a warning - because an answer that stopped early is *short* rather than
+fast, and would otherwise show up as a latency improvement. `timings.py` is the
+only thing that sees `finish_reason`.
+
+### Where not to cut
+
+The reranker costs 108ms and earns it: the ablation measures +5.0 points of
+recall@6 and +0.018 MRR for +0.01s per query over 120 queries. This has been
+measured twice, because an earlier run used 40 queries, reported +0.0 points,
+and this project recorded the reranker as not earning its latency. The sample
+was the finding, and the wrong conclusion survived in writing until the sample
+grew - which is the reason the ablation runs 120 and the reason
+`AGENT_LOOP.md` names the reranker as something not to remove.
+
+    recall@6, car named        83.3%   (100/120)
+    MRR                        0.400
+    complaint alone            52.5%   against a 53.0% ceiling
+    rerank gain                +5.0 points, +0.018 MRR, +0.01s per query
+    narration grounded        100.0%   (2/2, both reached the model)

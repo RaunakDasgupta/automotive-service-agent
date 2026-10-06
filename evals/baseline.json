@@ -1,12 +1,12 @@
 {
-  "commit": "8c77cc99285a5484d2e257371ed150fb3d7cbc6c",
+  "commit": "4870a7ec44d74c0736f184fb40cffa38237d85d7",
   "fast": {
     "grounding": 100.0,
     "refusal": 100.0,
     "routing": 100.0,
     "traceability": 100.0
   },
-  "from_run": "2026-10-06T11:27:41",
+  "from_run": "2026-10-06T12:38:41",
   "full": {
     "accuracy_scored": 0.9459,
     "answer_accuracy": 1.0,
@@ -28,6 +28,14 @@
     "unresolved_citations": 0.0,
     "unsupported_figures": 0.0
   },
-  "recorded_at": "2026-10-06T12:37:44",
-  "results_dir": "run/evals/20261006T112730"
+  "perf": {
+    "llm_best_ms": 1800.4,
+    "llm_completion_tokens": 99.0,
+    "llm_model_ms": 1453.3,
+    "llm_prompt_tokens": 1146.0,
+    "total_best_ms": 1995.4,
+    "worst_python_ms": 63.6
+  },
+  "recorded_at": "2026-10-06T14:19:28",
+  "results_dir": "run/evals/20261006T123830"
 }

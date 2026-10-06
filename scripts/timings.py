@@ -17,7 +17,7 @@ wrong costs a GPU hour.
 Run it twice: the second run shows what the query-embedding cache is worth.
 """
 from __future__ import annotations
-import argparse, os, statistics, sys, time
+import argparse, json, os, pathlib, statistics, sys, time
 
 sys.path.insert(0, ".")
 import _env  # noqa: E402,F401  - .env, like stack.sh; see scripts/_env.py
@@ -77,6 +77,11 @@ def _instrument():
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repeat", type=int, default=2)
+    # The gate reads this. Latency is the one thing in this project that was
+    # measured and reported but never gated, which means an agent told to make
+    # the agent faster could trade correctness for milliseconds and nothing
+    # would fail.
+    ap.add_argument("--json", metavar="PATH", help="write the profile as JSON")
     args = ap.parse_args()
 
     if not (os.path.exists("pyproject.toml") and os.path.isdir("app/agent")):
@@ -97,6 +102,7 @@ def main() -> int:
     print(f"{'path':7s} {'best':>8s} {'median':>8s}  question")
     print("-" * 78)
     slow = []
+    records: list[dict] = []
     for q in QUESTIONS:
         times, a, last_stages, last_usage = [], None, {}, {}
         for _ in range(args.repeat):
@@ -136,6 +142,15 @@ def main() -> int:
                       f"{out} generated{rate}"
                       + ("   ** TRUNCATED at max_tokens **"
                          if last_usage.get("finish_reason") == "length" else ""))
+        records.append({
+            "q": q, "path": path, "best_ms": round(best, 1),
+            "median_ms": round(med, 1),
+            "tools": [c["name"] for c in a.tool_calls],
+            "stages_ms": {k: round(v, 1) for k, v in last_stages.items()},
+            "prompt_tokens": last_usage.get("prompt_tokens"),
+            "completion_tokens": last_usage.get("completion_tokens"),
+            "finish_reason": last_usage.get("finish_reason"),
+        })
         if best > 1500:
             slow.append((best, q, last_stages))
     print()
@@ -157,6 +172,14 @@ def main() -> int:
         print("Every question under 1.5s.")
     print("\nA 'python' path makes no model call at all - if one of those is slow, "
           "the time is SQL or the event fold, not the GPU.")
+    if args.json:
+        pathlib.Path(args.json).parent.mkdir(parents=True, exist_ok=True)
+        pathlib.Path(args.json).write_text(json.dumps({
+            "asoia_now": os.environ.get("ASOIA_NOW"),
+            "repeat": args.repeat,
+            "questions": records,
+        }, indent=2) + "\n")
+        print(f"  wrote {args.json}")
     return 0
 
 

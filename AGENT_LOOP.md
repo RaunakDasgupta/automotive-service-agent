@@ -60,6 +60,7 @@ These five files are the measure:
 ```
 evals/truth.py              evals/asoia_byob.py       scripts/evaluate.py
 scripts/eval_standard.py    scripts/make_eval_dataset.py
+scripts/timings.py
 ```
 
 They are checksummed in `evals/harness.lock`, and both `fast` and `gate` refuse
@@ -86,6 +87,50 @@ Three metrics are inverted (`spurious_tools`, `unresolved_citations`,
 `unsupported_figures`) - lower is better. Two are counts that say how much the
 measure looks at (`arg_rules_checked`, `figures_per_row`) and are gated upward,
 because letting them fall is how a suite stays green while checking less.
+
+## Latency is gated too, and you cannot measure it here
+
+`gate` also compares six latency numbers, all lower-is-better:
+
+```
+worst_python_ms   llm_best_ms   llm_model_ms
+llm_prompt_tokens llm_completion_tokens   total_best_ms
+```
+
+**Timing needs the NIMs, so it runs only on the GPU box.** You can reason about
+latency here - count what you are adding to a prompt, notice a loop over
+retrieved rows - but you cannot measure it. Say so in the handoff rather than
+estimating a millisecond figure you did not observe.
+
+The thresholds come from three consecutive runs on an idle L40S: the model path
+varied 0% (1797/1799/1795 ms), prompt and completion tokens 0%, and the Python
+paths 1-2% above 6 ms. The gate allows 15% or 5 ms on times and 10% on tokens -
+roughly ten times the observed noise - because a latency gate that cries wolf
+gets switched off. It is there to catch a change that doubles a stage.
+
+### The measured profile, so you optimise the right thing
+
+```
+python paths        2-62 ms   no model call at all
+search question     1797 ms   model 1453, rerank 108, embed 0 (cached), rest 235
+                              prompt 1146 tokens -> 99 generated, 68 tok/s
+```
+
+Five of six questions never touch a model. **If a Python path is slow the cost
+is SQL or the event fold, not the GPU** - do not look for a model optimisation
+there.
+
+For the one model path, generation dominates: 1453 of 1797 ms. The levers in
+order of measured size are generation length, then the 1146-token prompt, then
+the 235 ms of SQL and rendering. Note that `completion_tokens` is 99 against a
+`max_tokens` of 400, so the answer is not being truncated - it is simply that
+length. An answer that gets *shorter* will get faster, which is a quality
+decision and not a free win.
+
+**Do not remove the reranker.** The ablation measures it at +5.0 points of
+recall@6 and +0.018 MRR for +0.01 s per query, over 120 queries - it earns its
+latency, and this has been measured twice because the first attempt used too
+small a sample and wrongly concluded it did not.
 
 ## Where the headroom actually is
 
