@@ -154,17 +154,24 @@ Be aware of this before you start: **most gated metrics are already at 100%.**
 questions are free-text searches with no correct number to check, and they are
 covered by grounding and relevance instead.
 
-**`free_of_meta` is 97.3% and that one is real.** The answer to "any notes about
-a burning smell" opens by referring to the records rather than answering, which
-`SYSTEM_SEARCH` explicitly forbids, and `relevance` is 99.1% because it is the
-mean of three. This is the only unsaturated quality metric with a genuine defect
-behind it, so it is the best target in this list - but read section 50 and 51 of
-`ENGINEERING.md` first: five fixes were measured and all of them made something
-worse. A prompt rule broadened to ban the bare form produced "There are four
-notes about a burning smell" and then listed the four. If you try a
-deterministic fix on the agent side, implement the check independently of
-`_META` in `evals/asoia_byob.py` - if the agent filters on the same regex the
-benchmark scores, the benchmark stops being evidence.
+`free_of_meta` is back to 100%, fixed by `refers_to_records` plus one retry in
+`app/agent/agent.py` rather than by the prompt - five prompt-side attempts were
+measured and all were worse. Two things about it worth knowing before you touch
+that path:
+
+* the agent's check is deliberately NOT the benchmark's regex. It asks whether
+  a banned noun appears in the OPENING words of a sentence; `_META` in
+  `evals/asoia_byob.py` matches nouns against reporting verbs. If you make them
+  the same, `free_of_meta` starts measuring the filter instead of the answer.
+* the retry RE-ASKS with a stronger system rule and no history. Showing the
+  model its own bad answer and requesting a rewrite was measured three ways and
+  returned the same mistake reworded. It is also kept only if it is clean AND
+  carries at least as many citations, because a clean uncited answer just trades
+  `free_of_meta` for `cited`.
+
+The retry costs a second generation on the answers that trip it - one of 37 -
+and "any notes about a burning smell" is in the latency profile for exactly that
+reason, so the cost is gated rather than invisible.
 
 So "raise the numbers" is nearly exhausted, and an agent pointed at a saturated
 metric will overfit or quietly weaken the measure. The real work is:

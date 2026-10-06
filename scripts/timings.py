@@ -29,6 +29,12 @@ QUESTIONS = [
     "Who worked in the afternoon yesterday?",
     "Any unusual patterns in the shop this week?",
     "has anyone seen a whistling noise on a Passat",
+    # Added when the meta retry went in. This is the question that trips it, so
+    # it is the only one that pays for the second generation - and the whistling
+    # question above does not, which means the profile showed the retry as
+    # costing nothing. An unmeasured 1.7s is how a path gets slow quietly,
+    # which is the whole argument of section 49.
+    "any notes about a burning smell",
 ]
 
 STAGES: dict[str, list[float]] = {}

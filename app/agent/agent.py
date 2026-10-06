@@ -441,6 +441,54 @@ def plan_for(question: str, chat_fn=None,
     return (plan or kw), ("llm" if plan else "keyword")
 
 
+# Appended to the narration system prompt on a retry only. SYSTEM_SEARCH
+# already forbids this; saying it louder in the first pass was measured and
+# made the answers worse (it produced "There are four notes about a burning
+# smell", then listed the four). So the louder version is paid for only on the
+# answers that need it.
+META_RULE = (
+    "\n\nABSOLUTE RULE, OVERRIDING ANYTHING ABOVE: the words \"update\", "
+    "\"note\", \"passage\", \"record\" and \"report\" and their plurals must "
+    "NOT appear in your answer except inside a direct quotation. Do not open "
+    "with how many were found. Begin with the finding itself. Keep the "
+    "citations.")
+CITE_RE = re.compile(r"\[(?:UPD|RO)-[0-9A-Za-z-]+\]")
+
+
+_RECORD_NOUNS = frozenset((
+    "update", "updates", "note", "notes", "passage", "passages",
+    "record", "records", "report", "reports"))
+_QUOTED_SPAN = re.compile(r'"[^"]*"|\u201c[^\u201d]*\u201d')
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
+_WORD = re.compile(r"[A-Za-z']+")
+
+
+def refers_to_records(text: str, head: int = 6) -> str | None:
+    """A sentence that opens by naming the records instead of stating a finding.
+
+    DELIBERATELY NOT the benchmark's implementation. `_META` in
+    evals/asoia_byob.py matches a noun against a list of reporting verbs and
+    several fixed constructions; this asks a different question - does one of
+    the five banned nouns appear in the OPENING words of a sentence - and so
+    the two can disagree. If this used the same regex the benchmark scores,
+    free_of_meta would be measuring this filter rather than the answer, and
+    would stop being evidence of anything.
+
+    Quoted spans are dropped first because SYSTEM_SEARCH asks the model to
+    quote the technician's own words, and those words contain these nouns:
+    "Notes on the RO." is in the corpus verbatim. Flagging that would punish
+    the model for obeying a different rule in the same prompt.
+
+    Returns the offending opening, for the retry to quote back, or None.
+    """
+    clean = _QUOTED_SPAN.sub(" ", text or "")
+    for sentence in _SENTENCE_SPLIT.split(clean):
+        words = _WORD.findall(sentence)
+        if any(w.lower() in _RECORD_NOUNS for w in words[:head]):
+            return " ".join(words[:head])
+    return None
+
+
 def check_grounding(text: str, results: list[dict]) -> list[str]:
     """Flag numbers and RO references in the answer that the tools never produced."""
     blob = json.dumps(results, default=str)
@@ -1273,6 +1321,58 @@ def _ask_inner(question: str, chat_fn=None, use_llm_router: bool = True) -> Answ
     if meta.get("finish_reason") == "length":
         ans.compose_notes = list(ans.compose_notes) + [
             "the model ran out of room at 400 tokens - the answer is cut short"]
+    # ONE retry when the answer opens by naming the records rather than
+    # answering. Five prompt-side fixes were measured and every one was worse:
+    # broadening the rule produced "There are four notes about a burning
+    # smell", and three different payload headers produced "Notes indicate",
+    # "There is one note about" and "The notes on the repair order (RO)
+    # mention". The instruction is not the lever, so this corrects after the
+    # fact instead of asking more loudly beforehand.
+    #
+    # The retry is kept only if it is actually clean. A second answer that
+    # trips the same check is not an improvement, and silently preferring it
+    # would make this look like it worked while changing nothing.
+    #
+    # Cost is one extra generation on the answers that trip it - 1 of 37 today.
+    # Nothing is rewritten in Python: an answer edited by string surgery is no
+    # longer the model's answer, and check_grounding could not vouch for it.
+    if (os.environ.get("ASOIA_META_RETRY", "1") == "1" and ans.text
+            and chat_fn is not None and refers_to_records(ans.text)):
+        # Re-ASK, do not argue. Four retry shapes were measured against the
+        # answer that opens "Notes indicate ...":
+        #
+        #   multi-turn correction          -> "The specific update that
+        #                                      provides the most detailed ..."
+        #   correction prefixed to payload -> "One of the updates notes a ..."
+        #   multi-turn + hard system rule  -> the identical bad opening again
+        #   SYSTEM RULE, single turn       -> clean
+        #
+        # Showing the model its own bad answer and asking for a rewrite gets a
+        # differently-worded version of the same mistake. Asking once more with
+        # a stronger system prompt and no history gets an answer.
+        fix = [{"role": "system", "content": msgs[0]["content"] + META_RULE}]
+        fix += [m for m in msgs[1:]]
+        try:
+            second = chat_fn(fix, temperature=0.0, max_tokens=400)
+        except Exception as e:                          # a retry must not 500
+            second = None
+            ans.compose_notes = list(ans.compose_notes) + [
+                f"meta retry failed: {type(e).__name__}"]
+        # Clean is not enough: a retry that drops the citations trades
+        # free_of_meta for `cited` and reads as a win. It has to be no worse on
+        # evidence than the answer it replaces.
+        had = len(CITE_RE.findall(ans.text))
+        got = len(CITE_RE.findall(second or ""))
+        if second and not refers_to_records(second) and got >= max(1, had):
+            ans.text = second
+            ans.compose_notes = list(ans.compose_notes) + [
+                "asked again with a stronger rule: the first answer named "
+                "the records"]
+        elif second is not None:
+            ans.compose_notes = list(ans.compose_notes) + [
+                "the answer names the records; the retry was "
+                + ("uncited" if got < max(1, had) else "no cleaner")
+                + " and was discarded"]
     if os.environ.get("ASOIA_FIGURES", "1") == "1":
         fig = _figures(ans.results)
         if fig:
