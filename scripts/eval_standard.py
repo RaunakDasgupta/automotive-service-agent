@@ -142,7 +142,12 @@ def cross_check(scores: dict) -> list[str]:
 
 
 
-MIN_ACCURACY_COVERAGE = 0.80
+# Ratcheted. 80% when 89.2% was reached, 90% now that the two handover
+# questions are scored and 94.6% is - which is the ceiling, because the two
+# free-text searches have no correct number. The floor is raised deliberately
+# each time coverage rises: a floor left below what has been achieved permits
+# the next change to give it back.
+MIN_ACCURACY_COVERAGE = 0.90
 # A benchmark that scores 10 of 37 rows and reports 100% is reporting the rows
 # it chose. accuracy_scored is the share of questions carrying an independently
 # derived number, and it is gated: add a deterministic question without adding

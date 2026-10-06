@@ -57,11 +57,10 @@ OUT = pathlib.Path("evals/data")
 # that carry no truth are named here rather than left to be inferred from a
 # gap:
 #
-#   the two handover questions  - the answer is five prioritised groups with no
-#                                 single headline figure to check
 #   the two free-text searches  - narrated prose over retrieved notes; there is
 #                                 no correct number for "has anyone seen a
-#                                 whistling noise"
+#                                 whistling noise". These two are the ceiling:
+#                                 35 of 37 is 94.6% and there is no 100%.
 #
 # Adding a deterministic question without adding its truth here lowers coverage
 # and fails the run. That is the mechanism that keeps this number moving.
@@ -102,6 +101,13 @@ def _truths(now):
         "Any unusual patterns in the shop this week?":          anywhere(shared),
         "Are any parts holding up more than one job at once?":  anywhere(shared),
         "Is the same part blocking several jobs?":              anywhere(shared),
+        # The handover states four totals on its own second line, and its
+        # groups do not depend on the shift - that word is a label. Checking
+        # all four is the whole of what this answer asserts numerically.
+        "Give me the afternoon handover, worst first.":
+            anywhere([T.n_open(con), safety, at_risk, blocked]),
+        "Hand over to the morning shift.":
+            anywhere([T.n_open(con), safety, at_risk, blocked]),
         "What has EMP014 done this week?":      lead(T.n_ops_by(con, "EMP014", now)),
         "How has EMP021 been getting on?":      lead(T.n_ops_by(con, "EMP021", now)),
         "Who worked in the afternoon yesterday?":

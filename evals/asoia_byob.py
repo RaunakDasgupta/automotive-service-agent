@@ -258,13 +258,20 @@ def accuracy(inp: ScorerInput) -> dict:
     separately, because a measure that silently skips rows reads as a pass.
     """
     truth = inp.target
-    if truth is None or truth == "":
+    if truth is None or truth == "" or truth == []:
         return {"answer_accuracy": 1.0, "accuracy_scored": 0.0,
                 "headline_correct": 1.0}
-    want = str(int(truth)) if str(truth).isdigit() or isinstance(truth, int) else str(truth)
+    # A list when one answer states several independently derived numbers. The
+    # handover opens with "46 open repair orders: 14 with safety findings, 27 at
+    # risk, 25 blocked" - four quantities, each derived separately in SQL, and
+    # checking one of them would leave three unexamined in an answer that is
+    # mostly numbers.
+    wants = [str(int(v)) for v in (truth if isinstance(truth, list) else [truth])]
+    want = wants[0]
     text = inp.response or ""
     first = next((ln for ln in text.splitlines() if ln.strip()), "")
-    present = want in NUM_RE.findall(text)
+    seen = NUM_RE.findall(text)
+    present = all(w in seen for w in wants)
     # Not every correct answer leads with its number: the anomalies answer opens
     # with the window it covers and reports the count below. The dataset says
     # which, so this does not have to guess from the shape of the prose.
@@ -277,6 +284,7 @@ def accuracy(inp: ScorerInput) -> dict:
         # than one that omits it.
         "headline_correct": (1.0 if (want in NUM_RE.findall(first)) else 0.0)
                             if leads else 1.0,
+        "figures_per_row": float(len(wants)),
     }
 
 

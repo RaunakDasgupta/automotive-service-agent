@@ -2681,3 +2681,56 @@ be inferred from a gap: the two handover questions, whose answer is five
 prioritised groups with no single headline figure, and the two free-text
 searches, where there is no correct number for "has anyone seen a whistling
 noise on a Passat".
+
+## 47. The handover had four figures, not none
+
+Pass 56 left two classes unscored and named them. The second, the free-text
+searches, is genuinely unscorable. The first was wrong:
+
+    46 open repair orders: **14 with safety findings**, 27 at risk of missing
+    their promise, 25 blocked, 35 operations still to do.
+
+That is the handover's second line. "Five prioritised groups with no single
+headline figure" describes the part of the answer I had looked at. Three of
+those four numbers were already derived in SQL - `n_safety`, `n_at_risk` and
+`n_blocked` went in during pass 56 for the list_ros questions - and the fourth,
+open repair orders, is a count of those whose last STATE_CHANGED is not
+INVOICED.
+
+The lesson is small and keeps recurring in this log: the reason a thing cannot
+be measured is worth re-reading after the measuring tools have changed. Pass
+56's note was true when written and false a hundred lines of SQL later.
+
+### One row, several figures
+
+The scorer takes a list now. Checking one number from an answer that is mostly
+numbers leaves the rest unexamined, and `figures_per_row` reports the average so
+that the strength of the measure is visible rather than assumed: 37 rows carry
+41 independently derived figures.
+
+Both handover questions take the same four totals, because the groups do not
+depend on the shift - that word is a label on the same open work. That is also
+what makes them a check on pass 55's fix from a second direction: if the shift
+argument went missing again the heading would change and these four would not,
+so the heading is scored by `asoia_relevance` and the figures by this one.
+
+### The floor is a ratchet
+
+`MIN_ACCURACY_COVERAGE` goes 80% to 90%. It was set at 80 when 89.2% had been
+reached, and is raised now 94.6% has been. A floor left below what has already
+been achieved lets the next change give it back quietly, which is the failure
+mode every measure here has had at least once.
+
+### And 94.6% is the ceiling
+
+Worth stating plainly rather than leaving a 5.4% gap that reads as unfinished
+work. The two remaining questions are "has anyone seen a whistling noise on a
+Passat" and "any notes about a burning smell" - narrated prose over retrieved
+notes, where there is no correct number to check. They are covered by
+grounding, traceability and relevance, which are the measures that apply to
+prose. A benchmark reporting 100% accuracy coverage here would be counting
+something other than accuracy.
+
+    accuracy_scored   89.2%  ->  94.6%    35 of 37, floor 90%
+    answer_accuracy  100.0%  -> 100.0%    over 41 figures rather than 33
+    figures_per_row             ->  1.17
