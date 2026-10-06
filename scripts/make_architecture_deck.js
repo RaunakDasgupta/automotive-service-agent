@@ -379,7 +379,7 @@ const COMPONENTS = [
   ["nv", "Riva — TTS", "Synthesises the speech the ASR leg is tested with.", "Magpie TTS · gRPC"],
   ["nv", "NVIDIA DCGM", "GPU utilisation, framebuffer, power, temperature.", "19 series · :9401"],
   ["nv", "NVIDIA Brev", "The deployment target carrying all three NIMs.", "L40S 48 GB"],
-  ["fw", "NeMo Agent Toolkit", "A second front end onto the same ten tools.", "6 of 6 question classes"],
+  ["fw", "NeMo Agent Toolkit", "A second front end onto the same ten tools; its calls arrive as text.", "tools run 18/18 \u00b7 answers 3/18"],
   ["fw", "NeMo Guardrails", "Input rail judged by the local model.", "self check input"],
   ["fw", "NeMo Curator", "Six stages; the sixth quarantines injection.", "run before indexing"],
   ["fw", "NeMo Evaluator", "Six measures as BYOB benchmarks, run over run.", "Evaluator result schema"],
