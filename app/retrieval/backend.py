@@ -226,9 +226,27 @@ class MilvusBackend:
         self._load()
         c = self.client()
         flt = f'ro_number == "{ro_number}"' if ro_number else ""
-        res = c.search(collection_name=self.collection, data=[list(vector)],
-                       limit=k, filter=flt, output_fields=FIELDS,
-                       search_params={"metric_type": "COSINE"})
+        try:
+            res = c.search(collection_name=self.collection, data=[list(vector)],
+                           limit=k, filter=flt, output_fields=FIELDS,
+                           search_params={"metric_type": "COSINE"})
+        except Exception as e:
+            # A width mismatch arrives from pymilvus as prose about vector
+            # dimensions, several frames deep, naming neither the embedder nor
+            # the fix. It means exactly one thing here - the index was built by
+            # a different embedder than the one asking - so it is worth saying
+            # that instead of passing the original up.
+            msg = str(e).lower()
+            if "dim" in msg and ("match" in msg or "inconsistent" in msg
+                                 or "expected" in msg):
+                raise BackendError(
+                    f"the query vector is {len(vector)}-dimensional and the "
+                    f"'{self.collection}' collection is not. The index was "
+                    f"built by a different embedder - NIM_MODE was changed "
+                    f"without rebuilding it. Rebuild:\n"
+                    f"  .venv/bin/python -c 'from app.retrieval.index import "
+                    f"build; print(build())'") from e
+            raise
         hits = []
         for h in (res[0] if res else []):
             row = dict(h.get("entity") or {})
