@@ -45,9 +45,30 @@ def _model(service: str, where: str, default: str) -> str:
     return os.environ.get(f"NIM_MODEL_{service.upper()}_{where.upper()}", default)
 
 
+# The chat model went the same way as the embedder, one day later. Measured
+# 2026-10-07: the hosted endpoint answers
+#
+#     HTTP 410 ... 'nvidia/llama-3.1-nemotron-nano-8b-v1' has reached its end
+#     of life on 2026-08-26T09:00:00Z and is no longer available
+#
+# so NIM_MODE=hosted could not answer a single narrated question, while
+# NIM_MODE=local kept working because a pinned container image does not expire.
+# That is the failure mode worth naming: the box hid this for six weeks.
+#
+# nemotron-3-super-120b-a12b replaces it on the hosted side and is already the
+# `super` target in configs/switchyard.toml. It is a REASONING model: it
+# returns `reasoning_content` alongside `content` and spends completion tokens
+# thinking, 51 of them on a one-sentence summary. `max_tokens=8` therefore
+# returns an EMPTY string rather than a short answer - the budget went on
+# reasoning - which looks like a broken endpoint and is not one. The narration
+# path asks for 400 and is unaffected.
+#
+# The local default stays the 8b nano: the container still runs it, it is what
+# every measurement in ENGINEERING.md was taken against, and changing it would
+# invalidate those numbers for no gain.
 MODELS = {
     "llm":    {"hosted": _model("llm", "hosted",
-                                "nvidia/llama-3.1-nemotron-nano-8b-v1"),
+                                "nvidia/nemotron-3-super-120b-a12b"),
                "local":  _model("llm", "local",
                                 "nvidia/llama-3.1-nemotron-nano-8b-v1")},
     # nemotron-3-embed-1b is 2048-dimensional, where nv-embedqa-e5-v5 was 1024.

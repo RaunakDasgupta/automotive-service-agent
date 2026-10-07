@@ -644,18 +644,9 @@ def ui_review_overview():
     o = RS.overview()
     if o.get("database") != "ok":
         return f"### No data\n\n{o.get('database')}"
-    vec = (f"{o['vector_rows']} chunks, {o['vector_dim']} dimensions"
-           if o.get("vector_rows") else f"**not available** — {o.get('vector_error')}")
     c = o.get("clock") or {}
     clock = (f"**{c.get('now', '?')[:16]}** — {c.get('why', '?')}"
              if c.get("now") else c.get("error", "—"))
-    st = o.get("index_staleness") or {}
-    if st.get("ok") is True:
-        stale = "matches the database"
-    elif st.get("ok") is False:
-        stale = "**OUT OF DATE** — " + "; ".join(st.get("reasons", []))
-    else:
-        stale = "—"
     warn = ""
     if c.get("wall_clock_would_break_time_questions"):
         warn += (f"\n\nThe data is {c.get('data_age_days')} days behind the wall "
@@ -663,9 +654,6 @@ def ui_review_overview():
                  f"\"this week\", \"yesterday afternoon\", \"overnight\" — would "
                  f"return nothing and be blocked for citing nothing. Anchoring "
                  f"to the newest event is what keeps them working.")
-    if st.get("ok") is False:
-        warn += (f"\n\n**Rebuild the index.** Until then, answers can cite update "
-                 f"ids that are not in the database:\n\n```\n{st.get('fix', '')}\n```")
     return (
         "### What the answers are built from\n\n"
         f"| | |\n|---|---|\n"
@@ -675,11 +663,20 @@ def ui_review_overview():
         f"| Technician updates | {o['updates']} |\n"
         f"| Staff | {o['staff']} |\n"
         f"| Window | {str(o['first_event'])[:16]} → {str(o['last_event'])[:16]} |\n"
-        f"| Vector index | {vec} |\n"
-        f"| Index vs database | {stale} |\n"
         f"| Answers logged | {o['answers_logged']} |\n\n"
         "State is **not stored**. Every repair order's state is folded from its "
-        "events on each read — the Fold tab shows that happening." + warn)
+        "events on each read — the Fold tab shows that happening.\n\n"
+        # The stores have their own UIs and this screen is not one of them.
+        # Row counts, dimensions, index health and index-vs-database staleness
+        # were shown here and are not any more: Attu is the vector store's
+        # console and sqlite-web is the database's, both started by
+        # `scripts/stores.sh up`. Nothing was lost - `index_stats`,
+        # `index_health` and `index_staleness` are still served by the API, and
+        # /health still fails on a stale index.
+        "The stores have their own consoles: **Attu** on :8101 for the vector "
+        "collection and **sqlite-web** on :8102 for the database "
+        "(`scripts/stores.sh up`). Index row counts, dimensions and staleness "
+        "live there and on `/health`, not on this screen." + warn)
 
 
 def ui_review_events(ro, etype, actor, hours, limit):
@@ -720,46 +717,6 @@ def ui_review_fold(ro_number):
     ups = _df(r["updates"], ["at", "update_id", "staff_id", "shift", "text"],
               {"text": 160})
     return md, evs, ups, r["snapshot"]
-
-
-def ui_review_index():
-    from app.review import store as RS
-    s = RS.index_stats()
-    if not s.get("exists"):
-        return (f"### No vector index\n\n{s.get('error')}\n\n"
-                "Build it with:\n\n"
-                "```\n.venv/bin/python -c 'from app.retrieval.index import build; "
-                "print(build())'\n```")
-    h = RS.index_health()
-    size = f"{s['bytes'] / 1e6:.1f} MB" if s.get("bytes") else "—"
-    health = (f"{h['sampled']} sampled, {h['zero_norm']} with a zero norm, "
-              f"norms {h.get('min_norm')}–{h.get('max_norm')}"
-              if "sampled" in h else h.get("error", "—"))
-    warn = ("" if h.get("ok", True) else
-            "\n\n**Some vectors are zero.** Those chunks can never be retrieved; "
-            "rebuild the index.")
-    # `collection`, not `table`: pass 27 put Milvus and LanceDB behind one
-    # interface and the shared vocabulary is Milvus's. This line still said
-    # `s['table']` after that change and took the whole Vector store tab down
-    # with a KeyError - the cost of changing a dict's shape without grepping for
-    # who reads it. `.get` everywhere below for the same reason.
-    st = s.get("staleness") or {}
-    if st.get("ok") is False:
-        warn += ("\n\n**The index does not match the database.** "
-                 + "; ".join(st.get("reasons", []))
-                 + f"\n\n```\n{st.get('fix', '')}\n```")
-    return (f"### Vector index\n\n"
-            f"| | |\n|---|---|\n"
-            f"| Store | **{s.get('backend', '?')}** ({s.get('mode', '?')}) |\n"
-            f"| Location | `{s.get('uri', '?')}` / `{s.get('collection', '?')}` |\n"
-            f"| Chunks | {s.get('rows')} |\n"
-            f"| Dimensions | {s.get('dim')} |\n"
-            f"| Built | {s.get('built_at', '—')} |\n"
-            f"| Size | {size} |\n"
-            f"| Health | {health} |\n"
-            f"| Matches the database | "
-            f"{'yes' if st.get('ok') else ('no' if st.get('ok') is False else '—')} |"
-            f"{warn}")
 
 
 def ui_review_chunks(ro, text, limit):
@@ -1070,9 +1027,10 @@ def build() -> gr.Blocks:
         with gr.Tab("Data & Retrieval"):
             gr.Markdown(
                 "Everything an answer is built from, open to inspection: the event "
-                "log, the fold that derives state from it, what is in the vector "
-                "index, what retrieval actually did, and which chunks each answer "
-                "cited. Read only — nothing on this tab changes anything.")
+                "log, the fold that derives state from it, what retrieval actually "
+                "did, and which chunks each answer cited. The stores' own consoles "
+                "are Attu (:8101) and sqlite-web (:8102), started by "
+                "`scripts/stores.sh up`.")
 
             with gr.Tab("Overview"):
                 rv_over = gr.Markdown(ui_review_overview)
@@ -1113,9 +1071,13 @@ def build() -> gr.Blocks:
                                      wrap=True, max_height=260)
                 fo_ro.change(ui_review_fold, fo_ro, [fo_md, fo_ev, fo_up, fo_snap])
 
-            with gr.Tab("Vector store"):
-                rv_idx = gr.Markdown(ui_review_index)
-                gr.Button("Refresh index stats").click(ui_review_index, None, rv_idx)
+            # Renamed from "Vector store". What is left is a WRITE path -
+            # editing an update re-embeds its chunk so the record and the index
+            # stay in step - and Attu cannot do that: it can change a vector
+            # but not the update the vector came from, which would leave
+            # answers quoting text that is not in the database. So the stats
+            # went to Attu and the correction desk stayed here.
+            with gr.Tab("Updates & corrections"):
                 with gr.Row():
                     ch_ro = gr.Textbox(label="Repair order", scale=2)
                     ch_text = gr.Textbox(label="Text contains", scale=3,

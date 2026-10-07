@@ -86,6 +86,8 @@ def build(con=None, progress: bool = True, **_legacy) -> dict:
     b = backend()
     b.create(dim)
     b.upsert(rows)
+    # Before stats, so the count this returns is the count the store reports.
+    b.flush()
     st = b.stats()
     return {"rows": len(rows), "dim": dim, "seconds": round(time.time() - t0, 1),
             **st}

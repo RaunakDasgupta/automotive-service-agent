@@ -455,6 +455,22 @@ META_RULE = (
 CITE_RE = re.compile(r"\[(?:UPD|RO)-[0-9A-Za-z-]+\]")
 
 
+# Narration budget. Was a hardcoded 400, which was right for a local nano 8b
+# that writes ~99 tokens and stops. It is wrong for the hosted catalogue as it
+# now stands: every chat model available there is a REASONING model, spending
+# completion tokens thinking before it writes. Measured 2026-10-07,
+# nemotron-3.5-lightning-30b-a3b used 243 completion tokens to produce one
+# sentence, and nemotron-3-super-120b-a12b hit the 400 cap mid-word - the
+# answer arrived as "The notes do not report a whist" with finish_reason
+# "length".
+#
+# A cap only binds when it is reached, so raising it costs the local model
+# nothing: it still stops at its own natural length. The failure it prevents is
+# the one above, where reasoning consumes the budget and the answer is a
+# fragment that still looks like an answer.
+NARRATION_MAX_TOKENS = int(os.environ.get("ASOIA_NARRATION_MAX_TOKENS", "1600"))
+
+
 _RECORD_NOUNS = frozenset((
     "update", "updates", "note", "notes", "passage", "passages",
     "record", "records", "report", "reports"))
@@ -1315,12 +1331,15 @@ def _ask_inner(question: str, chat_fn=None, use_llm_router: bool = True) -> Answ
     except (TypeError, ValueError):
         wants_meta = False
     if wants_meta:
-        ans.text = chat_fn(msgs, temperature=0.0, max_tokens=400, meta=meta)
+        ans.text = chat_fn(msgs, temperature=0.0,
+                           max_tokens=NARRATION_MAX_TOKENS, meta=meta)
     else:
-        ans.text = chat_fn(msgs, temperature=0.0, max_tokens=400)
+        ans.text = chat_fn(msgs, temperature=0.0,
+                           max_tokens=NARRATION_MAX_TOKENS)
     if meta.get("finish_reason") == "length":
         ans.compose_notes = list(ans.compose_notes) + [
-            "the model ran out of room at 400 tokens - the answer is cut short"]
+            f"the model ran out of room at {NARRATION_MAX_TOKENS} tokens "
+            f"- the answer is cut short"]
     # ONE retry when the answer opens by naming the records rather than
     # answering. Five prompt-side fixes were measured and every one was worse:
     # broadening the rule produced "There are four notes about a burning
@@ -1353,7 +1372,8 @@ def _ask_inner(question: str, chat_fn=None, use_llm_router: bool = True) -> Answ
         fix = [{"role": "system", "content": msgs[0]["content"] + META_RULE}]
         fix += [m for m in msgs[1:]]
         try:
-            second = chat_fn(fix, temperature=0.0, max_tokens=400)
+            second = chat_fn(fix, temperature=0.0,
+                             max_tokens=NARRATION_MAX_TOKENS)
         except Exception as e:                          # a retry must not 500
             second = None
             ans.compose_notes = list(ans.compose_notes) + [

@@ -16,7 +16,12 @@ PY=.venv/bin/python
   echo "  $PY -m pip install 'fastapi>=0.115' 'uvicorn>=0.30'"; exit 1; }
 
 if [ "${1:-}" = "--detach" ]; then
-  setsid nohup "$PY" -m app.api.server >/tmp/asoia-api.log 2>&1 </dev/null &
+  # setsid is Linux-only; see the note in scripts/stack.sh.
+  if command -v setsid >/dev/null 2>&1; then
+    setsid nohup "$PY" -m app.api.server >/tmp/asoia-api.log 2>&1 </dev/null &
+  else
+    nohup "$PY" -m app.api.server >/tmp/asoia-api.log 2>&1 </dev/null &
+  fi
   sleep 3
   printf 'health -> '
   curl -s -o /dev/null -w '%{http_code}\n' --max-time 5 "http://localhost:$API_PORT/health"
