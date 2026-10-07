@@ -87,6 +87,53 @@ node scripts/make_architecture_deck.js docs/architecture-deck.pptx
 That one needs `node` and `pptxgenjs` (`npm install pptxgenjs`), unlike the
 diagram generator, which is standard library only.
 
+## Run it without a GPU
+
+The reference deployment above is one L40S with all three NIMs local, and it is
+what every measurement in `ENGINEERING.md` was taken against. You do not need it
+to run the thing. Everything except the models is containers, and the models can
+come from the hosted endpoints — a laptop with Docker and an `NVIDIA_API_KEY` is
+enough.
+
+```bash
+python3.12 -m venv .venv && . .venv/bin/activate && pip install -e .
+cp .env.example .env            # add your key; set NIM_MODE=hosted
+                                # and ASOIA_MILVUS_URI=http://localhost:19530
+python -m app.data.generate
+bash scripts/start_milvus.sh up
+bash scripts/start_observability.sh up
+bash scripts/stack.sh stores provision && bash scripts/stores.sh up
+python -c "import sys;sys.path[:0]=['.','scripts'];import _env;\
+from app.retrieval.index import build;print(build())"
+bash scripts/stack.sh up
+```
+
+UI :7860, API :8080, Prometheus :9090, Grafana :3000, Attu :8101,
+sqlite-web :8102. `docs/screenshots/` is this, running.
+
+**A `python -c` that touches the app must load `.env` first** — hence the
+`import _env` above. Without it every model call fails with "NVIDIA_API_KEY is
+not set" while the key sits in `.env`.
+
+### What is worse this way, measured rather than guessed
+
+| | local NIMs | hosted |
+|---|---|---|
+| Reranking | `nv-rerankqa-mistral-4b-v3` | **none exists** — vector-only retrieval |
+| Embedding | `nv-embedqa-e5-v5`, 1024-d | `nemotron-3-embed-1b`, **2048-d** |
+| Narrated answer | ~1.8 s | **28–46 s** |
+| Same question twice | identical | **not reproducible** |
+
+The last row is the one that matters most. Every hosted chat model in the
+catalogue is now a *reasoning* model, and the endpoint does not return identical
+output at `temperature=0` the way a pinned container does. The baselines in
+`evals/baseline.json` were taken against the local NIMs, so **a hosted eval run
+is indicative, not comparable** — do not record one as a regression or an
+improvement.
+
+Switching `NIM_MODE` changes the embedder's width, so rebuild the index after
+you switch it or every search fails on a dimension mismatch.
+
 ## Deploy on NVIDIA Brev
 
 Target: **L40S 48GB**. All three NIMs co-reside in ~40GB.
@@ -186,7 +233,7 @@ demonstrable before the NIMs finish pulling.
 | Technician Update | Structured logging, **plus voice/free-text → extraction → diff card** |
 | Shift Handover | Prioritised: safety, breached, at-risk, blocked, each with a next action |
 | Manager Assistant | Grounded Q&A with citations; guardrails on input and output |
-| Data & Retrieval | Seven read-only panes: event log, fold, vector store, retrieval trace, answers, edit log, overview |
+| Data & Retrieval | Seven panes: overview, event log, fold, updates & corrections, edit log, retrieval trace, answers. Six are read-only; *updates & corrections* writes — editing an update re-embeds its chunk so the record and the index stay in step. Store statistics are **not** here: Attu (:8101) is the vector store's console and sqlite-web (:8102) is the database's |
 
 Every structured question is answered by a Python renderer reading the tool
 payload — no model call at all, 2–60ms. Only free-text search reaches the model,

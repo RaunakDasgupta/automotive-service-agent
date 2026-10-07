@@ -14,7 +14,8 @@ set -uo pipefail
 # to be reached over an ssh port-forward - and an anonymous admin
 # dashboard listening on 0.0.0.0 is exactly the exposure the store UIs
 # in scripts/stores.sh are bound away from. Reach these the same way:
-#   ssh -N -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 capstone-poc
+#   ssh -N -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 <your-box>
+# Running the stack locally needs no tunnel at all: open the links directly.
 PROM_PORT="${PROM_PORT:-9090}"
 GRAF_PORT="${GRAF_PORT:-3000}"
 APP_METRICS="${ASOIA_METRICS_PORT:-9400}"
@@ -60,9 +61,11 @@ up() {
 
   cat <<NEXT
 
-Started. From your laptop:
-  brev port-forward capstone-poc --port $GRAF_PORT:$GRAF_PORT
+Started.
   open http://localhost:$GRAF_PORT   -> dashboard "Service Operations Agent"
+
+Running on a remote box instead? Forward it first, e.g.
+  ssh -N -L $GRAF_PORT:127.0.0.1:$GRAF_PORT <your-box>
 
 Anonymous access is on and the login form is off, because this is reachable only
 over the port-forward. Do not publish $GRAF_PORT.

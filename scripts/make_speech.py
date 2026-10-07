@@ -220,7 +220,8 @@ Or make the file on your Mac, which already has `say`, and copy it over:
     say --file-format=WAVE --data-format=LEI16@16000 -o update.wav \\
         "Update for repair order RO-2024-0142. Front pad thickness at one point \\
          eight millimetres against a three millimetre minimum."
-    scp update.wav capstone-poc:~/automotive-service-agent/update.wav
+    # only if the stack is on another machine:
+    scp update.wav <your-box>:~/automotive-service-agent/update.wav
 
 Then:
 

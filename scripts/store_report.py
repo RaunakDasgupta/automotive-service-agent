@@ -74,7 +74,12 @@ LITE_PATH = "data/generated/milvus.db"
 # laxer than the service it administers.
 ATTU_PORT = int(os.environ.get("ASOIA_ATTU_PORT", "8101"))
 SQLITEWEB_PORT = int(os.environ.get("ASOIA_SQLITEWEB_PORT", "8102"))
-SSH_ALIAS = os.environ.get("ASOIA_SSH_ALIAS", "capstone-poc")
+# No default host. This used to be "capstone-poc", which was the GPU box;
+# that box was deleted and the report went on printing a tunnel command to
+# a machine that does not exist. When the stack runs where you are - which
+# is now the normal case - there is nothing to tunnel. Set ASOIA_SSH_ALIAS
+# to print the tunnel line for a remote box.
+SSH_ALIAS = os.environ.get("ASOIA_SSH_ALIAS", "")
 
 
 def _n(x) -> str:
@@ -294,12 +299,18 @@ def render(d: dict) -> str:
         "run/traces/*.jsonl")
 
     add("")
-    add("  both UIs are bound to 127.0.0.1. From your laptop, one tunnel:")
-    add(f"    ssh -N -L {d['admin']['attu']['port']}:127.0.0.1:"
-        f"{d['admin']['attu']['port']} "
-        f"-L {d['admin']['sqlite_web']['port']}:127.0.0.1:"
-        f"{d['admin']['sqlite_web']['port']} {SSH_ALIAS}")
-    add("  then open the two http://127.0.0.1 links above in your own browser.")
+    if SSH_ALIAS:
+        add("  both UIs are bound to 127.0.0.1. From your laptop, one tunnel:")
+        add(f"    ssh -N -L {d['admin']['attu']['port']}:127.0.0.1:"
+            f"{d['admin']['attu']['port']} "
+            f"-L {d['admin']['sqlite_web']['port']}:127.0.0.1:"
+            f"{d['admin']['sqlite_web']['port']} {SSH_ALIAS}")
+        add("  then open the two http://127.0.0.1 links above in your own browser.")
+    else:
+        add("  both UIs are bound to 127.0.0.1 - open the two links above "
+            "directly.")
+        add("  For a remote box, set ASOIA_SSH_ALIAS and this prints the "
+            "tunnel command.")
     add("-" * 74)
     return "\n".join(L)
 
