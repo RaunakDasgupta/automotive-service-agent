@@ -72,6 +72,22 @@ svc_log()    { echo "/tmp/asoia-$1.log"; }
 # The API has no route at /, so probing / reported a perfectly healthy API as
 # http=404. Each service is asked the question it can answer.
 svc_health() { case "$1" in api) echo "/health" ;; ui) echo "/" ;; esac; }
+# setsid is Linux-only and macOS has no equivalent. The box this was written for
+# was Linux, so `setsid` was called unguarded and `stack.sh up` died on a Mac
+# with `setsid: command not found` - which only surfaced once the box was gone
+# and the Mac was the only machine left.
+#
+# The reason setsid was used still holds on Linux: an ssh session being killed
+# would otherwise take the servers' process group with it. `nohup` alone detaches
+# from the terminal but not from the process group, which is enough when nothing
+# is going to kill a session - the local case - and is why the fallback is
+# acceptable rather than merely convenient.
+detach() {
+  if command -v setsid >/dev/null 2>&1; then setsid nohup "$@"
+  else nohup "$@"
+  fi
+}
+
 svc_pidfile(){ echo "$RUN/$1.pid"; }
 
 # Is the pid in the pidfile still OUR process? `ps -o args=` works the same on
@@ -163,7 +179,7 @@ start_svc() { # name [env assignments...]
   # file holds the python process by construction, not by luck.
   ( export PYTHONUNBUFFERED=1
     for kv in "$@"; do export "$kv"; done
-    setsid nohup bash -c 'echo $$ > "$1"; exec "$2" -m "$3"' _ \
+    detach bash -c 'echo $$ > "$1"; exec "$2" -m "$3"' _ \
       "$(svc_pidfile "$name")" "$PYABS" "$module" >"$log" 2>&1 </dev/null & )
   sleep 2
   if ! pid="$(alive "$name")"; then

@@ -186,6 +186,20 @@ class MilvusBackend:
         c.upsert(collection_name=self.collection, data=payload)
         return len(payload)
 
+    def flush(self) -> None:
+        """Seal the growing segment so the row count is readable.
+
+        Milvus counts only sealed segments, so a freshly built collection
+        reports row_count 0 while `query` happily returns rows from it. The
+        store report and Attu both read the count, so a build that had just
+        written 1,857 rows showed `updates 0 @2048d` - which reads as a failed
+        build rather than an unflushed one.
+
+        Called by `build()` only. Not by `reindex()`: that writes one row after
+        an edit, and flushing per edit seals a segment per row.
+        """
+        self.client().flush(self.collection)
+
     def scan(self) -> list[dict]:
         """Every row, without vectors."""
         self._load()
@@ -415,6 +429,9 @@ class LanceBackend:
             return len(v) if v is not None else None
         except Exception:
             return None
+
+    def flush(self) -> None:
+        """Nothing to do: LanceDB writes are visible as soon as they return."""
 
     def stats(self) -> dict:
         return {"backend": "lancedb", "mode": "embedded", "uri": self.uri,
