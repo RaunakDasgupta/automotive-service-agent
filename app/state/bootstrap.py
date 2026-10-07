@@ -123,8 +123,7 @@ def ensure_dataset(verbose: bool = True) -> dict:
             print(f"[bootstrap] generated {r['ros']} repair orders, "
                   f"{r['events']} events, {r['updates']} updates in {el:.1f}s")
             print("[bootstrap] the vector index is NOT built - semantic search "
-                  "needs:  .venv/bin/python -c "
-                  "'from app.retrieval.index import build; print(build())'")
+                  "needs:  .venv/bin/python scripts/build_index.py")
         # Prove the app can still talk to the database it just made. If this
         # fails the process is unusable, and it should say so now rather than on
         # the first question somebody asks.

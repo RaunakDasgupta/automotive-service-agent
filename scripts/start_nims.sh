@@ -61,9 +61,22 @@ pull() {
   docker pull "$EMB_IMG" > /tmp/pull_emb.log 2>&1 &  P2=$!
   docker pull "$RRK_IMG" > /tmp/pull_rrk.log 2>&1 &  P3=$!
   echo "    llm=$P1 embed=$P2 rerank=$P3   (tail /tmp/pull_*.log)"
-  wait $P1; echo "    llm    exit=$?"
-  wait $P2; echo "    embed  exit=$?"
-  wait $P3; echo "    rerank exit=$?"
+  # Each exit code is read, and a failure makes THIS script fail. Printing
+  # "Pulls complete" after a `manifest unknown` is how a missing image became a
+  # confusing container crash twenty minutes later instead of an error here.
+  local bad=0 rc=0
+  wait $P1; rc=$?; echo "    llm    exit=$rc"; [ $rc -eq 0 ] || bad=$((bad+1))
+  wait $P2; rc=$?; echo "    embed  exit=$rc"; [ $rc -eq 0 ] || bad=$((bad+1))
+  wait $P3; rc=$?; echo "    rerank exit=$rc"; [ $rc -eq 0 ] || bad=$((bad+1))
+  if [ $bad -gt 0 ]; then
+    echo
+    echo "==> $bad of 3 pulls FAILED. The reason is in the logs, last lines:"
+    for f in /tmp/pull_llm.log /tmp/pull_emb.log /tmp/pull_rrk.log; do
+      echo "    --- $f"; tail -3 "$f" 2>/dev/null | sed 's/^/        /'
+    done
+    echo "    Do not run \`run\` until all three are pulled."
+    return 1
+  fi
   echo "==> Pulls complete. Next: bash scripts/start_nims.sh run"
 }
 
@@ -114,7 +127,7 @@ health() {
 }
 
 case "${1:-}" in
-  pull)   pull ;;
+  pull)   pull || exit 1 ;;
   run)    run ;;
   health) health ;;
   logs)   docker logs -f "nim-${2:-llm}" ;;

@@ -358,5 +358,5 @@ def search_updates(query: str, k: int = 6, ro_number: str | None = None) -> dict
             "dangling": gone,
             "note": (f"the vector index is out of date: {len(gone)} of "
                      f"{len(cits)} cited updates are not in the database. "
-                     f"Rebuild it with app.retrieval.index.build()")}
+                     f"Rebuild it with .venv/bin/python scripts/build_index.py")}
     return out
