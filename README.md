@@ -356,8 +356,20 @@ key afterwards.
 `--nims` starts the three local NIM containers but does **not** point the app at
 them. That is deliberate: the hosted embedder is 2048-dimensional and the local
 one is 1024, so switching `NIM_MODE` without rebuilding the index leaves vectors
-and queries at different widths and every search fails. Switch it in `.env` and
-rebuild, knowingly.
+and queries at different widths and every search fails.
+
+**You will be told.** `build()` records the embedder it used in
+`data/generated/index_meta.json`, and two things read it back:
+
+- `/health` and the staleness check fail with *"the index was built with X
+  (2048-dimensional) and this process is configured for Y"* and the rebuild
+  command. Row counts and update ids still match perfectly after a mode switch,
+  so this is the only check that catches it.
+- a search that slips through raises one readable line naming both widths,
+  instead of a pymilvus dimension error several frames down.
+
+An index built before that file existed reports nothing: unknown is not treated
+as mismatched.
 
 ## Other ways in
 
@@ -402,7 +414,7 @@ at all, because a labelled counter is only emitted once incremented.
 | `PORT` | `7860` | the Gradio UI |
 | `ASOIA_MILVUS_URI` | embedded file | `http://localhost:19530` for standalone; unset locks the store to one process |
 | `VECTOR_BACKEND` | `milvus` | `lance` restores the previous store |
-| `NIM_MODE` | `auto` | `hosted` skips the local probe, `local` requires the containers; changing it changes the embedder, so rebuild the index |
+| `NIM_MODE` | `auto` | `hosted` skips the local probe, `local` requires the containers; changing it changes the embedder, so rebuild the index — `/health` fails until you do |
 | `NIM_MODE_{LLM,EMBED,RERANK}` | `NIM_MODE` | per-service override; `NIM_MODE_RERANK=local` is the useful one — there is no hosted reranking model |
 | `ASOIA_REVIEW_WRITES` | `1` | `0` makes the API's four edit endpoints return 403 |
 | `GRADIO_AUTH` | — | `user:password`; required by `stack.sh up --share` |

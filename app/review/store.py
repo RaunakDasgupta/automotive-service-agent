@@ -381,6 +381,37 @@ def index_staleness(uri: str | None = None, con: sqlite3.Connection | None = Non
             f"come from - an edit was written but not re-embedded, so answers "
             f"would quote wording that is not on file")
 
+    # The embedder it was BUILT with, against the one configured now.
+    #
+    # Everything above compares the index to the database, and all of it passes
+    # after someone flips NIM_MODE: the same chunks, the same ids, the same
+    # text. What changed is the width of the vectors - nemotron-3-embed-1b is
+    # 2048 and nv-embedqa-e5-v5 is 1024 - so the index is perfectly consistent
+    # and completely unusable, and the first sign of it is a pymilvus error on
+    # a question. This is the check that fires when a GPU box comes back.
+    #
+    # An index built before the sidecar existed reports nothing here. Unknown
+    # is not mismatched: refusing to answer because a note is missing would be
+    # worse than the problem.
+    try:
+        from app.retrieval.index import index_meta
+        from app.nim.client import resolve as _resolve
+        meta = index_meta()
+        built_with = meta.get("embed_model")
+        if built_with:
+            now_model = _resolve("embed")[1]      # (base, MODEL, mode)
+            out["index_embed_model"] = built_with
+            out["configured_embed_model"] = now_model
+            if built_with != now_model:
+                out["ok"] = False
+                out["reasons"].append(
+                    f"the index was built with {built_with} "
+                    f"({meta.get('dim', '?')}-dimensional) and this process is "
+                    f"configured for {now_model} - every search will fail on a "
+                    f"dimension mismatch until it is rebuilt")
+    except Exception:
+        pass
+
     if not out["ok"]:
         out["fix"] = (".venv/bin/python -c 'from app.retrieval.index import build; "
                       "print(build())'")

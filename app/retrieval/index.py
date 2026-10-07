@@ -16,15 +16,62 @@ config change rather than a code change:
 Nothing in this file knows which one is in use.
 """
 from __future__ import annotations
-import os, re, time
+import os, pathlib, re, time
 from typing import Any
 
 from app.state import db as dbm
 from app.retrieval.backend import backend, BackendError
 from app.nim.client import (embed as nim_embed, embed_query as nim_embed_query,
-                            rerank as nim_rerank)
+                            rerank as nim_rerank, resolve as nim_resolve)
 
 BATCH = 64
+
+# What the index was last built with, written beside the generated data.
+#
+# Switching NIM_MODE changes the EMBEDDER, and the two are different widths -
+# nemotron-3-embed-1b is 2048, nv-embedqa-e5-v5 is 1024. Nothing noticed: the
+# staleness check compares row counts and update ids, which both still match
+# perfectly, so it reported a healthy index while every search failed deep in
+# pymilvus on a dimension error. The seam only appears when a GPU box comes
+# back and someone flips the mode.
+#
+# A sidecar rather than a collection field: adding a field means a schema
+# migration for a fact about the build, not about a chunk. This is gitignored
+# with the rest of data/generated, and its absence is treated as "unknown",
+# never as "mismatched" - an index built before this existed must not start
+# failing because of it.
+INDEX_META = os.environ.get(
+    "ASOIA_INDEX_META",
+    os.path.join(os.path.dirname(
+        os.environ.get("ASOIA_DB", "data/generated/service.sqlite")),
+        "index_meta.json"))
+
+
+def index_meta() -> dict:
+    """How the index was built, or {} if that was never recorded."""
+    try:
+        import json
+        with open(INDEX_META) as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def _write_index_meta(dim: int, rows: int) -> None:
+    try:
+        import json
+        # resolve() -> (base_url, model_id, mode). Getting this order
+        # wrong recorded embed_model="hosted" and compared it against
+        # itself, so the check passed on a genuine mismatch.
+        _base, model, mode = nim_resolve("embed")
+        pathlib.Path(INDEX_META).parent.mkdir(parents=True, exist_ok=True)
+        pathlib.Path(INDEX_META).write_text(json.dumps({
+            "dim": dim, "rows": rows, "embed_model": model, "nim_mode": mode,
+            "built_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }, indent=2) + "\n")
+    except Exception:
+        # Never fail a successful build over a note about it.
+        pass
 
 
 def _rows(con, only: list[str] | None = None) -> list[dict]:
@@ -88,6 +135,7 @@ def build(con=None, progress: bool = True, **_legacy) -> dict:
     b.upsert(rows)
     # Before stats, so the count this returns is the count the store reports.
     b.flush()
+    _write_index_meta(dim, len(rows))
     st = b.stats()
     return {"rows": len(rows), "dim": dim, "seconds": round(time.time() - t0, 1),
             **st}
