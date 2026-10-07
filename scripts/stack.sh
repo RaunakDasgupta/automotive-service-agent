@@ -42,7 +42,11 @@
 # reranker only exists locally, the hosted catalogue has no reranking model -
 # then set NIM_MODE=local in .env and rebuild the index:
 #
-#     .venv/bin/python -c "from app.retrieval.index import build; print(build())"
+#     .venv/bin/python scripts/build_index.py
+#
+# That script loads .env first, which the bare one-liner that used to be
+# printed here did not - so it rebuilt the EMBEDDED Milvus Lite file with the
+# HOSTED embedder, and reported success.
 #
 # That is a deliberate act with a five-minute cost, not something a launcher
 # should do to you as a side effect of an --nims flag.

@@ -98,7 +98,7 @@ YAML
         echo "Point the app at it:"
         echo "  export ASOIA_MILVUS_URI=http://localhost:${PORT}"
         echo "and rebuild, because an embedded index does not move across:"
-        echo "  .venv/bin/python -c 'from app.retrieval.index import build; print(build())'"
+        echo "  .venv/bin/python scripts/build_index.py"
       fi
       exit 0
     fi

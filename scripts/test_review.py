@@ -143,8 +143,7 @@ def main() -> int:
     idx = RS.index_stats()
     if not idx.get("exists"):
         note(f"no index: {idx.get('error')}")
-        note("build it:  .venv/bin/python -c "
-             "'from app.retrieval.index import build; print(build())'")
+        note("build it:  .venv/bin/python scripts/build_index.py")
         check("a missing index is reported, not raised", "error" in idx)
         check("chunks() degrades the same way", "error" in RS.chunks())
     else:

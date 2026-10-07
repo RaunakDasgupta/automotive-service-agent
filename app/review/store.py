@@ -262,9 +262,8 @@ def index_stats(uri: str | None = None) -> dict:
         out["error"] = str(e)
         return out
     if not out["exists"]:
-        out["error"] = (f"no '{b.collection}' collection at {b.uri} - build the "
-                        f"index first: .venv/bin/python -c "
-                        f"'from app.retrieval.index import build; print(build())'")
+        out["error"] = (f"no '{b.collection}' collection at {b.uri} - build "
+                        f"the index first: .venv/bin/python scripts/build_index.py")
         return out
     try:
         out["rows"] = b.count()
@@ -413,8 +412,11 @@ def index_staleness(uri: str | None = None, con: sqlite3.Connection | None = Non
         pass
 
     if not out["ok"]:
-        out["fix"] = (".venv/bin/python -c 'from app.retrieval.index import build; "
-                      "print(build())'")
+        # scripts/build_index.py, not a bare `python -c`: this message is
+        # reached BECAUSE the embedder does not match, and the one-liner that
+        # used to be here did not read .env, so following it rebuilt a
+        # different store at the wrong width and said it worked.
+        out["fix"] = ".venv/bin/python scripts/build_index.py"
     return out
 
 

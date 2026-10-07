@@ -103,17 +103,22 @@ python -m app.data.generate
 bash scripts/start_milvus.sh up
 bash scripts/start_observability.sh up
 bash scripts/stack.sh stores provision && bash scripts/stores.sh up
-python -c "import sys;sys.path[:0]=['.','scripts'];import _env;\
-from app.retrieval.index import build;print(build())"
+python scripts/build_index.py
 bash scripts/stack.sh up
 ```
 
 UI :7860, API :8080, Prometheus :9090, Grafana :3000, Attu :8101,
 sqlite-web :8102. `docs/screenshots/` is this, running.
 
-**A `python -c` that touches the app must load `.env` first** — hence the
-`import _env` above. Without it every model call fails with "NVIDIA_API_KEY is
-not set" while the key sits in `.env`.
+**Anything that touches the app must load `.env` first.** The application does
+not read it — `stack.sh` does — so a bare
+`python -c 'from app.retrieval.index import build; print(build())'` runs with
+`NVIDIA_API_KEY`, `NIM_MODE` and `ASOIA_MILVUS_URI` all unset. Sometimes that
+fails loudly, with "NVIDIA_API_KEY is not set" while the key sits in `.env`.
+Worse, sometimes it does not: it builds the *embedded* Milvus Lite decoy with
+the *hosted* embedder and prints a row count. `scripts/build_index.py` loads
+`.env` and prints the store and the embedder it used; a script of your own does
+it with `sys.path[:0]=['.','scripts']; import _env` (see `scripts/_env.py`).
 
 ### What is worse this way, measured rather than guessed
 
@@ -138,39 +143,45 @@ you switch it or every search fails on a dimension mismatch.
 
 Target: **L40S 48GB**. All three NIMs co-reside in ~40GB.
 
+**The full sequence is [`docs/BREV_RUNBOOK.md`](docs/BREV_RUNBOOK.md)** — ordered,
+copy-pasteable, with a gate at the end of each phase. It is the authority; this
+is the shape of it:
+
 ```bash
 git clone <your-fork> automotive-service-agent && cd automotive-service-agent
+cp .env.example .env && $EDITOR .env      # key, and NIM_MODE=local
 
-cp .env.example .env && $EDITOR .env           # add your key; .env is gitignored
+bash scripts/brev_bootstrap.sh            # 1. pulls FIRST - 30-90 min
 
-# 1. Start the NIM pulls FIRST - 30-90 min including TRT engine builds.
-export NVIDIA_API_KEY=nvapi-...
-bash scripts/start_nims.sh pull
-
-# 2. While that downloads, set up Python and build the dataset (no GPU needed).
-curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -LsSf https://astral.sh/uv/install.sh | sh          # 2. while it downloads
 uv venv --python 3.11 .venv && uv pip install --python .venv -e ".[dev]"
-# Optional extras, each independent:
-#   .[nvidia]    NeMo Guardrails + NeMo Agent Toolkit  (the GPU box)
-#   .[flywheel]  NeMo Relay, Evaluator and Switchyard
-#   .[voice]     nvidia-riva-client, for spoken updates
-#   .[admin]     sqlite-web, for the store admin UIs
-# NeMo Curator installs into its own .venv-curator - it pulls ray and torch,
-# which is 6 GB you do not want in the serving environment.
-# uv does not put pip inside the venv - install extras the same way:
-#   uv pip install --python .venv 'fastapi>=0.115' 'uvicorn>=0.30' prometheus-client
 .venv/bin/python -m app.data.generate
 .venv/bin/python -m pytest tests/ -q
 
-# 3. When the pulls finish.
-bash scripts/start_nims.sh run
-bash scripts/start_nims.sh health
+bash scripts/start_nims.sh run            # 3. when the pulls finish
+bash scripts/start_nims.sh health         #    gate: all three OK
 
-# 4. Prove the answers are built correctly, then launch. No date to pin: the
-#    clock follows the newest event in the log, and ASOIA_NOW still overrides it.
-.venv/bin/python scripts/verify_answers.py   # 14 checks, exits non-zero on failure
-.venv/bin/python -m app.ui.gradio_app        # or run notebooks/07_app.ipynb
+bash scripts/start_milvus.sh up           # 4. the index, at the right width
+.venv/bin/python scripts/build_index.py --check
+.venv/bin/python scripts/build_index.py
+
+bash scripts/stack.sh up                  # 5. API, UI, stores, observability
+.venv/bin/python scripts/verify_answers.py --with-llm
 ```
+
+Two things in that order are load-bearing, and both have gone wrong here:
+
+**`.env.example` ships `NIM_MODE=hosted`, and `hosted` skips the local probe.**
+Leave it and all three containers can be healthy while every request still goes
+to the hosted endpoints — you pay for the GPU and use none of it. Nothing fails;
+`stack.sh status` notes it as *"3 local NIM container(s) up and NOTHING routes to
+them."*
+
+**Set it to `local` before building the index, not after.** The embedder changes
+width with the mode — `nv-embedqa-e5-v5` is 1024, `nemotron-3-embed-1b` is 2048 —
+so building first and switching later means building twice. If you do switch
+later, `/health` fails with both model ids and the fix rather than letting every
+search break on a dimension error.
 
 There is nothing to pin and nothing to generate by hand. Both used to be
 required, and both were easy to get wrong.
@@ -184,9 +195,14 @@ rail. So "now" defaults to the newest event in the log instead. The shop is
 always live and a dataset never goes stale. `ASOIA_NOW` still pins it when you
 want a fixed clock, and `ASOIA_CLOCK=wall` restores the old behaviour.
 
-**The dataset generates itself if there is none.** 400 repair orders, 10,927
-events, 1,949 updates in about 0.1 seconds, with a window ending now. The
-generator is seeded, so those are exact numbers and not typical ones. It fires
+**The dataset generates itself if there is none.** 400 repair orders and roughly
+10.8k events and 1.9k updates, in about 0.1 seconds, with a window ending now.
+The repair-order count is exact; the other two are not, and the reason is worth
+knowing before you read them as a checksum. The generator is seeded, so the same
+"now" gives the same rows — but "now" is when you generate, and the window ends
+there, so each machine lands on its own event count. Three measured here: 10,927
+/ 1,949 on the GPU box, 10,841 / 1,903 and 10,778 / 1,857 on the laptop. A fresh
+box will give a fourth, and nothing is wrong. It fires
 only when the database is empty, so it cannot overwrite anything;
 `ASOIA_AUTOGEN=0` turns it off and `.venv/bin/python -m app.data.generate` still
 works by hand.
@@ -195,8 +211,14 @@ It does **not** build the vector index — that means embedding every update
 through a NIM, which is not a startup cost. Build it once:
 
 ```bash
-.venv/bin/python -c 'from app.retrieval.index import build; print(build())'
+.venv/bin/python scripts/build_index.py
 ```
+
+That script and not a bare `python -c`: the application does not read `.env`,
+`stack.sh` does, so a one-liner run straight from the prompt builds the
+*embedded* Milvus Lite file with the *hosted* embedder and reports success
+either way. `--check` prints the store and the embedder it would use before you
+spend the minutes.
 
 and if the data is ever regenerated without rebuilding it, `/health`, the review
 Overview and any affected answer all say so, because a stale index otherwise
@@ -275,12 +297,15 @@ app/
   obs/        Prometheus metrics
 scripts/      NIM lifecycle, data verification, notebook build, answer
               verification, evaluation, stage timings, voice-update harness,
-              API and observability launchers
+              API and observability launchers, the index builder that loads
+              .env (build_index.py) and the improvement loop (agent_loop.py)
 configs/      prometheus scrape config, provisioned Grafana dashboard
 patches/      the forty-seven migration scripts, as the record of what changed and why
-docs/         architecture.drawio - seven pages, and architecture-deck.pptx -
-              seven slides; both generated, by scripts/make_architecture_diagram.py
-              and scripts/make_architecture_deck.js
+docs/         BREV_RUNBOOK.md - bringing up a GPU box, in order, with a gate
+              per phase; screenshots/ - the running stack; architecture.drawio -
+              seven pages, and architecture-deck.pptx - seven slides; both
+              generated, by scripts/make_architecture_diagram.py and
+              scripts/make_architecture_deck.js
 tests/        engine tests - no GPU, no network
 ```
 
