@@ -10,45 +10,36 @@ count and the timing are what the agent returned.
 
 | question | tool chosen | composed by | citations | seconds |
 |---|---|---|---|---|
-| Which vehicles cannot be released on safety grounds? | `list_ros` | Python | 11 | **0.12** |
+| Which vehicles cannot be released on safety grounds? | `list_ros` | Python | 11 | **0.11** |
 | Give me the afternoon handover, worst first. | `generate_handover` | Python | 40 | **0.05** |
 | Which jobs are blocked waiting for parts? | `list_ros` | Python | 25 | **0.05** |
 | Which jobs will miss their promised time? | `list_ros` | Python | 25 | **0.05** |
-| What has EMP014 done this week? | `get_technician_activity` | Python | 9 | **0.00** |
+| What has EMP014 done this week? | `get_technician_activity` | Python | 9 | **0.01** |
 | Are there any customers waiting on site? | `list_ros` | Python | 14 | **0.05** |
 | Any unusual patterns in the shop this week? | `detect_anomalies` | Python | 19 | **0.05** |
-| Has anyone seen a whistling noise on a Passat before | `search_updates` | LLM | 8 | **3.94** |
-| Any history of a battery going flat overnight? | `search_updates` | LLM | 8 | **49.78** |
+| Has anyone seen a whistling noise on a Passat before | `search_updates` | LLM | 8 | **3.87** |
+| Any history of a battery going flat overnight? | `search_updates` | LLM | 8 | **3.43** |
 | Order the parts for RO-26-08165. | `get_ro_state` | Python | 13 | **0.00** |
 | Close RO-26-08165 for me. | `get_ro_state` | Python | 13 | **0.00** |
 
-**Eight of eleven answered in under a tenth of a second**, because they are
+**Nine of eleven answered in under a tenth of a second**, because they are
 composed in Python from the deterministic tools rather than narrated by a model.
 That is the project's whole thesis: the model routes and narrates, it does not
 compute.
 
-An earlier version of this page claimed Grafana corroborated the ratio
-independently, at 87.5%. **It does not, and that claim was wrong.** The two
-measure different things: this table is eleven questions in one run, while the
-Grafana stat was a five-minute *rate* that happened to be showing a 7:1 mix at
-the moment it was read - the same panel has read 0% while idle and 100% minutes
-later. Worse, it counted an answer that called the model, timed out and fell
-back to Python as a *Python* answer, so a failing LLM pushed it up.
+Do not read Grafana's Python-share stat as independent confirmation of this
+ratio - an earlier version of this page did, and it was wrong. That panel is a
+different measurement over a different window; see `docs/screenshots/README.md`.
 
-Measured over the whole run instead: **92.5% of 80 answers finished on the
-Python path, and 86.25% were Python by design** once the 5 fallbacks are
-removed. The panel now computes that second figure over an hour, and is titled
-*Composed in Python by design*.
-
-The two that take seconds are the semantic ones - they embed the query, search
-Milvus, rerank, and narrate the passages. The spread between them, 3.9s and
-49.8s, is real and unexplained; see the note at the end.
+The two that take seconds are the semantic ones: they embed the query, search
+Milvus, rerank, and narrate the passages. **Both are now ~3.5s.** One of them
+used to take 49.8s - see the note at the end.
 
 ## Safety — what cannot be released
 
 > Which vehicles cannot be released on safety grounds?
 
-`list_ros` · 11 citations · grounded=True · **0.12s**
+`list_ros` · 11 citations · grounded=True · **0.11s**
 
 ```
 **11 repair orders cannot be released on safety grounds.** Most urgent first.
@@ -243,7 +234,7 @@ Cites: `RO-26-08031`, `RO-26-08074`, `RO-26-08062`, `RO-26-08052`, `RO-26-08165`
 
 > What has EMP014 done this week?
 
-`get_technician_activity` · 9 citations · grounded=True · **0.00s**
+`get_technician_activity` · 9 citations · grounded=True · **0.01s**
 
 ```
 **Amara Osei** (EMP014) - Apprentice, Afternoon shift - completed **14 jobs** across **6 repair orders** in the last 7 days, and posted **19 updates**.
@@ -359,7 +350,7 @@ Cites: `RO-26-08073`, `RO-26-08242`, `RO-26-08319`, `RO-26-08203`, `RO-26-08031`
 
 > Has anyone seen a whistling noise on a Passat before?
 
-`search_updates` · 8 citations · grounded=True · **3.94s**
+`search_updates` · 8 citations · grounded=True · **3.87s**
 
 ```
 A whistling noise on a Passat has been reported before. [UPD-00001-08278] describes a louder than normal noise from underneath, traced to the exhaust flex pipe section, recommending repair of that section, muffler, and tailpipe. [UPD-00005-08170] confirms a customer concern but does not specify the cause. [UPD-00000-08274] reports a steering wheel vibration at motorway speed, traced to mount and balance, and recommends recalcibrating those components. [UPD-00001-08275] notes a clicking noise on full lock turns, traced to the CV axle shaft, recommending its replacement.
@@ -371,7 +362,7 @@ Cites: `UPD-00001-08278`, `RO-26-08278`, `UPD-00005-08170`, `RO-26-08170`, `UPD-
 
 > Any history of a battery going flat overnight?
 
-`search_updates` · 8 citations · grounded=True · **49.78s**
+`search_updates` · 8 citations · grounded=True · **3.43s**
 
 ```
 The updates indicate a history of a battery going flat overnight in several vehicles, including a 2023 Honda CR-V, a 2023 Volkswagen Golf, a 2017 Nissan Qashqai, and a 2022 Ford Transit. The common cause identified is the alternator. [UPD-00001-08309] [UPD-00001-08151] [UPD-00001-08389] [UPD-00001-08229]
@@ -442,7 +433,11 @@ refused, and both still call `get_ro_state` and return citations. The agent
 reads the record before declining, so the refusal names the actual job rather
 than being a flat no.
 
-**One semantic query took 49.8s against another's 3.9s**, same tool, same
-citation count, on the same box. Not investigated. It is recorded rather than
-smoothed over, because an unexplained 13x on the only path that touches three
-models is the kind of thing that turns into a demo failure.
+**The 49.8s outlier is fixed, and it was not the model.** One semantic question
+used to take 49.8s against another's 3.9s. It was the LLM router: the only call
+in the system that asked for guided JSON decoding, which on this NIM costs
+**37.5s** and returns *malformed* output - `{ "tools]:[{"` - against **0.2s**
+and usable JSON without it. The keyword router matched the other questions, so
+only the fallthrough ever paid. Guided decoding is now off by default
+(`ASOIA_NIM_GUIDED_JSON`), and that question answers in 3.4s with the same 8
+citations.

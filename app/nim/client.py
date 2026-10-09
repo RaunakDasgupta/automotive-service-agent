@@ -182,6 +182,30 @@ def _headers(local: bool) -> dict:
 # than editing this.
 NIM_TIMEOUT = float(os.environ.get("ASOIA_NIM_TIMEOUT", "120"))
 
+# Guided JSON decoding, OFF by default. `json_mode=True` callers still say they
+# want JSON - this only controls whether that becomes a `response_format` on the
+# wire, which makes the NIM compile a finite-state machine to constrain the
+# sampler.
+#
+# Measured on the L40S, the same router prompt at max_tokens=300:
+#
+#     response_format sent     37.5s   -> { "tools]:[{"        (malformed)
+#     not sent                  0.2s   -> {"tools":[{"name": ... (usable)
+#
+# 187x slower AND worse output: the mechanism whose entire purpose is to
+# guarantee well-formed JSON produced the only broken JSON of the two. The cost
+# is the FSM compile, which runs on the CPU per request while the GPU sits idle,
+# and it is why one question in eight took 40s while the rest took 0.05s - the
+# keyword router matched the others, so only the fallthrough paid for it.
+#
+# Both callers already tolerate prose around the JSON: app/agent/agent.py slices
+# between the first { and the last } inside a try that falls back to keyword
+# routing, and app/pipeline/extract.py goes through parse_json. So turning this
+# off removes a guarantee that was not being relied on and was not being kept.
+#
+# Set ASOIA_NIM_GUIDED_JSON=1 to restore it on a deployment where it is cheap.
+GUIDED_JSON = os.environ.get("ASOIA_NIM_GUIDED_JSON", "0") == "1"
+
 
 def _post(url: str, payload: dict, local: bool, timeout: float | None = None,
           retries: int = 4) -> dict:
@@ -289,7 +313,7 @@ def _chat_inner(messages: list[dict], temperature: float = 0.0,
                                "temperature": temperature, "max_tokens": max_tokens}
     if stop:
         payload["stop"] = stop
-    if json_mode:
+    if json_mode and GUIDED_JSON:
         payload["response_format"] = {"type": "json_object"}
     data = _post(f"{base}/chat/completions", payload, local=_is_loopback(mode))
     choice = data["choices"][0]
