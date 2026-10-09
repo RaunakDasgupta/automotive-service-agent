@@ -25,7 +25,20 @@ count and the timing are what the agent returned.
 **Eight of eleven answered in under a tenth of a second**, because they are
 composed in Python from the deterministic tools rather than narrated by a model.
 That is the project's whole thesis: the model routes and narrates, it does not
-compute. Grafana reports the same split as *Answers composed in Python: 87.5%*.
+compute.
+
+An earlier version of this page claimed Grafana corroborated the ratio
+independently, at 87.5%. **It does not, and that claim was wrong.** The two
+measure different things: this table is eleven questions in one run, while the
+Grafana stat was a five-minute *rate* that happened to be showing a 7:1 mix at
+the moment it was read - the same panel has read 0% while idle and 100% minutes
+later. Worse, it counted an answer that called the model, timed out and fell
+back to Python as a *Python* answer, so a failing LLM pushed it up.
+
+Measured over the whole run instead: **92.5% of 80 answers finished on the
+Python path, and 86.25% were Python by design** once the 5 fallbacks are
+removed. The panel now computes that second figure over an hour, and is titled
+*Composed in Python by design*.
 
 The two that take seconds are the semantic ones - they embed the query, search
 Milvus, rerank, and narrate the passages. The spread between them, 3.9s and

@@ -10,8 +10,8 @@
   "panels": [
     {
       "type": "stat",
-      "title": "Answers composed in Python (%)",
-      "description": "The headline claim. Structured questions should compose in Python and make no model call at all.",
+      "title": "Composed in Python by design (%)",
+      "description": "Share of answers the router sent down the deterministic path and that stayed there. Fallbacks are SUBTRACTED: an answer that called the model, timed out and fell back to Python is not a design win, and counting it as one made a failing LLM push this number up. Measured over 1h, not a 5m rate - the old query swung between 0 and 100 depending on the last few questions. No clamp: with no answers in the window the ratio is undefined, and 'No data' is the honest rendering of that. A clamped 0 looked identical to the Python path having collapsed.",
       "gridPos": {
         "h": 5,
         "w": 6,
@@ -20,8 +20,9 @@
       },
       "targets": [
         {
-          "expr": "100 * sum(rate(asoia_answers_total{compose=\"python\"}[5m])) / clamp_min(sum(rate(asoia_answers_total[5m])), 0.0001)",
-          "legendFormat": "python"
+          "expr": "100 * (sum(increase(asoia_answers_total{compose=\"python\"}[1h])) - sum(increase(asoia_compose_fallbacks_total[1h]))) / sum(increase(asoia_answers_total[1h]))",
+          "refId": "A",
+          "legendFormat": "by design"
         }
       ],
       "fieldConfig": {
