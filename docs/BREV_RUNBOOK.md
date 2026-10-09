@@ -35,12 +35,45 @@ runs docker unprivileged.
 
 ---
 
-## 1. Clone, and write `.env`
+## 1. Get the code across, and write `.env`
+
+**From a tarball, not a clone.** On the Mac:
 
 ```bash
-git clone https://github.com/RaunakDasgupta/automotive-service-agent.git
-cd automotive-service-agent
-cp .env.example .env
+bash scripts/make_tarball.sh ~/asoia.tar.gz
+scp ~/asoia.tar.gz capstone-asoia:/home/ubuntu/
+```
+
+`make_tarball.sh` sets `COPYFILE_DISABLE=1` and `--no-mac-metadata --no-xattrs`,
+and then checks its own output. Both matter. A plain `tar czf` on macOS stores
+xattrs and resource forks, so GNU tar on Linux prints
+`Ignoring unknown extended header keyword 'LIBARCHIVE.xattr.com.apple.provenance'`
+**once per file** — thousands of lines that read like a failed extraction — and
+writes AppleDouble `._*` siblings. Those land inside `.git/objects/pack/` and git
+then refuses the repository outright:
+
+```
+error: index file .git/objects/pack/._pack-….idx is too small
+```
+
+The tree looks fine and its git is broken. The script also refuses to produce an
+archive containing `.env` or a `.bak`, rather than trusting its own exclude list.
+
+On the box:
+
+```bash
+cd /home/ubuntu && tar -xzf asoia.tar.gz
+cd automotive-service-agent && git log --oneline -1 && git status --short
+```
+
+A clean extract prints **nothing** from tar, and `git status` is empty. Extracting
+over an existing tree is safe and is the update path: `.env` and
+`data/generated/` are not in the archive, so they survive.
+
+Then write `.env`:
+
+```bash
+cp .env.example .env && chmod 600 .env && $EDITOR .env
 ```
 
 Now edit `.env`. **Three lines, and the second one is the whole point of the
@@ -67,6 +100,59 @@ grep -c . .env                  # gate: the file has the lines you just wrote
 ```
 
 ---
+
+## 1b. JupyterLab, and the kernel that is easy to get wrong
+
+The notebooks are the intended route through this; `notebooks/00`–`07` cover the
+same ground as the shell phases below.
+
+**Brev already runs a JupyterLab for you** — a supervised process that respawns
+if killed, so do not try to stop it. Two things about it matter:
+
+- **It runs from `~/.venv`, not the project's `.venv`.** Its default `python3`
+  kernel has none of this project's dependencies, so the first cell of every
+  notebook dies on `ModuleNotFoundError: No module named 'gradio'`. Register the
+  project venv as its own kernel, once:
+
+  ```bash
+  cd /home/ubuntu/automotive-service-agent
+  .venv/bin/python -m ipykernel install --user --name asoia --display-name "Python 3.11 (asoia)"
+  ```
+
+  Then pick **Python 3.11 (asoia)** in the kernel menu. Verify from a shell the
+  same way the notebooks will run:
+
+  ```bash
+  /home/ubuntu/.venv/bin/python -m jupyter kernelspec list     # asoia should be listed
+  ```
+
+- **It binds `0.0.0.0:8888` with an empty token and empty password.** Anyone who
+  can reach the box's 8888 gets a Python REPL as `ubuntu`. That is Brev's
+  default, not this project's. Keep 8888 off the public internet and reach it
+  over the forward in phase 8, or run your own on another port:
+
+  ```bash
+  .venv/bin/python -m jupyterlab --no-browser --ip 127.0.0.1 --port 8899
+  ```
+
+  A JupyterLab started from `.venv` sees only that interpreter, so there is no
+  wrong kernel to pick.
+
+### The notebook route, in order
+
+| notebook | does | needs |
+|---|---|---|
+| `00_setup` | key check, **sets `NIM_MODE=local` in `.env`**, GPU check, NIM pull + run + health, **starts Milvus, observability and the admin UIs**, port check | GPU |
+| `01_data` | generates the dataset — 400 ROs | nothing |
+| `02_state_engine` | the event log and fold engine | 01 |
+| `03_ingest_pipeline` | ASR → extract → reconcile → diff card | 01, NIMs |
+| `04_retrieval` | **checks the store and embedder, then builds the index** | 00, 01 |
+| `05_agent` | the typed tools, router and grounded narration | 01, 04, NIMs |
+| `06_guardrails` | the rails, input and output | 01, `.[nvidia]` |
+| `07_app` | launches the Gradio UI — **blocks the kernel while it serves** | 01 |
+
+Run the 30–90 minute NIM pull in a **terminal**, not a cell: one kernel runs one
+cell at a time, so a `!`-cell pull blocks the notebook you wanted to keep using.
 
 ## 2. Start the pulls FIRST — this is the long pole
 
@@ -154,7 +240,11 @@ to fail on a crowded GPU. The LLM is capped — both `NIM_GPU_MEMORY_UTILIZATION
 applies depends on the profile the container picks, and on an L40S it picks
 TRT-LLM FP8 — so the vLLM variable alone was silently doing nothing. Budget,
 carried forward from the previous box rather than re-measured: LLM ~12GB + embed
-~5GB + rerank ~24GB ≈ 41GB of 48.
+~5GB + rerank ~24GB ≈ 41GB.
+
+**Measure the card, do not assume 48.** `capstone-asoia` reports **46068 MiB**,
+not 49152 — an L40S is a 48GB card by name and ~45GB by `nvidia-smi`. 41GB still
+fits, with less headroom than the number above suggests.
 
 If the LLM refuses to start, raise `LLM_GPU_FRAC` to `0.30`; if the **reranker**
 fails, lower it to `0.20`, or switch to the 1B reranker (`~4GB`, one commented
@@ -302,8 +392,14 @@ ssh -N \
   -L 7860:127.0.0.1:7860 -L 8080:127.0.0.1:8080 \
   -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 \
   -L 8101:127.0.0.1:8101 -L 8102:127.0.0.1:8102 \
-  <your-brev-alias>
+  -L 8888:127.0.0.1:8888 \
+  capstone-asoia
 ```
+
+`brev refresh` writes the host entry; the alias is the instance name. If `ssh
+capstone-asoia` cannot resolve, the entry is stale — `brev refresh` rewrites
+`~/.brev/ssh_config`, dropping instances that no longer exist and adding the
+current one.
 
 Then open the `http://127.0.0.1:...` links directly. Set `ASOIA_SSH_ALIAS` in
 `.env` on the box and `scripts/stack.sh stores` prints this command for you,
@@ -332,6 +428,10 @@ why this is `restart` and not `up`.
 | row count 0 on a freshly built index | Milvus counts only sealed segments | harmless; `build()` flushes, and `query` returns rows regardless |
 | reranker won't start | VRAM | `LLM_GPU_FRAC=0.20`, or the 1B reranker |
 | `No module named pytest` | base install only | `uv pip install --python .venv -e ".[dev]"` |
+| `No module named gradio` in a notebook's first cell | Brev's JupyterLab kernel is `~/.venv`, not the project's | register the `asoia` kernel (phase 1b) and select it |
+| `Cannot operate on a closed database` | fixed in `f8a359e`; `db.connect()` used to cache a closed handle after the dataset was generated | update the code |
+| thousands of `LIBARCHIVE.xattr` lines on extract, broken git | the tarball was made with plain `tar` on macOS | `bash scripts/make_tarball.sh` |
+| `ssh capstone-asoia` fails to resolve | stale `~/.brev/ssh_config` | `brev refresh` |
 | Grafana GPU panels empty | DCGM exporter didn't start | `bash scripts/start_observability.sh status` |
 | time-window questions return nothing | the clock was pinned to a stale moment | unset `ASOIA_NOW`; the clock follows the newest event by default |
 
