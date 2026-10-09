@@ -7,20 +7,27 @@ be refreshed rather than redrawn by hand. It captures the four non-Gradio UIs
 reliably; Chromium hangs on four of the six Gradio tabs, headless or headed, so
 those are still taken by hand.
 
-| | | captured | against |
+| | | captured | shows |
 |---|---|---|---|
-| 01 | Dashboard — open ROs, safety, and the action list | **2026-10-09** | GPU box, local NIMs |
-| 02 | Repair Order — state folded from events | **2026-10-09** | GPU box, local NIMs |
-| 03 | Technician Update — logging work against an RO | 2026-10-07 | Mac, hosted |
-| 04 | Shift Handover — generated brief, worst first | 2026-10-07 | Mac, hosted |
-| 05 | Manager Assistant — a cited answer with its tools | 2026-10-07 | Mac, hosted |
-| 06 | Data & Retrieval — the store consoles are pointed at, not embedded | 2026-10-07 | Mac, hosted |
-| 07 | Prometheus targets — `asoia` **and `dcgm` both up** | **2026-10-09** | GPU box |
-| 08 | Prometheus — `asoia_tool_calls_total`, one series per tool actually called | **2026-10-09** | GPU box, under load |
-| 09 | Grafana — ungrounded 0, latency by path, NIM latency, six tools, GPU tracking the semantic queries | **2026-10-09** | GPU box, under load |
-| 10 | Attu — connected to Milvus 2.5.4 standalone, 1 database | **2026-10-09** | GPU box |
-| 11 | Attu — the `updates` collection, **1,690 entities** | **2026-10-09** | GPU box |
-| 12 | sqlite-web — the system of record | **2026-10-09** | GPU box |
+| 01 | Dashboard | **2026-10-09** | 400 live ROs filtered to safety / blocked / at-risk / waiting, each row saying why |
+| 02 | Repair Order | **2026-10-09** | state folded from the event log, beside the updates as written |
+| 03 | Technician Update | 2026-10-07 | dictate or type an update, then the diff card |
+| 04 | Shift Handover | 2026-10-07 | the changeover brief, safety first |
+| 05 | Manager Assistant | 2026-10-07 | a cited answer with the tools it used |
+| 06 | Data & Retrieval | 2026-10-07 | points at the store consoles rather than embedding them |
+| 07 | Prometheus targets | **2026-10-09** | `asoia` **and `dcgm` both up** — real GPU telemetry |
+| 08 | Prometheus tool calls | **2026-10-09** | `rate(asoia_tool_calls_total[5m])*60`, six series, `list_ros` peaking ~10/min |
+| 09 | Grafana | **2026-10-09** | **88.3% composed in Python**, ungrounded 0, cut short 0, rail blocks 0, and the latency step-down when the guided-JSON fix landed |
+| 10 | Attu collections | **2026-10-09** | `updates`, **Loaded**, approx count 1,690 |
+| 11 | Attu schema | **2026-10-09** | **`vector` FloatVector(1024), AUTOINDEX(COSINE)**, entity count 1,690, 13 fields |
+| 11b | Attu data | **2026-10-09** | real rows — `pk`, the **1024-float vectors themselves**, `update_id`, `ro_number` |
+| 12 | sqlite-web | **2026-10-09** | the system of record, 8 tables, 12,266 rows |
+
+**Eight of thirteen are from the GPU box with the local NIMs and the latency
+fixes in.** 03–06 are still 2026-10-07 on hosted inference: Chromium hangs on
+those four Gradio tabs — headless, headed under xvfb, with fake media devices,
+on an idle box — so they are not automated. Everything else re-captures with
+`scripts/capture_screenshots.py`.
 
 ## Capturing them under load, which is the whole point
 

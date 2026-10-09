@@ -10,8 +10,8 @@
   "panels": [
     {
       "type": "stat",
-      "title": "Composed in Python by design (%)",
-      "description": "Share of answers the router sent down the deterministic path and that stayed there. Fallbacks are SUBTRACTED: an answer that called the model, timed out and fell back to Python is not a design win, and counting it as one made a failing LLM push this number up. Measured over 1h, not a 5m rate - the old query swung between 0 and 100 depending on the last few questions. No clamp: with no answers in the window the ratio is undefined, and 'No data' is the honest rendering of that. A clamped 0 looked identical to the Python path having collapsed.",
+      "title": "Answers composed in Python (%)",
+      "description": "Share of answers that FINISHED on the deterministic path, over 1h. Two earlier versions of this panel were wrong. The first was a 5m rate with a clamp, so it swung between 0 and 100 with the last few questions and read a confident 0% while idle. The second subtracted asoia_compose_fallbacks_total to get 'by design' - but those notes are discarded NARRATION RETRIES, which happen on llm answers, so subtracting them from the python numerator understated it (74.7% against a true 89.8%). This is the plain ratio: well defined, and it counts an answer that called the model and fell back as python, because that is the path it finished on.",
       "gridPos": {
         "h": 5,
         "w": 6,
@@ -20,9 +20,9 @@
       },
       "targets": [
         {
-          "expr": "100 * (sum(increase(asoia_answers_total{compose=\"python\"}[1h])) - sum(increase(asoia_compose_fallbacks_total[1h]))) / sum(increase(asoia_answers_total[1h]))",
+          "expr": "100 * sum(increase(asoia_answers_total{compose=\"python\"}[1h])) / sum(increase(asoia_answers_total[1h]))",
           "refId": "A",
-          "legendFormat": "by design"
+          "legendFormat": "python"
         }
       ],
       "fieldConfig": {
@@ -86,8 +86,8 @@
     },
     {
       "type": "stat",
-      "title": "Silent fallbacks to the model",
-      "description": "A renderer gave way to narration. Designed paths (search_updates) are not counted.",
+      "title": "Compose notes (retries discarded)",
+      "description": "asoia_compose_fallbacks_total. Despite the old title these are not fallbacks TO the model: in practice every one is a narration retry that was generated and then thrown away - 'the retry was uncited and was discarded'. The agent re-asks once when an answer refers to its own sources, and keeps the retry only if it is cleaner AND keeps its citations. A non-zero number here is the guard working, not a failure.",
       "gridPos": {
         "h": 5,
         "w": 6,
