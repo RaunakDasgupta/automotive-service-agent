@@ -657,31 +657,32 @@ function slideUsageCore(pres) {
 
   const cw = (FW - 0.3) / 2, ch = 2.14, top = 2.48;
   cell(s, M, top, cw, ch, "05-app-manager-assistant.jpg", 1.333,
-    "Manager Assistant — the question", [
-      "Plain English in; the router picks one typed tool",
-      "Every figure traces to a record id",
-      "Refusals read the record first, then decline",
+    "The question a service manager asks", [
+      "Plain English in; a keyword router picks one typed",
+      "tool - no model call to decide what to run",
+      "Every figure carries the record id it came from",
+      "Measured: 9 of 11 questions answer in under 0.11s",
     ]);
   cell(s, M + cw + 0.3, top, cw, ch, "09-grafana-dashboard.jpg", 1.455,
-    "Grafana — under real load", [
-      "Composed in Python by design 94.5% over 1h -",
-      "model fallbacks subtracted, so a timing-out LLM",
-      "cannot inflate it",
-      "Ungrounded 0  ·  cut short 0  ·  six tools in use",
+    "Grafana — the thesis, measured", [
+      "Answers composed in Python 88.3% over the hour",
+      "Ungrounded 0  ·  cut short 0  ·  rail blocks 0",
+      "p50 by path: python ~0s against llm ~3s - and the",
+      "step down at 16:40 is the guided-JSON fix landing",
     ]);
   cell(s, M, top + ch + 0.22, cw, ch, "08-prometheus-tool-calls.jpg", 1.455,
-    "Prometheus — which tools ran", [
+    "Prometheus — which tools actually ran", [
       "rate(asoia_tool_calls_total[5m]) x 60, six series",
-      "list_ros dominates; search_updates is the rare one",
-      "Counters are per-process - traffic must hit the API",
+      "list_ros peaks ~10/min; search_updates is the rare",
+      "one, because retrieval is the minority path here",
+      "Counters are per-process: load must hit the API",
     ]);
   cell(s, M + cw + 0.3, top + ch + 0.22, cw, ch, "11-attu-schema-1024.jpg", 1.455,
-    "Milvus in Attu — loaded and indexed", [
+    "Milvus in Attu — the store, in full", [
       "vector: FloatVector(1024), AUTOINDEX(COSINE)",
-      "Loaded, replica 1, entity count 1,690",
-      "Rerank earns its place: for \"whistling noise\",",
-      "vector-only returns knocking and vibration; the",
-      "reranker returns blowing-noise - different ROs",
+      "Loaded, replica 1, entity count 1,690, 13 fields",
+      "Width is load-bearing: the hosted embedder is 2048,",
+      "so switching mode without rebuilding breaks search",
     ]);
 
   s.addNotes("The flow strip is the read path. The four frames are the same run seen from the app, from Grafana, from Prometheus and from the store. On the Python share: do NOT claim Grafana corroborates the eleven timings in docs/EXAMPLES.md - it measures a different thing. Over 80 answers, 92.5% finished on the Python path and 86.25% were Python by design once the 5 model fallbacks are removed.");
@@ -694,12 +695,18 @@ function slideUsageSurface(pres) {
     "Five tabs a service advisor actually uses, and the two store consoles behind them. The agent's UI shows no vector internals — that is an operator's view, and it lives in Attu and sqlite-web.");
 
   const items = [
-    ["01-app-dashboard.jpg", 1.455, "Dashboard", "Every RO, filtered to safety, blocked, at-risk or waiting"],
-    ["02-app-repair-order.jpg", 1.455, "Repair Order", "State folded from the event log, with the updates as written"],
-    ["03-app-technician-update.jpg", 1.333, "Technician Update", "Log work by voice or text, then read the diff card"],
-    ["04-app-shift-handover.jpg", 1.333, "Shift Handover", "Prioritised brief: safety, breached, at-risk, blocked"],
-    ["06-app-data-and-retrieval.jpg", 1.333, "Data & Retrieval", "Points at the store consoles rather than embedding them"],
-    ["12-sqlite-web.jpg", 1.455, "sqlite-web", "The system of record, read-write, bound to loopback"],
+    ["01-app-dashboard.jpg", 1.455, "Dashboard",
+     "400 live ROs, filtered to safety, blocked, at-risk or waiting — each row says WHY, with the measurement against its limit"],
+    ["02-app-repair-order.jpg", 1.455, "Repair Order",
+     "State folded from the event log rather than stored, beside the technician updates exactly as written"],
+    ["04-app-shift-handover.jpg", 1.333, "Shift Handover",
+     "The brief a manager reads at changeover: safety first, then breached, at-risk, blocked — composed in 0.05s"],
+    ["03-app-technician-update.jpg", 1.333, "Technician Update",
+     "Dictate or type the update; the diff card shows exactly what changed in the record, for confirmation before it lands"],
+    ["07-prometheus-targets.jpg", 1.455, "Prometheus targets",
+     "Both scrape jobs up: the app on :9400 and NVIDIA DCGM on :9401, which is what puts real GPU telemetry on the dashboard"],
+    ["12-sqlite-web.jpg", 1.455, "sqlite-web",
+     "The system of record itself — 8 tables, 12,266 rows. An operator view, deliberately outside the advisor's UI"],
   ];
   const cols = 3, gapX = 0.26, gapY = 0.3;
   const cw = (FW - (cols - 1) * gapX) / cols, ih = 2.08, top = 1.40;
