@@ -81,13 +81,15 @@ box:**
 
 ```bash
 NVIDIA_API_KEY=nvapi-...
-NIM_MODE=local                              # .env.example ships `hosted` — change it
+NIM_MODE=local                              # what .env.example ships; leave it
 ASOIA_MILVUS_URI=http://localhost:19530
 ```
 
-`NIM_MODE=hosted` does not merely prefer hosted, it **skips the local probe
-entirely**. Leave it as shipped and all three containers can be running and
-healthy while every request still goes to the hosted endpoints — you pay for the
+`.env.example` ships `local`, so a fresh copy is already right. It is worth
+knowing what the wrong value does, because nothing tells you: `NIM_MODE=hosted`
+does not merely prefer hosted, it **skips the local probe entirely**, so all
+three containers can be running and healthy while every request still goes to
+the hosted endpoints — you pay for the
 GPU and use none of it. `stack.sh status` is the only thing that will tell you,
 and only as a note: *"3 local NIM container(s) up and NOTHING routes to them."*
 

@@ -58,12 +58,13 @@ print("key loaded:  nvapi-...%s  (len %d)" % (key[-4:], len(key)))
 
 **This is the step that makes the GPU box worth having, and it is easy to skip.**
 
-`.env.example` ships `NIM_MODE=hosted`, and `hosted` does not merely *prefer* the
-hosted endpoints — it **skips the local probe entirely**. Leave it and all three
-containers can be pulled, built and healthy while every single request still
-goes to `integrate.api.nvidia.com`. Nothing errors. The only hint is a note from
-`scripts/stack.sh status`: *"3 local NIM container(s) up and NOTHING routes to
-them."*
+`.env.example` ships `NIM_MODE=local`, so a fresh `.env` is already right and
+this cell will say so. It is here because the wrong value is invisible: `hosted`
+does not merely *prefer* the hosted endpoints — it **skips the local probe
+entirely**, so all three containers can be pulled, built and healthy while every
+single request still goes to `integrate.api.nvidia.com`. Nothing errors. The only
+hint is a note from `scripts/stack.sh status`: *"3 local NIM container(s) up and
+NOTHING routes to them."* An `.env` inherited from before 379e97c will have it.
 
 It has to be in `.env`, not just this kernel, because the API and the UI are
 separate processes that read `.env` through `scripts/stack.sh`.
