@@ -581,10 +581,10 @@ function slideLifecycle(pres) {
 // docs/screenshots/README.md for which frame came from which date, and
 // docs/EXAMPLES.md for the answers behind the manager-assistant shot.
 //
-// Images carry their own aspect ratio: the 2026-10-09 captures are 1600x1100
-// and the four older Gradio frames are 800x600. Fitting every image to one box
-// would stretch half of them, so fit() solves for whichever of width or height
-// binds first and centres the result in its cell.
+// Every frame is now 1600x1100 - they all come from one capture run - but the
+// ratio stays an argument rather than a constant, because the moment one frame
+// is re-taken at another size, fitting them all to one box would stretch it.
+// fit() solves for whichever of width or height binds first and centres it.
 
 const FW = W - 2 * M;   // the existing slides declare their own and shadow this
 const SHOT_DIR = "docs/screenshots/";
@@ -656,36 +656,36 @@ function slideUsageCore(pres) {
   flowStrip(s, 1.12);
 
   const cw = (FW - 0.3) / 2, ch = 2.14, top = 2.48;
-  cell(s, M, top, cw, ch, "05-app-manager-assistant.jpg", 1.333,
+  cell(s, M, top, cw, ch, "05-app-manager-assistant.jpg", 1.455,
     "The question a service manager asks", [
-      "Plain English in; a keyword router picks one typed",
-      "tool - no model call to decide what to run",
-      "Every figure carries the record id it came from",
-      "Measured: 9 of 11 questions answer in under 0.11s",
+      "Plain English in; a keyword router picks the tool",
+      "The answer ends in the six record ids it used -",
+      "the same six as docs/EXAMPLES.md",
+      "Measured: 9 of 11 answer in under 0.11s",
     ]);
   cell(s, M + cw + 0.3, top, cw, ch, "09-grafana-dashboard.jpg", 1.455,
     "Grafana — the thesis, measured", [
-      "Answers composed in Python 88.3% over the hour",
-      "Ungrounded 0  ·  cut short 0  ·  rail blocks 0",
-      "p50 by path: python ~0s against llm ~3s - and the",
-      "step down at 16:40 is the guided-JSON fix landing",
+      "90.9% of answers composed in Python, over 30 min",
+      "Ungrounded 0 · cut short 0 · blocks 0 · errors 0",
+      "p50 by path: python ~0s against llm ~3s",
+      "GPU to 100% on the semantic queries, flat otherwise",
     ]);
   cell(s, M, top + ch + 0.22, cw, ch, "08-prometheus-tool-calls.jpg", 1.455,
     "Prometheus — which tools actually ran", [
       "rate(asoia_tool_calls_total[5m]) x 60, six series",
-      "list_ros peaks ~10/min; search_updates is the rare",
-      "one, because retrieval is the minority path here",
+      "Two bursts of load, thirty minutes apart",
+      "list_ros peaks at 10.3/min; search_updates is rare",
       "Counters are per-process: load must hit the API",
     ]);
   cell(s, M + cw + 0.3, top + ch + 0.22, cw, ch, "11-attu-schema-1024.jpg", 1.455,
     "Milvus in Attu — the store, in full", [
       "vector: FloatVector(1024), AUTOINDEX(COSINE)",
-      "Loaded, replica 1, entity count 1,690, 13 fields",
+      "Loaded, replica 1, 1,690 entities, 13 fields",
       "Width is load-bearing: the hosted embedder is 2048,",
       "so switching mode without rebuilding breaks search",
     ]);
 
-  s.addNotes("The flow strip is the read path. The four frames are the same run seen from the app, from Grafana, from Prometheus and from the store. On the Python share: do NOT claim Grafana corroborates the eleven timings in docs/EXAMPLES.md - it measures a different thing. Over 80 answers, 92.5% finished on the Python path and 86.25% were Python by design once the 5 model fallbacks are removed.");
+  s.addNotes("The flow strip is the read path. The four frames are the same run seen from the app, from Grafana, from Prometheus and from the store. Two cautions on the 90.9%. It does NOT corroborate the eleven timings in docs/EXAMPLES.md - that is a different measurement that happens to agree. And `compose` records the path that FINISHED: an answer that called the model, timed out and fell back to Python counts as Python, so a failing LLM would push this number up. There are no NIM errors in this window, which is what makes it a clean reading.");
   return s;
 }
 
@@ -696,17 +696,17 @@ function slideUsageSurface(pres) {
 
   const items = [
     ["01-app-dashboard.jpg", 1.455, "Dashboard",
-     "400 live ROs, filtered to safety, blocked, at-risk or waiting — each row says WHY, with the measurement against its limit"],
+     "66 open repair orders of 400 — 11 unsafe to release, 43 past promise — each row saying why, with its measurement"],
     ["02-app-repair-order.jpg", 1.455, "Repair Order",
-     "State folded from the event log rather than stored, beside the technician updates exactly as written"],
-    ["04-app-shift-handover.jpg", 1.333, "Shift Handover",
+     "State folded from the event log, never stored — promise breached, hours against flat rate, 12 events cited"],
+    ["04-app-shift-handover.jpg", 1.455, "Shift Handover",
      "The brief a manager reads at changeover: safety first, then breached, at-risk, blocked — composed in 0.05s"],
-    ["03-app-technician-update.jpg", 1.333, "Technician Update",
-     "Dictate or type the update; the diff card shows exactly what changed in the record, for confirmation before it lands"],
+    ["03-app-technician-update.jpg", 1.455, "Technician Update",
+     "What the RO already says, shown before anything is typed, so nothing is logged twice. Dictate or type it"],
     ["07-prometheus-targets.jpg", 1.455, "Prometheus targets",
      "Both scrape jobs up: the app on :9400 and NVIDIA DCGM on :9401, which is what puts real GPU telemetry on the dashboard"],
     ["12-sqlite-web.jpg", 1.455, "sqlite-web",
-     "The system of record itself — 8 tables, 12,266 rows. An operator view, deliberately outside the advisor's UI"],
+     "The system of record itself — 9 tables, 12 indexes, 6.4 MB. An operator view, outside the advisor's UI"],
   ];
   const cols = 3, gapX = 0.26, gapY = 0.3;
   const cw = (FW - (cols - 1) * gapX) / cols, ih = 2.08, top = 1.40;
@@ -724,7 +724,7 @@ function slideUsageSurface(pres) {
     }));
   });
 
-  s.addText("Technician Update, Shift Handover and Data & Retrieval were captured against the hosted models rather than the local NIMs — Chromium hangs on those three Gradio tabs, so they are not re-taken automatically. docs/screenshots/README.md dates every frame.",
+  s.addText("Every frame on these two slides came from one box with all three NIMs local, taken by scripts/capture_screenshots.py on 2026-10-09 — not by hand. Each one is checked against a string that must appear in the page before it counts as captured; docs/screenshots/README.md says what each shows.",
     txt(null, { x: M, y: 6.95, w: FW, h: 0.34, fontSize: 10, italic: true, color: MUTE }));
   s.addNotes("Nothing here needs a GPU except the voice leg and the semantic tab. The store consoles are deliberately outside the advisor's UI.");
   return s;

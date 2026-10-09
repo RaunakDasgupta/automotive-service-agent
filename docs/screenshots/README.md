@@ -1,33 +1,86 @@
 # Screenshots
 
-**Mixed vintage. Read the date column before believing one.**
+**All thirteen are from 2026-10-09, from one box with all three NIMs local.**
+They were taken in four runs between 18:12 and 18:33 UTC, every one by
+`scripts/capture_screenshots.py` against the running stack — none by hand.
 
-`scripts/capture_screenshots.py` drives the stack and re-takes these, so they can
-be refreshed rather than redrawn by hand. It captures the four non-Gradio UIs
-reliably; Chromium hangs on four of the six Gradio tabs, headless or headed, so
-those are still taken by hand.
+```bash
+xvfb-run -a .venv/bin/python scripts/capture_screenshots.py            # all of them
+xvfb-run -a .venv/bin/python scripts/capture_screenshots.py --only 09  # just one
+```
 
-| | | captured | shows |
-|---|---|---|---|
-| 01 | Dashboard | **2026-10-09** | 400 live ROs filtered to safety / blocked / at-risk / waiting, each row saying why |
-| 02 | Repair Order | **2026-10-09** | state folded from the event log, beside the updates as written |
-| 03 | Technician Update | 2026-10-07 | dictate or type an update, then the diff card |
-| 04 | Shift Handover | 2026-10-07 | the changeover brief, safety first |
-| 05 | Manager Assistant | 2026-10-07 | a cited answer with the tools it used |
-| 06 | Data & Retrieval | 2026-10-07 | points at the store consoles rather than embedding them |
-| 07 | Prometheus targets | **2026-10-09** | `asoia` **and `dcgm` both up** — real GPU telemetry |
-| 08 | Prometheus tool calls | **2026-10-09** | `rate(asoia_tool_calls_total[5m])*60`, six series, `list_ros` peaking ~10/min |
-| 09 | Grafana | **2026-10-09** | **88.3% composed in Python**, ungrounded 0, cut short 0, rail blocks 0, and the latency step-down when the guided-JSON fix landed |
-| 10 | Attu collections | **2026-10-09** | `updates`, **Loaded**, approx count 1,690 |
-| 11 | Attu schema | **2026-10-09** | **`vector` FloatVector(1024), AUTOINDEX(COSINE)**, entity count 1,690, 13 fields |
-| 11b | Attu data | **2026-10-09** | real rows — `pk`, the **1024-float vectors themselves**, `update_id`, `ro_number` |
-| 12 | sqlite-web | **2026-10-09** | the system of record, 8 tables, 12,266 rows |
+Every frame declares a string that must appear in the page's visible text, and
+the run prints `found` or `MISSING` for each. That is the cheap version of
+checking a screenshot says what its caption claims, and it is what caught three
+frames of an Attu dialog being passed off as the vector store.
 
-**Eight of thirteen are from the GPU box with the local NIMs and the latency
-fixes in.** 03–06 are still 2026-10-07 on hosted inference: Chromium hangs on
-those four Gradio tabs — headless, headed under xvfb, with fake media devices,
-on an idle box — so they are not automated. Everything else re-captures with
-`scripts/capture_screenshots.py`.
+| | | shows |
+|---|---|---|
+| 01 | Dashboard | **66 open repair orders** — 11 safety, 43 promise missed, 51 blocked, 14 waiting — and the 59 that need a decision, each row giving the measurement against its limit |
+| 02 | Repair Order | RO-26-08074 folded from its events: `AWAITING_AUTHORISATION`, promise **breached**, 1.7 h booked against 1.5 flat rate, ops done and outstanding, DTCs, the safety finding, **12 source events cited** — beside the three updates as written |
+| 03 | Technician Update | the same RO's context *before* anything is typed: what is unsafe, what blocks it, what is already done with hours. That is what stops work being logged twice |
+| 04 | Shift Handover | the afternoon brief — 66 open, 51 blocked, 11 safety, 49 at risk — safety first, each entry carrying its measurement and the next action |
+| 05 | Manager Assistant | a cited answer: `Tools: list_ros · computed from the records · Sources: RO-26-08031, RO-26-08074, RO-26-08062, RO-26-08052, RO-26-08165, RO-26-08274` — the same six ids as `docs/EXAMPLES.md` |
+| 06 | Data & Retrieval | what the answers are built from: 400 repair orders, 10,022 events, 1,690 technician updates, 50 staff, 476 answers logged |
+| 07 | Prometheus targets | `asoia` on :9400 **and `dcgm` on :9401**, both UP — the second is what puts real GPU telemetry on the dashboard |
+| 08 | Prometheus tool calls | `rate(asoia_tool_calls_total[5m])*60` over 30 minutes, **six series**, two load bursts, `list_ros` peaking at 10.3/min and `search_updates` the rare one |
+| 09 | Grafana | **90.9% composed in Python**, ungrounded **0**, cut short **0**, guardrail blocks and NIM errors flat at zero, p50 llm ~3s against python ~0s, and SM util hitting **100%** on the semantic queries |
+| 10 | Attu collections | `updates`, **Loaded**, approx count 1,690 |
+| 11 | Attu schema | **`vector` FloatVector(1024), AUTOINDEX(COSINE)**, Loaded, replica 1, 1,690 entities, 13 declared fields plus the dynamic `$meta` |
+| 11b | Attu data | real rows — `pk`, the **1024-float vectors themselves**, `update_id`, `ro_number`, `staff_id`, `staff_name`, timestamps |
+| 12 | sqlite-web | the system of record: 9 tables, 12 indexes, 6.4 MB, `events` and `updates` beside `answer_log` |
+
+## Switching a Gradio tab is what made four frames impossible
+
+03, 04, 05 and 06 sat at an older date for two days, and the reason given here
+twice was wrong both times — first "the third page in a browser session", then
+"the microphone on the Technician Update tab". Neither.
+
+**Clicking from one tab to another throws `effect_update_depth_exceeded` — a
+Svelte reactive loop — about fifteen times a second and never stops.** The
+renderer pins 102% of a core, an `evaluate` never returns (and its own timeout
+does not fire either, which is why runs looked hung rather than failed), and
+`Page.screenshot` times out at 60s. Gradio is 6.15.1.
+
+It is the **switch**, not any tab: a fresh page load on any tab is clean, zero
+page errors, screenshot in 0.4s. Rebuilt in toy apps, the suspects all stay
+clean — 400-row dataframes, 200-item filterable dropdowns, the KPI flex strip,
+the whole Repair Order tab. So the trigger needs the full page, and it is not
+something this repo can fix.
+
+**What fixed the frames was not switching.** `ASOIA_UI_TAB` opens the app on a
+chosen tab, and each Gradio frame now starts a second copy of the app on :7869
+already open on the tab it wants, with the whole tab bar intact. The UI on
+:7860 is left running and untouched. See `docs/OPERATING.md`.
+
+Two things fell out of this that are not about screenshots at all:
+
+- **Each shot runs in its own process**, and the parent kills the process group
+  when it finishes or runs over budget. Nothing calls `browser.close()` — a
+  wedged renderer never answers one and the call blocks forever, which is how a
+  single bad frame used to take the other twelve with it.
+- **Two tabs showed nothing until you changed the dropdown.** Repair Order and
+  Technician Update both come up with the first repair order selected, but their
+  content was wired to `.change()` only — so a person arriving saw an RO
+  selected and an empty panel under it. Both now also fill on load. 02 and 03
+  are the first frames to show what those tabs are for.
+
+## Attu asks to connect in every fresh browser
+
+A run before this one produced three Attu frames that were all the same 45 KB
+picture of **the connect dialog**. Attu keeps the Milvus connection in browser
+state, and every shot here gets a clean profile, so every route rendered the
+dialog instead. The frames that had looked right came from a browser someone
+had connected by hand.
+
+The address is prefilled from the container's `MILVUS_URL`, so the fix is one
+click before taking the route. The route matters too:
+
+    #/databases/default/updates/overview      <- loads the collection into state
+    #/databases/default/collections/updates   <- renders the shell, tabs stay empty
+
+and the **Data** tab starts empty by design: it shows rows only after `Query` is
+pressed, which is why 11b used to be a picture of an empty table.
 
 ## Capturing them under load, which is the whole point
 
@@ -40,53 +93,37 @@ The reason is worth writing down. Traffic was driven by calling
 are **per-process**, and the exporter Prometheus scrapes on :9400 belongs to the
 API server — so those calls incremented counters in a process that then exited,
 and the dashboard never saw them. Driving the same questions through
-`POST /ask` on :8080 put 101 series on the exporter and filled every panel.
+`POST /ask` on :8080 put the series on the exporter and filled every panel.
 
-So: **exercise the app through the API, then wait for two or three scrapes, then
-capture.** A screenshot taken straight after `stack.sh up` shows an idle
-dashboard no matter how healthy the box is.
-
-## What these now show
-
-- **09** — ungrounded answers **0** and answers cut short **0** (both read
-  *No data* before, see below), answer latency split by compose path, NIM
-  latency per service, six tools, and the GPU tracking the semantic queries.
-- **08** — `rate(asoia_tool_calls_total[5m]) * 60` as a graph over 30 minutes,
-  six series: `list_ros` dominates and `search_updates` is the rare one.
-- **11** — `updates (1,690)`. It replaces a shot captioned `FloatVector(2048)`,
-  the hosted embedder's width; the store is 1024-d now. The Schema tab's field
-  list had not loaded when the frame was taken, so the dimension itself is not
-  visible — the file is named for what it shows, not what was wanted.
-
-## Still from 2026-10-07, on a Mac with hosted inference
-
-**03, 04, 05 and 06.** Chromium hangs on those four Gradio tabs, headless or
-headed under xvfb, so they are not automated. They show the right screens, taken
-against the hosted models rather than the local NIMs.
+So: **exercise the app through the API, then capture.** A screenshot taken
+straight after `stack.sh up` shows an idle dashboard no matter how healthy the
+box is. The panels in 08 and 09 run over 30 minutes rather than an hour for the
+same reason — an hour of mostly-idle axis tells you less than the bursts do.
 
 ## A healthy zero is not "No data"
 
 Four panels read *No data* no matter how well the stack was running:
-**Ungrounded answers**, **Silent fallbacks**, **Answers cut short** and
+**Ungrounded answers**, **Compose notes**, **Answers cut short** and
 **Guardrail blocks**. Prometheus returns an empty vector for a counter whose
 labelled child has never been created, and `asoia_grounding_warnings_total` has
 no child precisely *because* nothing was ever ungrounded. Grafana renders that
 identically to the exporter being down.
 
-The dashboard now wraps those queries in `(...) or vector(0)`, so a healthy zero
-says **0**. That is a dashboard fix, not a metric change - the underlying
+The dashboard wraps those queries in `(...) or vector(0)`, so a healthy zero
+says **0**. That is a dashboard fix, not a metric change — the underlying
 counters are untouched.
 
-## What this run surfaced
+## What a run surfaced: a retry bug, not a slow model
 
-Driving real load put **42 `asoia_nim_errors_total{cause="ReadTimeout",
+Driving real load once put **42 `asoia_nim_errors_total{cause="ReadTimeout",
 service="llm"}`** on the exporter while the LLM NIM itself stayed healthy.
 
-The cause was a cascade started by a retry bug, not a slow model. `_post`
-retried **every** exception four times, so one `POST /updates` whose extraction
-exceeded the 120s budget occupied the LLM for up to eight minutes; everything
-queued behind it timed out too, and each of those was retried four times. Fixed
-in `b9a80f9`: read timeouts now fail on the first attempt.
+`_post` retried **every** exception four times, so one `POST /updates` whose
+extraction exceeded the 120s budget occupied the LLM for up to eight minutes;
+everything queued behind it timed out too, and each of those was retried four
+times. Fixed in `b9a80f9`: read timeouts now fail on the first attempt. The
+frames here were taken across two load bursts with **no NIM error series at
+all** — the panel is flat at zero because nothing failed.
 
 **The model itself is fast.** Measured on an idle box: 100 tokens in 1.39s, 215
 in 2.99s, a real semantic question end to end in 3.52s. An earlier note here
@@ -94,67 +131,35 @@ claimed ~0.37 tok/s and blamed guided-decoding FSM compilation — that was
 measured while a load generator of mine was still running, and was wrong. See
 `docs/OPERATING.md`.
 
-## Attu was never broken — the route was wrong
+## The Python-share panel was wrong twice
 
-Three capture attempts produced an Attu frame with headers and no rows, and it
-looked like an Attu or Milvus fault. It was neither. The automation navigated to
-
-    #/databases/default/collections/updates        <- renders the shell, tabs stay empty
-
-when the route Attu actually uses is
-
-    #/databases/default/updates/overview           <- loads the collection into state
-
-The first one renders the page frame and the tab bar, issues no further API
-calls, and leaves every tab showing *No Data*. Opening Attu in a real browser and
-clicking through is what exposed it: the link in the collections table points at
-`.../updates/overview`, not `.../collections/updates`.
-
-Everything else was healthy the whole time. Milvus reports the collection
-**Loaded**, 1,690 rows, `vector` as **FloatVector dim 1024**, index AUTOINDEX /
-COSINE with 1690 of 1690 indexed and 0 pending, and `query()` returning rows.
-Attu's own API was returning the full schema with its fields populated —
-`/collections/details` answered 200 in 349ms with `schema.fields` intact. The
-frontend simply had no collection in state to render.
-
-| | shows |
-|---|---|
-| `10-attu-collections.jpg` | the collections table: `updates`, **Loaded**, approx count 1,690 |
-| `11-attu-schema-1024.jpg` | **`vector` FloatVector(1024)`, AUTOINDEX(COSINE)**, Loaded, replica 1, entity count 1,690, all 13 fields |
-| `11b-attu-data.jpg` | real rows — `pk`, the **1024-float vectors themselves**, `update_id`, `ro_number`, `staff_id`, timestamps |
-
-The deck also carries the rerank evidence as text, from a live query: for
-*"whistling noise"*, vector-only search returns knocking and vibration passages,
-and the reranker returns blowing-noise passages — a different set of repair
-orders entirely.
-
-## The Python-share stat was measuring the wrong thing
-
-It read 87.5% in one capture and 100% in the next, and 0% while idle. All three
-were "correct" for what the query said and none described the system.
+It read 87.5% in one capture and 100% in the next, and 0% while idle:
 
     100 * sum(rate(asoia_answers_total{compose="python"}[5m]))
         / clamp_min(sum(rate(asoia_answers_total[5m])), 0.0001)
 
-Two faults. **A 5-minute rate** reflects only the last handful of questions, so
-the number swung with whatever was asked most recently, and `clamp_min` turned
-an undefined ratio into a confident **0%** whenever nothing was happening -
-indistinguishable from the deterministic path having collapsed.
+**A 5-minute rate** reflects only the last handful of questions, and `clamp_min`
+turned an undefined ratio into a confident **0%** whenever nothing was
+happening — indistinguishable from the deterministic path collapsing.
 
-And `compose` is the path that **finished**, not the path that was chosen. An
-answer that called the model, timed out and fell back to Python was counted as
-Python, so **a failing LLM pushed the number up**. With 48 `ReadTimeout`s on the
-exporter at the time, that was not hypothetical.
+The second attempt subtracted `asoia_compose_fallbacks_total` from the numerator
+to get "Python by design", and **that was wrong too**. Every one of those notes
+reads *"the answer names the records; the retry was uncited and was discarded"*
+— they are discarded **narration retries on LLM answers**, not answers that fell
+back to Python. Subtracting them understated the figure badly (74.7% against a
+true 89.8% at the time).
 
-Measured over the whole run instead: **92.5% of 80 answers finished on the
-Python path; 86.25% were Python by design** once the 5 fallbacks are removed.
+The panel is now the plain ratio over an hour, with no clamp and nothing
+subtracted:
 
-The panel is now titled *Composed in Python by design (%)*, computes
-`increase(...[1h])` with fallbacks subtracted and no clamp, and reads a steady
-94.5% instead of swinging between 0 and 100.
+    100 * sum(increase(asoia_answers_total{compose="python"}[1h]))
+        / sum(increase(asoia_answers_total[1h]))
 
-The Python share in the captured frame is **flattered by the timeout cascade**
-that was running at the time: model calls that timed out fell back to Python and
-were counted as Python. That cascade is fixed in `b9a80f9`, and the model
-answers a real question in 3.52s, so a frame captured now would show a truer
-split.
+and the fallbacks panel is retitled **"Compose notes (retries discarded)"**,
+because a non-zero number there is the citation guard working, not a failure.
+
+One caveat that still stands: `compose` records the path that **finished**, not
+the path that was chosen. An answer that called the model, timed out and fell
+back to Python counts as Python — so a failing LLM pushes this number up. With
+no NIM errors in the window, 90.9% is a clean reading; with errors in it, it
+would not be.

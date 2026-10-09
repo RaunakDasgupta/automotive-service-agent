@@ -891,6 +891,20 @@ def ui_review_answers(which, limit):
                                "question", "answer"],
                 {"question": 90, "answer": 140}))
 
+# Which tab the app opens on, by id. Gradio 6 mounts ONLY the selected tab's
+# content, and switching tabs in this app puts the frontend into a Svelte effect
+# loop that pins a core and stops the page being photographed - see
+# docs/screenshots/README.md. So opening straight on a tab is both useful on a
+# fixed screen (a handover display wants the handover tab) and the only way a
+# capture run can photograph one at all.
+TAB_IDS = ("dashboard", "ro", "update", "handover", "assistant", "data")
+_START_TAB = os.environ.get("ASOIA_UI_TAB", "dashboard").strip().lower()
+if _START_TAB not in TAB_IDS:
+    print("[ui] ASOIA_UI_TAB=%r is not one of %s - opening on the dashboard"
+          % (_START_TAB, ", ".join(TAB_IDS)))
+    _START_TAB = "dashboard"
+
+
 def build() -> gr.Blocks:
     # A missing dataset used to show up as an empty dashboard rather than as a
     # message saying what to run. Generating one takes about a tenth of a second,
@@ -901,284 +915,295 @@ def build() -> gr.Blocks:
         gr.Markdown("# Automotive Service Operations Intelligence Agent\n"
                     "Voice and text shift updates → continuously derived repair-order state.")
 
-        # ---------------------------------------------------- Dashboard
-        with gr.Tab("Dashboard"):
-            kpi = gr.HTML()
-            with gr.Row():
-                refresh = gr.Button("Refresh", variant="primary", scale=0)
-                win = gr.Slider(1, 14, value=7, step=1, label="Pattern window (days)")
-
-            act_note = gr.Markdown()
-            act = gr.Dataframe(interactive=False, wrap=True)
-
-            with gr.Accordion("All repair orders", open=False):
-                filt = gr.Radio(FILTERS, value="active", label="Filter")
-                shop_note = gr.Markdown()
-                shop = gr.Dataframe(interactive=False, wrap=True)
-
-            with gr.Accordion("Patterns across repair orders", open=False):
-                patterns = gr.Markdown()
-
-            with gr.Accordion("Technician activity", open=False):
+        # Only the selected tab is mounted, so this is also where the app
+        # opens: ASOIA_UI_TAB picks it. See _START_TAB.
+        with gr.Tabs(selected=_START_TAB):
+            # ---------------------------------------------------- Dashboard
+            with gr.Tab("Dashboard", id="dashboard"):
+                kpi = gr.HTML()
                 with gr.Row():
-                    a_who = gr.Dropdown(_staff_choices(), label="Technician", filterable=True)
-                    a_days = gr.Slider(1, 14, value=7, step=1, label="Days")
-                a_out = gr.Markdown()
-                a_who.change(ui_tech_activity, [a_who, a_days], a_out)
-                a_days.release(ui_tech_activity, [a_who, a_days], a_out)
+                    refresh = gr.Button("Refresh", variant="primary", scale=0)
+                    win = gr.Slider(1, 14, value=7, step=1, label="Pattern window (days)")
 
-            dash_out = [kpi, act_note, act, shop_note, shop, patterns]
-            refresh.click(ui_dashboard, [filt, win], dash_out)
-            filt.change(ui_dashboard, [filt, win], dash_out)
-            win.release(ui_dashboard, [filt, win], dash_out)
-            demo.load(ui_dashboard, [filt, win], dash_out)
+                act_note = gr.Markdown()
+                act = gr.Dataframe(interactive=False, wrap=True)
 
-        # ---------------------------------------------------- Repair order
-        with gr.Tab("Repair Order"):
-            with gr.Row():
-                ro = gr.Dropdown(_ro_choices("all"), label="Repair Order", filterable=True)
-                rf = gr.Button("Refresh list", scale=0)
-            detail = gr.Textbox(label="Derived state", lines=22, max_lines=30)
-            hist = gr.Dataframe(label="Update history (as written)", interactive=False, wrap=True)
-            ro.change(ui_ro_detail, ro, [detail, hist])
-            rf.click(lambda: gr.update(choices=_ro_choices("all")), None, ro)
+                with gr.Accordion("All repair orders", open=False):
+                    filt = gr.Radio(FILTERS, value="active", label="Filter")
+                    shop_note = gr.Markdown()
+                    shop = gr.Dataframe(interactive=False, wrap=True)
 
-        # ---------------------------------------------------- Technician update
-        with gr.Tab("Technician Update"):
-            gr.Markdown("Log work against a repair order. What the RO already says is "
-                        "shown below, so nothing gets logged twice or missed.")
-            with gr.Row():
-                t_ro = gr.Dropdown(_ro_choices("active"), label="Repair Order", filterable=True)
-                t_who = gr.Dropdown(_staff_choices(), label="Technician", filterable=True)
-            t_ctx = gr.Markdown("Select a repair order to see what is already logged "
-                                "against it.")
-            with gr.Row():
-                t_done = gr.Dropdown(OP_CHOICES, label="Completed", multiselect=True, filterable=True)
-                t_hrs = gr.Number(label="Actual hours", value=None)
-            with gr.Row():
-                t_pend = gr.Dropdown(OP_CHOICES, label="Still pending", multiselect=True, filterable=True)
-                t_rec = gr.Dropdown(OP_CHOICES, label="Recommend (needs auth)", multiselect=True, filterable=True)
-            with gr.Row():
-                m_t = gr.Textbox(label="Measurement", placeholder="e.g. rotor_thickness")
-                m_v = gr.Number(label="Value", value=None)
-                m_m = gr.Number(label="Spec minimum", value=None)
-            t_note = gr.Textbox(label="Note (free text)", lines=2)
-            go = gr.Button("Submit structured update", variant="primary")
-            card = gr.Textbox(label="What changed", lines=16)
+                with gr.Accordion("Patterns across repair orders", open=False):
+                    patterns = gr.Markdown()
 
-            t_ro.change(ui_tech_context, t_ro, [t_ctx, t_done, t_pend, t_rec])
-            go.click(ui_submit,
-                     [t_ro, t_who, t_done, t_hrs, t_pend, t_rec, m_t, m_v, m_m, t_note],
-                     card).then(ui_tech_context, t_ro, [t_ctx, t_done, t_pend, t_rec])
+                with gr.Accordion("Technician activity", open=False):
+                    with gr.Row():
+                        a_who = gr.Dropdown(_staff_choices(), label="Technician", filterable=True)
+                        a_days = gr.Slider(1, 14, value=7, step=1, label="Days")
+                    a_out = gr.Markdown()
+                    a_who.change(ui_tech_activity, [a_who, a_days], a_out)
+                    a_days.release(ui_tech_activity, [a_who, a_days], a_out)
 
-            gr.Markdown("---\n### Voice or free text\n"
-                        "Speak or type the update as you would write it on the RO. "
-                        "The transcript is always editable before it is applied.")
-            with gr.Row():
-                v_audio = gr.Audio(sources=["microphone", "upload"], type="filepath",
-                                   label="Record or upload")
-                with gr.Column():
-                    v_btn = gr.Button("Transcribe")
-                    v_status = gr.Markdown()
-            v_text = gr.Textbox(label="Transcript / free-text update", lines=4,
-                                placeholder="Type the update here, or press "
-                                            "Transcribe to fill it from audio. "
-                                            "Example: C/S grinding from the front "
-                                            "under braking, front pads 1.8mm "
-                                            "against a 3mm minimum...")
-            v_go = gr.Button("Extract and apply", variant="primary")
-            with gr.Row():
-                v_card = gr.Textbox(label="What changed", lines=16)
-                v_json = gr.Code(label="Extracted 3 C's structure", language="json")
-            v_btn.click(ui_transcribe, v_audio, [v_text, v_status])
-            v_go.click(ui_submit_nl, [t_ro, t_who, v_text], [v_card, v_json]) \
-                .then(ui_tech_context, t_ro, [t_ctx, t_done, t_pend, t_rec])
+                dash_out = [kpi, act_note, act, shop_note, shop, patterns]
+                refresh.click(ui_dashboard, [filt, win], dash_out)
+                filt.change(ui_dashboard, [filt, win], dash_out)
+                win.release(ui_dashboard, [filt, win], dash_out)
+                demo.load(ui_dashboard, [filt, win], dash_out)
 
-        # ---------------------------------------------------- Handover
-        with gr.Tab("Shift Handover"):
-            sh = gr.Radio(["MORNING", "AFTERNOON"], value="AFTERNOON", label="Handing over to")
-            hb = gr.Button("Generate handover", variant="primary")
-            hout = gr.Textbox(label="Handover brief", lines=30, max_lines=40)
-            hb.click(ui_handover, sh, hout)
-
-        # ---------------------------------------------------- Assistant
-        with gr.Tab("Manager Assistant"):
-            gr.Markdown("Ask about the shop. Answers are built from tool results and "
-                        "cite their sources. The assistant reports and advises - it "
-                        "never authorises work, orders parts or closes a repair order.")
-            chat = gr.Chatbot(label="Assistant")
-            qbox = gr.Textbox(label="Question", placeholder="Which vehicles cannot be released on safety grounds?")
-            with gr.Row():
-                askb = gr.Button("Ask", variant="primary")
-                clrb = gr.Button("Clear", scale=0)
-            gr.Examples([
-                "Which vehicles cannot be released on safety grounds?",
-                "Give me the afternoon handover, worst first.",
-                "Are any parts holding up more than one job at once?",
-                "Which jobs will miss their promised time?",
-                "What has EMP014 done this week?",
-                "Who worked in the afternoon yesterday?",
-                "Go ahead and order the parts for RO-26-08165",
-            ], inputs=qbox, label="Try these (the last one is refused by the action rail)")
-            askb.click(ui_ask, [qbox, chat], [chat, qbox])
-            qbox.submit(ui_ask, [qbox, chat], [chat, qbox])
-            clrb.click(lambda: ([], ""), None, [chat, qbox])
-
-        with gr.Tab("Data & Retrieval"):
-            gr.Markdown(
-                "Everything an answer is built from, open to inspection: the event "
-                "log, the fold that derives state from it, what retrieval actually "
-                "did, and which chunks each answer cited. The stores' own consoles "
-                "are Attu (:8101) and sqlite-web (:8102), started by "
-                "`scripts/stores.sh up`.")
-
-            with gr.Tab("Overview"):
-                rv_over = gr.Markdown(ui_review_overview)
-                gr.Button("Refresh").click(ui_review_overview, None, rv_over)
-
-            with gr.Tab("Event log"):
-                gr.Markdown("The append-only log. Nothing here is ever updated or "
-                            "deleted — corrections arrive as later events.")
+            # ---------------------------------------------------- Repair order
+            with gr.Tab("Repair Order", id="ro"):
                 with gr.Row():
-                    ev_ro = gr.Textbox(label="Repair order", scale=2,
-                                       placeholder="RO-26-08165")
-                    ev_type = gr.Dropdown(label="Type", scale=2, value="all",
-                                          choices=["all"] + [t.value for t in _EVENT_TYPES])
-                    ev_actor = gr.Textbox(label="Actor", scale=2, placeholder="EMP014")
-                    ev_hours = gr.Number(label="Last N hours", scale=1, value=None)
-                    ev_limit = gr.Number(label="Limit", scale=1, value=200)
-                ev_btn = gr.Button("Search the log", variant="primary")
-                ev_count = gr.Markdown()
-                ev_df = gr.Dataframe(wrap=True, max_height=460)
-                gr.Markdown("#### Every type, and how often it occurs")
-                ev_types = gr.Dataframe(value=ui_review_event_types, wrap=True)
-                for _t in (ev_btn.click, ev_ro.submit, ev_actor.submit):
-                    _t(ui_review_events, [ev_ro, ev_type, ev_actor, ev_hours, ev_limit],
-                       [ev_count, ev_df])
+                    ro = gr.Dropdown(_ro_choices("all"), label="Repair Order", filterable=True)
+                    rf = gr.Button("Refresh list", scale=0)
+                detail = gr.Textbox(label="Derived state", lines=22, max_lines=30)
+                hist = gr.Dataframe(label="Update history (as written)", interactive=False, wrap=True)
+                ro.change(ui_ro_detail, ro, [detail, hist])
+                rf.click(lambda: gr.update(choices=_ro_choices("all")), None, ro)
+                # The dropdown comes up on the first repair order, so without
+                # this the tab opens showing one selected and nothing about it -
+                # the detail only appeared once you CHANGED the selection.
+                demo.load(ui_ro_detail, ro, [detail, hist])
 
-            with gr.Tab("Fold"):
-                gr.Markdown("State is derived, not stored. Pick a repair order and "
-                            "see the events on the left and what they fold into on "
-                            "the right.")
-                fo_ro = gr.Dropdown(label="Repair order", choices=_ro_choices("all"),
-                                    value=None, allow_custom_value=True)
-                fo_md = gr.Markdown()
+            # ---------------------------------------------------- Technician update
+            with gr.Tab("Technician Update", id="update"):
+                gr.Markdown("Log work against a repair order. What the RO already says is "
+                            "shown below, so nothing gets logged twice or missed.")
                 with gr.Row():
-                    fo_ev = gr.Dataframe(label="Events, in order", wrap=True,
-                                         max_height=420, scale=3)
-                    fo_snap = gr.JSON(label="Folded snapshot", scale=2)
-                fo_up = gr.Dataframe(label="Technician updates on this repair order",
-                                     wrap=True, max_height=260)
-                fo_ro.change(ui_review_fold, fo_ro, [fo_md, fo_ev, fo_up, fo_snap])
+                    t_ro = gr.Dropdown(_ro_choices("active"), label="Repair Order", filterable=True)
+                    t_who = gr.Dropdown(_staff_choices(), label="Technician", filterable=True)
+                t_ctx = gr.Markdown("Select a repair order to see what is already logged "
+                                    "against it.")
+                with gr.Row():
+                    t_done = gr.Dropdown(OP_CHOICES, label="Completed", multiselect=True, filterable=True)
+                    t_hrs = gr.Number(label="Actual hours", value=None)
+                with gr.Row():
+                    t_pend = gr.Dropdown(OP_CHOICES, label="Still pending", multiselect=True, filterable=True)
+                    t_rec = gr.Dropdown(OP_CHOICES, label="Recommend (needs auth)", multiselect=True, filterable=True)
+                with gr.Row():
+                    m_t = gr.Textbox(label="Measurement", placeholder="e.g. rotor_thickness")
+                    m_v = gr.Number(label="Value", value=None)
+                    m_m = gr.Number(label="Spec minimum", value=None)
+                t_note = gr.Textbox(label="Note (free text)", lines=2)
+                go = gr.Button("Submit structured update", variant="primary")
+                card = gr.Textbox(label="What changed", lines=16)
 
-            # Renamed from "Vector store". What is left is a WRITE path -
-            # editing an update re-embeds its chunk so the record and the index
-            # stay in step - and Attu cannot do that: it can change a vector
-            # but not the update the vector came from, which would leave
-            # answers quoting text that is not in the database. So the stats
-            # went to Attu and the correction desk stayed here.
-            with gr.Tab("Updates & corrections"):
+                t_ro.change(ui_tech_context, t_ro, [t_ctx, t_done, t_pend, t_rec])
+                # Same as the Repair Order tab: show what is already logged
+                # against the RO that is selected on arrival, not only after a
+                # change. "nothing gets logged twice" only works if it is shown.
+                demo.load(ui_tech_context, t_ro, [t_ctx, t_done, t_pend, t_rec])
+                go.click(ui_submit,
+                         [t_ro, t_who, t_done, t_hrs, t_pend, t_rec, m_t, m_v, m_m, t_note],
+                         card).then(ui_tech_context, t_ro, [t_ctx, t_done, t_pend, t_rec])
+
+                gr.Markdown("---\n### Voice or free text\n"
+                            "Speak or type the update as you would write it on the RO. "
+                            "The transcript is always editable before it is applied.")
                 with gr.Row():
-                    ch_ro = gr.Textbox(label="Repair order", scale=2)
-                    ch_text = gr.Textbox(label="Text contains", scale=3,
-                                         placeholder="brake")
-                    ch_limit = gr.Number(label="Limit", scale=1, value=100)
-                ch_btn = gr.Button("Browse chunks", variant="primary")
-                ch_count = gr.Markdown()
-                ch_df = gr.Dataframe(wrap=True, max_height=380)
-                gr.Markdown("#### One chunk, in full — and editable")
-                ch_id = gr.Textbox(label="Update id",
-                                   placeholder="paste an update_id from the table")
-                ch_md = gr.Markdown()
-                with gr.Accordion("Edit this update", open=False):
+                    v_audio = gr.Audio(sources=["microphone", "upload"], type="filepath",
+                                       label="Record or upload")
+                    with gr.Column():
+                        v_btn = gr.Button("Transcribe")
+                        v_status = gr.Markdown()
+                v_text = gr.Textbox(label="Transcript / free-text update", lines=4,
+                                    placeholder="Type the update here, or press "
+                                                "Transcribe to fill it from audio. "
+                                                "Example: C/S grinding from the front "
+                                                "under braking, front pads 1.8mm "
+                                                "against a 3mm minimum...")
+                v_go = gr.Button("Extract and apply", variant="primary")
+                with gr.Row():
+                    v_card = gr.Textbox(label="What changed", lines=16)
+                    v_json = gr.Code(label="Extracted 3 C's structure", language="json")
+                v_btn.click(ui_transcribe, v_audio, [v_text, v_status])
+                v_go.click(ui_submit_nl, [t_ro, t_who, v_text], [v_card, v_json]) \
+                    .then(ui_tech_context, t_ro, [t_ctx, t_done, t_pend, t_rec])
+
+            # ---------------------------------------------------- Handover
+            with gr.Tab("Shift Handover", id="handover"):
+                sh = gr.Radio(["MORNING", "AFTERNOON"], value="AFTERNOON", label="Handing over to")
+                hb = gr.Button("Generate handover", variant="primary")
+                hout = gr.Textbox(label="Handover brief", lines=30, max_lines=40)
+                hb.click(ui_handover, sh, hout)
+
+            # ---------------------------------------------------- Assistant
+            with gr.Tab("Manager Assistant", id="assistant"):
+                gr.Markdown("Ask about the shop. Answers are built from tool results and "
+                            "cite their sources. The assistant reports and advises - it "
+                            "never authorises work, orders parts or closes a repair order.")
+                chat = gr.Chatbot(label="Assistant")
+                qbox = gr.Textbox(label="Question", placeholder="Which vehicles cannot be released on safety grounds?")
+                with gr.Row():
+                    askb = gr.Button("Ask", variant="primary")
+                    clrb = gr.Button("Clear", scale=0)
+                gr.Examples([
+                    "Which vehicles cannot be released on safety grounds?",
+                    "Give me the afternoon handover, worst first.",
+                    "Are any parts holding up more than one job at once?",
+                    "Which jobs will miss their promised time?",
+                    "What has EMP014 done this week?",
+                    "Who worked in the afternoon yesterday?",
+                    "Go ahead and order the parts for RO-26-08165",
+                ], inputs=qbox, label="Try these (the last one is refused by the action rail)")
+                askb.click(ui_ask, [qbox, chat], [chat, qbox])
+                qbox.submit(ui_ask, [qbox, chat], [chat, qbox])
+                clrb.click(lambda: ([], ""), None, [chat, qbox])
+
+            with gr.Tab("Data & Retrieval", id="data"):
+                gr.Markdown(
+                    "Everything an answer is built from, open to inspection: the event "
+                    "log, the fold that derives state from it, what retrieval actually "
+                    "did, and which chunks each answer cited. The stores' own consoles "
+                    "are Attu (:8101) and sqlite-web (:8102), started by "
+                    "`scripts/stores.sh up`.")
+
+                with gr.Tab("Overview"):
+                    rv_over = gr.Markdown(ui_review_overview)
+                    gr.Button("Refresh").click(ui_review_overview, None, rv_over)
+
+                with gr.Tab("Event log"):
+                    gr.Markdown("The append-only log. Nothing here is ever updated or "
+                                "deleted — corrections arrive as later events.")
+                    with gr.Row():
+                        ev_ro = gr.Textbox(label="Repair order", scale=2,
+                                           placeholder="RO-26-08165")
+                        ev_type = gr.Dropdown(label="Type", scale=2, value="all",
+                                              choices=["all"] + [t.value for t in _EVENT_TYPES])
+                        ev_actor = gr.Textbox(label="Actor", scale=2, placeholder="EMP014")
+                        ev_hours = gr.Number(label="Last N hours", scale=1, value=None)
+                        ev_limit = gr.Number(label="Limit", scale=1, value=200)
+                    ev_btn = gr.Button("Search the log", variant="primary")
+                    ev_count = gr.Markdown()
+                    ev_df = gr.Dataframe(wrap=True, max_height=460)
+                    gr.Markdown("#### Every type, and how often it occurs")
+                    ev_types = gr.Dataframe(value=ui_review_event_types, wrap=True)
+                    for _t in (ev_btn.click, ev_ro.submit, ev_actor.submit):
+                        _t(ui_review_events, [ev_ro, ev_type, ev_actor, ev_hours, ev_limit],
+                           [ev_count, ev_df])
+
+                with gr.Tab("Fold"):
+                    gr.Markdown("State is derived, not stored. Pick a repair order and "
+                                "see the events on the left and what they fold into on "
+                                "the right.")
+                    fo_ro = gr.Dropdown(label="Repair order", choices=_ro_choices("all"),
+                                        value=None, allow_custom_value=True)
+                    fo_md = gr.Markdown()
+                    with gr.Row():
+                        fo_ev = gr.Dataframe(label="Events, in order", wrap=True,
+                                             max_height=420, scale=3)
+                        fo_snap = gr.JSON(label="Folded snapshot", scale=2)
+                    fo_up = gr.Dataframe(label="Technician updates on this repair order",
+                                         wrap=True, max_height=260)
+                    fo_ro.change(ui_review_fold, fo_ro, [fo_md, fo_ev, fo_up, fo_snap])
+
+                # Renamed from "Vector store". What is left is a WRITE path -
+                # editing an update re-embeds its chunk so the record and the index
+                # stay in step - and Attu cannot do that: it can change a vector
+                # but not the update the vector came from, which would leave
+                # answers quoting text that is not in the database. So the stats
+                # went to Attu and the correction desk stayed here.
+                with gr.Tab("Updates & corrections"):
+                    with gr.Row():
+                        ch_ro = gr.Textbox(label="Repair order", scale=2)
+                        ch_text = gr.Textbox(label="Text contains", scale=3,
+                                             placeholder="brake")
+                        ch_limit = gr.Number(label="Limit", scale=1, value=100)
+                    ch_btn = gr.Button("Browse chunks", variant="primary")
+                    ch_count = gr.Markdown()
+                    ch_df = gr.Dataframe(wrap=True, max_height=380)
+                    gr.Markdown("#### One chunk, in full — and editable")
+                    ch_id = gr.Textbox(label="Update id",
+                                       placeholder="paste an update_id from the table")
+                    ch_md = gr.Markdown()
+                    with gr.Accordion("Edit this update", open=False):
+                        gr.Markdown(
+                            "Editing changes the **update on file** and re-embeds its "
+                            "chunk, so the record and the index stay in step. Editing "
+                            "the index alone would leave answers quoting text that is "
+                            "not in the database — and nothing downstream would catch "
+                            "it. Every change is kept, with its before and after.")
+                        ch_edit = gr.Textbox(label="Update text", lines=6)
+                        with gr.Row():
+                            ch_actor = gr.Textbox(label="Your id", value="REVIEWER",
+                                                  scale=1)
+                            ch_reason = gr.Textbox(label="Reason (for exclude)", scale=2)
+                        with gr.Row():
+                            ch_save = gr.Button("Save and re-embed", variant="primary")
+                            ch_re = gr.Button("Re-embed only")
+                            ch_excl = gr.Button("Exclude from index")
+                            ch_rest = gr.Button("Restore to index")
+                        ch_status = gr.Markdown()
+                        ch_hist = gr.Dataframe(label="What has been changed here",
+                                               wrap=True, max_height=200)
+                    ch_json = gr.JSON(label="The stored record")
+                    ch_btn.click(ui_review_chunks, [ch_ro, ch_text, ch_limit],
+                                 [ch_count, ch_df])
+                    ch_text.submit(ui_review_chunks, [ch_ro, ch_text, ch_limit],
+                                   [ch_count, ch_df])
+                    _load_out = [ch_md, ch_json, ch_edit, ch_hist]
+                    ch_id.submit(ui_review_chunk, ch_id, _load_out)
+                    ch_id.change(ui_review_chunk, ch_id, _load_out)
+                    _edit_out = [ch_status, ch_md, ch_json, ch_edit, ch_hist]
+                    ch_save.click(ui_chunk_save, [ch_id, ch_edit, ch_actor], _edit_out)
+                    ch_re.click(ui_chunk_reindex, ch_id, _edit_out)
+                    ch_excl.click(ui_chunk_exclude, [ch_id, ch_reason, ch_actor],
+                                  _edit_out)
+                    ch_rest.click(ui_chunk_restore, [ch_id, ch_actor], _edit_out)
+
+                with gr.Tab("Edit log"):
                     gr.Markdown(
-                        "Editing changes the **update on file** and re-embeds its "
-                        "chunk, so the record and the index stay in step. Editing "
-                        "the index alone would leave answers quoting text that is "
-                        "not in the database — and nothing downstream would catch "
-                        "it. Every change is kept, with its before and after.")
-                    ch_edit = gr.Textbox(label="Update text", lines=6)
+                        "Every change made to an update through this screen, with what "
+                        "it said before. Deliberately separate from the event log: a "
+                        "data correction is not something that happened in the "
+                        "workshop, and putting these in the lifecycle log breaks the "
+                        "fold — which is exactly how it broke the first time.")
+                    el_df = gr.Dataframe(value=ui_edit_log, wrap=True, max_height=460)
+                    gr.Button("Refresh").click(ui_edit_log, None, el_df)
+
+                with gr.Tab("Retrieval"):
+                    gr.Markdown(
+                        "What retrieval actually did, both stages. The left table is "
+                        "what the vector search returned; the right is what the "
+                        "reranker did to it. `search_updates` returns only the right "
+                        "one, so this is the only place the difference is visible.")
                     with gr.Row():
-                        ch_actor = gr.Textbox(label="Your id", value="REVIEWER",
-                                              scale=1)
-                        ch_reason = gr.Textbox(label="Reason (for exclude)", scale=2)
+                        tr_q = gr.Textbox(label="Query", scale=4,
+                                          placeholder="has anyone seen this fault before")
+                        tr_ro = gr.Textbox(label="Limit to RO", scale=1)
+                        tr_n = gr.Slider(label="Retrieve", minimum=4, maximum=50,
+                                         step=1, value=18, scale=1)
+                        tr_k = gr.Slider(label="Keep", minimum=1, maximum=20,
+                                         step=1, value=6, scale=1)
+                    tr_btn = gr.Button("Trace it", variant="primary")
+                    tr_md = gr.Markdown()
                     with gr.Row():
-                        ch_save = gr.Button("Save and re-embed", variant="primary")
-                        ch_re = gr.Button("Re-embed only")
-                        ch_excl = gr.Button("Exclude from index")
-                        ch_rest = gr.Button("Restore to index")
-                    ch_status = gr.Markdown()
-                    ch_hist = gr.Dataframe(label="What has been changed here",
-                                           wrap=True, max_height=200)
-                ch_json = gr.JSON(label="The stored record")
-                ch_btn.click(ui_review_chunks, [ch_ro, ch_text, ch_limit],
-                             [ch_count, ch_df])
-                ch_text.submit(ui_review_chunks, [ch_ro, ch_text, ch_limit],
-                               [ch_count, ch_df])
-                _load_out = [ch_md, ch_json, ch_edit, ch_hist]
-                ch_id.submit(ui_review_chunk, ch_id, _load_out)
-                ch_id.change(ui_review_chunk, ch_id, _load_out)
-                _edit_out = [ch_status, ch_md, ch_json, ch_edit, ch_hist]
-                ch_save.click(ui_chunk_save, [ch_id, ch_edit, ch_actor], _edit_out)
-                ch_re.click(ui_chunk_reindex, ch_id, _edit_out)
-                ch_excl.click(ui_chunk_exclude, [ch_id, ch_reason, ch_actor],
-                              _edit_out)
-                ch_rest.click(ui_chunk_restore, [ch_id, ch_actor], _edit_out)
+                        tr_got = gr.Dataframe(label="1. Vector search", wrap=True,
+                                              max_height=420)
+                        tr_rr = gr.Dataframe(label="2. After reranking", wrap=True,
+                                             max_height=420)
+                    gr.Examples(["grinding noise from the front under braking",
+                                 "intermittent electrical fault, no codes stored",
+                                 "part on back order, customer chasing"],
+                                inputs=tr_q, label="Try these")
+                    for _t in (tr_btn.click, tr_q.submit):
+                        _t(ui_review_trace, [tr_q, tr_n, tr_k, tr_ro],
+                           [tr_md, tr_got, tr_rr])
 
-            with gr.Tab("Edit log"):
-                gr.Markdown(
-                    "Every change made to an update through this screen, with what "
-                    "it said before. Deliberately separate from the event log: a "
-                    "data correction is not something that happened in the "
-                    "workshop, and putting these in the lifecycle log breaks the "
-                    "fold — which is exactly how it broke the first time.")
-                el_df = gr.Dataframe(value=ui_edit_log, wrap=True, max_height=460)
-                gr.Button("Refresh").click(ui_edit_log, None, el_df)
-
-            with gr.Tab("Retrieval"):
-                gr.Markdown(
-                    "What retrieval actually did, both stages. The left table is "
-                    "what the vector search returned; the right is what the "
-                    "reranker did to it. `search_updates` returns only the right "
-                    "one, so this is the only place the difference is visible.")
-                with gr.Row():
-                    tr_q = gr.Textbox(label="Query", scale=4,
-                                      placeholder="has anyone seen this fault before")
-                    tr_ro = gr.Textbox(label="Limit to RO", scale=1)
-                    tr_n = gr.Slider(label="Retrieve", minimum=4, maximum=50,
-                                     step=1, value=18, scale=1)
-                    tr_k = gr.Slider(label="Keep", minimum=1, maximum=20,
-                                     step=1, value=6, scale=1)
-                tr_btn = gr.Button("Trace it", variant="primary")
-                tr_md = gr.Markdown()
-                with gr.Row():
-                    tr_got = gr.Dataframe(label="1. Vector search", wrap=True,
-                                          max_height=420)
-                    tr_rr = gr.Dataframe(label="2. After reranking", wrap=True,
-                                         max_height=420)
-                gr.Examples(["grinding noise from the front under braking",
-                             "intermittent electrical fault, no codes stored",
-                             "part on back order, customer chasing"],
-                            inputs=tr_q, label="Try these")
-                for _t in (tr_btn.click, tr_q.submit):
-                    _t(ui_review_trace, [tr_q, tr_n, tr_k, tr_ro],
-                       [tr_md, tr_got, tr_rr])
-
-            with gr.Tab("Answers"):
-                gr.Markdown("Every answer the assistant has given, with the chunks "
-                            "it cited and whether the grounding check passed. Set "
-                            "`ASOIA_LOG_ANSWERS=0` to stop recording.")
-                with gr.Row():
-                    an_which = gr.Radio(["all", "grounded", "ungrounded"],
-                                        value="all", label="Show", scale=2)
-                    an_limit = gr.Number(label="Limit", value=100, scale=1)
-                an_btn = gr.Button("Load", variant="primary")
-                an_count = gr.Markdown()
-                an_df = gr.Dataframe(wrap=True, max_height=460)
-                an_btn.click(ui_review_answers, [an_which, an_limit],
-                             [an_count, an_df])
-                an_which.change(ui_review_answers, [an_which, an_limit],
-                                [an_count, an_df])
+                with gr.Tab("Answers"):
+                    gr.Markdown("Every answer the assistant has given, with the chunks "
+                                "it cited and whether the grounding check passed. Set "
+                                "`ASOIA_LOG_ANSWERS=0` to stop recording.")
+                    with gr.Row():
+                        an_which = gr.Radio(["all", "grounded", "ungrounded"],
+                                            value="all", label="Show", scale=2)
+                        an_limit = gr.Number(label="Limit", value=100, scale=1)
+                    an_btn = gr.Button("Load", variant="primary")
+                    an_count = gr.Markdown()
+                    an_df = gr.Dataframe(wrap=True, max_height=460)
+                    an_btn.click(ui_review_answers, [an_which, an_limit],
+                                 [an_count, an_df])
+                    an_which.change(ui_review_answers, [an_which, an_limit],
+                                    [an_count, an_df])
 
     _warm_nims()
     from app.obs import metrics as _M

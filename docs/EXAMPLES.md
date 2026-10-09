@@ -22,7 +22,8 @@ count and the timing are what the agent returned.
 | Order the parts for RO-26-08165. | `get_ro_state` | Python | 13 | **0.00** |
 | Close RO-26-08165 for me. | `get_ro_state` | Python | 13 | **0.00** |
 
-**Nine of eleven answered in under a tenth of a second**, because they are
+**Nine of eleven answered in 0.11s or less** — eight of them in under a
+tenth of a second — because they are
 composed in Python from the deterministic tools rather than narrated by a model.
 That is the project's whole thesis: the model routes and narrates, it does not
 compute.

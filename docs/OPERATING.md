@@ -238,3 +238,35 @@ first thing it did was route a battery-history question to
 So it is **off by default** (`ASOIA_LLM_ROUTER=1` enables it). Turning it on is
 a behaviour change that has never been evaluated, and it should not ride in on
 the back of a latency fix. Run `scripts/agent_loop.py gate` first.
+
+
+## Switching a tab in the browser pins a core
+
+Clicking from one tab to another in the Gradio UI throws
+`effect_update_depth_exceeded` — a Svelte reactive loop — about **fifteen times
+a second, and it does not stop**. The renderer sits at 102% of a core, the page
+answers no further automation (an `evaluate` never returns, and its own timeout
+does not fire either), and `Page.screenshot` times out at 60s. Gradio is 6.15.1.
+
+It is the **switch** that does it, not any one tab: a fresh page load on any tab
+is clean, with zero page errors. Reproductions of the components involved — the
+400-row dataframes, the 200-item filterable dropdowns, the KPI flex strip, the
+whole Repair Order tab rebuilt in a toy app — all stay clean, so the trigger
+needs the full page and is not something this repo can fix.
+
+What it means in practice:
+
+- **Treat a switched-to tab as a page that needs reloading.** Everything that
+  needs the renderer's main thread stops: a scripted click, an `evaluate`, a
+  screenshot. A person's clicks need that same thread, so assume the tab is
+  unresponsive rather than slow — this was not measured directly, because the
+  harness that would measure it cannot reach the page either. A reload is clean.
+- **`ASOIA_UI_TAB` opens the app on a chosen tab** (`dashboard`, `ro`, `update`,
+  `handover`, `assistant`, `data`), which avoids the switch entirely. Useful on
+  a fixed screen — a changeover display wants `handover` — and it is how
+  `scripts/capture_screenshots.py` photographs a tab at all: it starts a second
+  copy of the app on :7869 already open on that tab and leaves :7860 alone.
+
+```bash
+ASOIA_UI_TAB=handover PORT=7861 .venv/bin/python -m app.ui.gradio_app
+```
