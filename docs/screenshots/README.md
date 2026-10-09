@@ -80,16 +80,36 @@ fallbacks recorded as *"the retry was uncited"*, and `POST /updates` hanging
 past 240s without logging a request line. Not fixed here, and recorded so it is
 not rediscovered from scratch.
 
-## Attu will not render its Schema or Data tab under automation
+## Attu was never broken — the route was wrong
 
-The frame is the collection view: `updates (1,690)`, loaded, the right row
-count. The **Schema** and **Data** tabs click correctly - they are real
-`role=tab` elements and Attu's own API answers `/collections/details` in 349ms -
-but neither panel ever populates in headless or xvfb Chromium, even after 36
-seconds of waiting. So the dimension is not visible in a frame.
+Three capture attempts produced an Attu frame with headers and no rows, and it
+looked like an Attu or Milvus fault. It was neither. The automation navigated to
 
-The deck carries the evidence as text instead, from a live query: for *"whistling
-noise"*, vector-only search tops out at knocking and vibration passages, and the
-reranker returns blowing-noise passages - a different set of repair orders
-entirely. That shows the store working better than a screenshot of an admin
-panel would.
+    #/databases/default/collections/updates        <- renders the shell, tabs stay empty
+
+when the route Attu actually uses is
+
+    #/databases/default/updates/overview           <- loads the collection into state
+
+The first one renders the page frame and the tab bar, issues no further API
+calls, and leaves every tab showing *No Data*. Opening Attu in a real browser and
+clicking through is what exposed it: the link in the collections table points at
+`.../updates/overview`, not `.../collections/updates`.
+
+Everything else was healthy the whole time. Milvus reports the collection
+**Loaded**, 1,690 rows, `vector` as **FloatVector dim 1024**, index AUTOINDEX /
+COSINE with 1690 of 1690 indexed and 0 pending, and `query()` returning rows.
+Attu's own API was returning the full schema with its fields populated —
+`/collections/details` answered 200 in 349ms with `schema.fields` intact. The
+frontend simply had no collection in state to render.
+
+| | shows |
+|---|---|
+| `10-attu-collections.jpg` | the collections table: `updates`, **Loaded**, approx count 1,690 |
+| `11-attu-schema-1024.jpg` | **`vector` FloatVector(1024)`, AUTOINDEX(COSINE)**, Loaded, replica 1, entity count 1,690, all 13 fields |
+| `11b-attu-data.jpg` | real rows — `pk`, the **1024-float vectors themselves**, `update_id`, `ro_number`, `staff_id`, timestamps |
+
+The deck also carries the rerank evidence as text, from a live query: for
+*"whistling noise"*, vector-only search returns knocking and vibration passages,
+and the reranker returns blowing-noise passages — a different set of repair
+orders entirely.
