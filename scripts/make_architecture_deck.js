@@ -674,12 +674,13 @@ function slideUsageCore(pres) {
       "list_ros dominates; search_updates is the rare one",
       "Counters are per-process - traffic must hit the API",
     ]);
-  cell(s, M + cw + 0.3, top + ch + 0.22, cw, ch, "11-attu-collection-1690.jpg", 1.455,
-    "Milvus — 1,690 vectors, and the rerank", [
-      "updates collection, 1,690 entities at 1024 dims",
-      "\"whistling noise\": vector-only tops out at knocking",
-      "and vibration; the reranker returns blowing-noise",
-      "passages instead - a different set of ROs entirely",
+  cell(s, M + cw + 0.3, top + ch + 0.22, cw, ch, "11-attu-schema-1024.jpg", 1.455,
+    "Milvus in Attu — loaded and indexed", [
+      "vector: FloatVector(1024), AUTOINDEX(COSINE)",
+      "Loaded, replica 1, entity count 1,690",
+      "Rerank earns its place: for \"whistling noise\",",
+      "vector-only returns knocking and vibration; the",
+      "reranker returns blowing-noise - different ROs",
     ]);
 
   s.addNotes("The flow strip is the read path. The four frames are the same run seen from the app, from Grafana, from Prometheus and from the store. 87.5% composed in Python is the project's thesis, and Grafana reports it independently of the eleven timings in docs/EXAMPLES.md.");
