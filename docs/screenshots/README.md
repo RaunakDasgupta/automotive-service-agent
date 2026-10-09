@@ -17,7 +17,7 @@ those are still taken by hand.
 | 06 | Data & Retrieval — the store consoles are pointed at, not embedded | 2026-10-07 | Mac, hosted |
 | 07 | Prometheus targets — `asoia` **and `dcgm` both up** | **2026-10-09** | GPU box |
 | 08 | Prometheus — `asoia_tool_calls_total`, one series per tool actually called | **2026-10-09** | GPU box, under load |
-| 09 | Grafana — **87.5% composed in Python**, latency by path, NIM latency, tool usage, GPU to 100% | **2026-10-09** | GPU box, under load |
+| 09 | Grafana — ungrounded 0, latency by path, NIM latency, six tools, GPU tracking the semantic queries | **2026-10-09** | GPU box, under load |
 | 10 | Attu — connected to Milvus 2.5.4 standalone, 1 database | **2026-10-09** | GPU box |
 | 11 | Attu — the `updates` collection, **1,690 entities** | **2026-10-09** | GPU box |
 | 12 | sqlite-web — the system of record | **2026-10-09** | GPU box |
@@ -41,11 +41,11 @@ dashboard no matter how healthy the box is.
 
 ## What these now show
 
-- **09** — *Answers composed in Python 87.5%*, answer latency split by compose
-  path (llm ~4–5s against python ~0s), NIM latency per service, five tools in
-  `Tool usage`, GPU utilisation spiking to 100% on the semantic queries, and
-  zero ungrounded answers.
-- **08** — one `asoia_tool_calls_total` series per tool actually called.
+- **09** — ungrounded answers **0** and answers cut short **0** (both read
+  *No data* before, see below), answer latency split by compose path, NIM
+  latency per service, six tools, and the GPU tracking the semantic queries.
+- **08** — `rate(asoia_tool_calls_total[5m]) * 60` as a graph over 30 minutes,
+  six series: `list_ros` dominates and `search_updates` is the rare one.
 - **11** — `updates (1,690)`. It replaces a shot captioned `FloatVector(2048)`,
   the hosted embedder's width; the store is 1024-d now. The Schema tab's field
   list had not loaded when the frame was taken, so the dimension itself is not
@@ -56,3 +56,40 @@ dashboard no matter how healthy the box is.
 **03, 04, 05 and 06.** Chromium hangs on those four Gradio tabs, headless or
 headed under xvfb, so they are not automated. They show the right screens, taken
 against the hosted models rather than the local NIMs.
+
+## A healthy zero is not "No data"
+
+Four panels read *No data* no matter how well the stack was running:
+**Ungrounded answers**, **Silent fallbacks**, **Answers cut short** and
+**Guardrail blocks**. Prometheus returns an empty vector for a counter whose
+labelled child has never been created, and `asoia_grounding_warnings_total` has
+no child precisely *because* nothing was ever ungrounded. Grafana renders that
+identically to the exporter being down.
+
+The dashboard now wraps those queries in `(...) or vector(0)`, so a healthy zero
+says **0**. That is a dashboard fix, not a metric change - the underlying
+counters are untouched.
+
+## What this run surfaced
+
+Driving real load put **42 `asoia_nim_errors_total{cause="ReadTimeout",
+service="llm"}`** on the exporter while the LLM NIM itself stayed healthy on
+`/v1/health/ready` with nothing in its own log. The client gives up before the
+model answers. It also explains the 49.8s outlier in `docs/EXAMPLES.md`, the
+fallbacks recorded as *"the retry was uncited"*, and `POST /updates` hanging
+past 240s without logging a request line. Not fixed here, and recorded so it is
+not rediscovered from scratch.
+
+## Attu will not render its Schema or Data tab under automation
+
+The frame is the collection view: `updates (1,690)`, loaded, the right row
+count. The **Schema** and **Data** tabs click correctly - they are real
+`role=tab` elements and Attu's own API answers `/collections/details` in 349ms -
+but neither panel ever populates in headless or xvfb Chromium, even after 36
+seconds of waiting. So the dimension is not visible in a frame.
+
+The deck carries the evidence as text instead, from a live query: for *"whistling
+noise"*, vector-only search tops out at knocking and vibration passages, and the
+reranker returns blowing-noise passages - a different set of repair orders
+entirely. That shows the store working better than a screenshot of an admin
+panel would.
