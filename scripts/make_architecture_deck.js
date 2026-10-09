@@ -664,9 +664,10 @@ function slideUsageCore(pres) {
     ]);
   cell(s, M + cw + 0.3, top, cw, ch, "09-grafana-dashboard.jpg", 1.455,
     "Grafana — under real load", [
-      "Ungrounded answers 0  ·  answers cut short 0",
-      "p95 by path: python ~0s against llm ~10s",
-      "Six tools in use; GPU tracks the semantic queries",
+      "Composed in Python by design 94.5% over 1h -",
+      "model fallbacks subtracted, so a timing-out LLM",
+      "cannot inflate it",
+      "Ungrounded 0  ·  cut short 0  ·  six tools in use",
     ]);
   cell(s, M, top + ch + 0.22, cw, ch, "08-prometheus-tool-calls.jpg", 1.455,
     "Prometheus — which tools ran", [
@@ -683,7 +684,7 @@ function slideUsageCore(pres) {
       "reranker returns blowing-noise - different ROs",
     ]);
 
-  s.addNotes("The flow strip is the read path. The four frames are the same run seen from the app, from Grafana, from Prometheus and from the store. 87.5% composed in Python is the project's thesis, and Grafana reports it independently of the eleven timings in docs/EXAMPLES.md.");
+  s.addNotes("The flow strip is the read path. The four frames are the same run seen from the app, from Grafana, from Prometheus and from the store. On the Python share: do NOT claim Grafana corroborates the eleven timings in docs/EXAMPLES.md - it measures a different thing. Over 80 answers, 92.5% finished on the Python path and 86.25% were Python by design once the 5 model fallbacks are removed.");
   return s;
 }
 

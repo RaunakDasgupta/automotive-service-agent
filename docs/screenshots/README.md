@@ -113,3 +113,34 @@ The deck also carries the rerank evidence as text, from a live query: for
 *"whistling noise"*, vector-only search returns knocking and vibration passages,
 and the reranker returns blowing-noise passages — a different set of repair
 orders entirely.
+
+## The Python-share stat was measuring the wrong thing
+
+It read 87.5% in one capture and 100% in the next, and 0% while idle. All three
+were "correct" for what the query said and none described the system.
+
+    100 * sum(rate(asoia_answers_total{compose="python"}[5m]))
+        / clamp_min(sum(rate(asoia_answers_total[5m])), 0.0001)
+
+Two faults. **A 5-minute rate** reflects only the last handful of questions, so
+the number swung with whatever was asked most recently, and `clamp_min` turned
+an undefined ratio into a confident **0%** whenever nothing was happening -
+indistinguishable from the deterministic path having collapsed.
+
+And `compose` is the path that **finished**, not the path that was chosen. An
+answer that called the model, timed out and fell back to Python was counted as
+Python, so **a failing LLM pushed the number up**. With 48 `ReadTimeout`s on the
+exporter at the time, that was not hypothetical.
+
+Measured over the whole run instead: **92.5% of 80 answers finished on the
+Python path; 86.25% were Python by design** once the 5 fallbacks are removed.
+
+The panel is now titled *Composed in Python by design (%)*, computes
+`increase(...[1h])` with fallbacks subtracted and no clamp, and reads a steady
+94.5% instead of swinging between 0 and 100.
+
+**Treat any Python-share figure as flattered until the LLM timeouts are fixed.**
+`_post` in `app/nim/client.py` uses `timeout=120.0` with `retries=4`, and a
+`ReadTimeout` is retried by the generic handler - so one slow question costs up
+to 4 x 120s and records four timeouts. 48 / 4 = 12 affected questions, and it is
+why `POST /updates` appeared to hang past 240s. Not fixed.
