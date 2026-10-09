@@ -311,8 +311,10 @@ scripts/      NIM lifecycle, data verification, notebook build, answer
               .env (build_index.py) and the improvement loop (agent_loop.py)
 configs/      prometheus scrape config, provisioned Grafana dashboard
 patches/      the forty-seven migration scripts, as the record of what changed and why
-docs/         BREV_RUNBOOK.md - bringing up a GPU box, in order, with a gate
-              per phase; screenshots/ - the running stack; architecture.drawio -
+docs/         EXAMPLES.md - what it actually answers, captured from a live run
+              on an L40S; BREV_RUNBOOK.md - bringing up a GPU box, in order,
+              with a gate per phase; OPERATING.md - restart and refresh, day to
+              day; screenshots/ - the running stack; architecture.drawio -
               seven pages, and architecture-deck.pptx - seven slides; both
               generated, by scripts/make_architecture_diagram.py and
               scripts/make_architecture_deck.js
