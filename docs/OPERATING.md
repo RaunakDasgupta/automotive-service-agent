@@ -133,36 +133,43 @@ Do not `pkill -f <pattern>` when your own command line contains that pattern —
 it matches the shell you are typing in and kills your session. Use the exact
 process name, or bracket a letter: `pgrep -f "captu[r]e_screenshots"`.
 
-## When the model is slow — read this before raising the timeout
+## The model is not slow — a note on how that was got wrong
 
-Measured on `capstone-asoia`, 2026-10-09: the LLM NIM took **~43 seconds to
-generate 16 tokens**, three times running, and a 400-token generation did not
-finish in 300 seconds. That is about 0.37 tokens/sec from an 8B FP8 engine on an
-L40S that should manage 50–100.
+An earlier version of this section claimed the LLM NIM managed ~0.37 tokens/sec,
+stalled with the GPU idle for 35 seconds, and blamed per-request FSM compilation
+from guided decoding. **All of that was wrong, and it is left here because the
+mistake is more useful than the conclusion was.**
 
-Sampling `nvidia-smi` every 3s during one of those calls:
+Measured on an idle box:
 
-```
-t+ 3s … t+33s   0 %, 29963 MiB, 2520 MHz
-t+36s           9 %
-```
+| | |
+|---|---|
+| 16 tokens | **0.22 s** |
+| 100 tokens | **1.39 s** |
+| 215 tokens | **2.99 s** (~72 tok/s) |
+| a real semantic question, end to end through `/ask` | **3.52 s** |
 
-**The GPU is idle for the first ~35 seconds.** So this is not slow generation,
-it is a stall before any compute starts. The NIM's own log says what is
-happening in that window:
+That is what an 8B FP8 engine on an L40S should do.
 
-```
-Compiling FSM index for all state transitions:   0%|  | 0/23 [00:00<?, ?it/s]
-```
+The 43-second figures were taken **while a six-round load generator was still
+running in the background** — my own. I was measuring contention against a
+single LLM NIM and reporting it as a model fault. The GPU showing 0% was real
+and meant the request was queued, not that compute had stalled. And a plain
+request triggers **zero** FSM compiles: `grep -c "Compiling FSM"` on the
+container log was unchanged across one, so guided decoding was never in that
+path. Only `app/pipeline/extract.py` and one call in `app/agent/agent.py` ask
+for `json_mode`.
 
-That is guided/structured decoding building a finite-state machine, on the CPU,
-per request. The profile selected is correct — `tensorrt_llm-l40s-fp8-tp1-pp1-
-throughput` — so this is not a CPU fallback or a wrong engine.
+**Before blaming a component, check nothing of yours is still hammering it.**
+`pgrep -f` for your own load scripts first.
 
-**Not yet fixed, and not yet root-caused past this point.** Worth checking
-before anything else: whether the app is asking for JSON/guided decoding on
-calls that do not need it, and whether the NIM can cache a compiled FSM between
-requests.
+### Where the ReadTimeouts actually came from
+
+A cascade, and the retry bug started it. A vague `POST /updates` runs an
+extraction through the model. Under load that call exceeded the 120s budget,
+and `_post` then retried it **four times** — occupying the LLM for up to eight
+minutes for one request. Everything queued behind that timed out too, each of
+those retried four times. Hence 48 timeouts from 12 questions.
 
 ### What was fixed
 
@@ -179,7 +186,55 @@ there the request never landed and another attempt is free. Verified: a call
 against a 5s budget fails in 5.0s rather than 20s, and records **one**
 `asoia_nim_errors_total` instead of four.
 
-`ASOIA_NIM_TIMEOUT` sets the budget (default 120s). On a box where the model is
-in the state described above, a lower value — say 45 — makes narration fail fast
-and fall back to the deterministic composer, which keeps the app responsive. It
-treats the symptom; the FSM stall is the disease.
+`ASOIA_NIM_TIMEOUT` sets the budget (default 120s). With the model answering in
+seconds, 120 is generous — the point of the fix is that exceeding it now costs
+one timeout instead of four and eight minutes.
+
+
+## The 40-second question: guided JSON decoding
+
+One question in eight took ~41 seconds while the rest took 0.05s, reproducibly,
+every round. Tracing the model calls showed the cost was not narration:
+
+```
+"whistling noise"      3.9s   2 calls   2.0s + 1.2s, both max_tokens=1600
+"battery flat"        40.8s   3 calls  37.4s + 1.4s + 1.6s
+                                       ^^^^^ max_tokens=300, the LLM ROUTER
+```
+
+The 300-token call is `plan_llm`, the only thing in the system that passes
+`json_mode=True`. Timed directly, same prompt:
+
+| | time | output |
+|---|---|---|
+| `response_format: json_object` | **37.5 s** | `{ "tools]:[{"` — malformed |
+| no `response_format` | **0.2 s** | `{"tools":[{"name": …}]}` — usable |
+
+**187× slower, and the mechanism whose only purpose is to guarantee well-formed
+JSON produced the only broken JSON of the two.** The cost is the NIM compiling a
+finite-state machine per request, on the CPU, which is why the GPU reads 0%
+while a request is in flight. Keyword routing matched the other questions, so
+only the fallthrough ever paid for it.
+
+Guided decoding is now off by default — `ASOIA_NIM_GUIDED_JSON=1` restores it.
+That question now answers in **3.4s with the same 8 citations**.
+
+### Two things that fix uncovered
+
+**The router emitted argument names the tools do not have.** It returned
+`search_updates(q=...)` where the parameter is `query`, so the search ran with
+no query, returned nothing, and the answer became "there were no matching
+notes" with zero citations. `plan_llm` now validates every planned call against
+the tool's own spec — unknown or missing-required args reject the plan, and
+keyword routing takes over. The prompt also lists the real parameter names now.
+
+**That router had never run.** Guided decoding made it fail every single time,
+so `plan_llm` always returned `None` and keyword routing always won. Every
+measurement in this repo, `evals/baseline.json` included, was taken with the
+LLM router inert. Fixing the latency switched it on for the first time, and the
+first thing it did was route a battery-history question to
+`detect_anomalies(days=1)`.
+
+So it is **off by default** (`ASOIA_LLM_ROUTER=1` enables it). Turning it on is
+a behaviour change that has never been evaluated, and it should not ride in on
+the back of a latency fix. Run `scripts/agent_loop.py gate` first.

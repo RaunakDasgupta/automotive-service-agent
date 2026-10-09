@@ -73,12 +73,19 @@ counters are untouched.
 ## What this run surfaced
 
 Driving real load put **42 `asoia_nim_errors_total{cause="ReadTimeout",
-service="llm"}`** on the exporter while the LLM NIM itself stayed healthy on
-`/v1/health/ready` with nothing in its own log. The client gives up before the
-model answers. It also explains the 49.8s outlier in `docs/EXAMPLES.md`, the
-fallbacks recorded as *"the retry was uncited"*, and `POST /updates` hanging
-past 240s without logging a request line. Not fixed here, and recorded so it is
-not rediscovered from scratch.
+service="llm"}`** on the exporter while the LLM NIM itself stayed healthy.
+
+The cause was a cascade started by a retry bug, not a slow model. `_post`
+retried **every** exception four times, so one `POST /updates` whose extraction
+exceeded the 120s budget occupied the LLM for up to eight minutes; everything
+queued behind it timed out too, and each of those was retried four times. Fixed
+in `b9a80f9`: read timeouts now fail on the first attempt.
+
+**The model itself is fast.** Measured on an idle box: 100 tokens in 1.39s, 215
+in 2.99s, a real semantic question end to end in 3.52s. An earlier note here
+claimed ~0.37 tok/s and blamed guided-decoding FSM compilation — that was
+measured while a load generator of mine was still running, and was wrong. See
+`docs/OPERATING.md`.
 
 ## Attu was never broken — the route was wrong
 
@@ -139,8 +146,8 @@ The panel is now titled *Composed in Python by design (%)*, computes
 `increase(...[1h])` with fallbacks subtracted and no clamp, and reads a steady
 94.5% instead of swinging between 0 and 100.
 
-**Treat any Python-share figure as flattered until the LLM timeouts are fixed.**
-`_post` in `app/nim/client.py` uses `timeout=120.0` with `retries=4`, and a
-`ReadTimeout` is retried by the generic handler - so one slow question costs up
-to 4 x 120s and records four timeouts. 48 / 4 = 12 affected questions, and it is
-why `POST /updates` appeared to hang past 240s. Not fixed.
+The Python share in the captured frame is **flattered by the timeout cascade**
+that was running at the time: model calls that timed out fell back to Python and
+were counted as Python. That cascade is fixed in `b9a80f9`, and the model
+answers a real question in 3.52s, so a frame captured now would show a truer
+split.

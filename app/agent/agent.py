@@ -367,22 +367,92 @@ def plan_keyword(question: str) -> list[dict]:
     return plan[:3]
 
 
+def _spec_params(name: str) -> tuple[set[str], set[str]]:
+    """-> (allowed, required) parameter names for one tool, from its own spec."""
+    for s in SPECS:
+        if s["function"]["name"] == name:
+            params = s["function"].get("parameters") or {}
+            return (set((params.get("properties") or {}).keys()),
+                    set(params.get("required") or []))
+    return set(), set()
+
+
+def _plan_is_callable(calls: list[dict]) -> bool:
+    """Every call names a real tool and args the tool will actually accept.
+
+    WHY THIS EXISTS
+
+    The router emitted {"name": "search_updates", "args": {"q": "..."}} - the
+    parameter is `query`, not `q`. search_updates then ran with no query and
+    returned nothing, and the answer became "there were no matching notes" with
+    zero citations. It looked like a retrieval failure and was a routing bug.
+
+    It had been invisible because guided JSON decoding made plan_llm return
+    malformed output every time, so this path always raised and fell back to
+    keyword routing. Turning guided decoding off made the router work and
+    exposed what it had been producing all along.
+
+    A plan the tools cannot execute is worse than no plan: keyword routing is a
+    good fallback and is what ran before. So reject it and let that happen.
+    """
+    for c in calls:
+        allowed, required = _spec_params(c.get("name", ""))
+        if not allowed:
+            return False
+        args = set((c.get("args") or {}).keys())
+        if args - allowed or required - args:
+            return False
+    return True
+
+
+# The LLM router, OFF by default. `use_llm_router` is the per-call switch; this
+# is the deployment one, and it defaults off because THIS ROUTER HAS NEVER
+# ACTUALLY RUN HERE.
+#
+# plan_llm asked for guided JSON, and guided decoding on this NIM returns
+# malformed output - `{ "tools]:[{"` - so the json.loads always raised, plan_llm
+# always returned None, and keyword routing always won. Every measurement in
+# this repo, including evals/baseline.json, was taken with the LLM router
+# silently inert. It also cost 37.5s per fallthrough question to achieve that.
+#
+# Turning guided decoding off (app/nim/client.py, GUIDED_JSON) made the router
+# work for the first time, and the first thing it did was route "Any history of
+# a battery going flat overnight?" to detect_anomalies(days=1) - where keyword
+# routing correctly picks search_updates. Citations went from 8 to 0 and the
+# answer became "there were no matching notes".
+#
+# So enabling it is a behaviour change that has never been evaluated, and it
+# must not ride in on the back of a latency fix. Set ASOIA_LLM_ROUTER=1 and run
+# `scripts/agent_loop.py gate` before trusting it.
+LLM_ROUTER = os.environ.get("ASOIA_LLM_ROUTER", "0") == "1"
+
+
 def plan_llm(question: str, chat_fn) -> list[dict] | None:
     """Ask the model which tools to call. Returns None if it will not cooperate."""
     try:
+        lines = []
+        for s in SPECS:
+            fn = s["function"]
+            params = (fn.get("parameters") or {}).get("properties") or {}
+            req = set((fn.get("parameters") or {}).get("required") or [])
+            sig = ", ".join(("%s*" % k) if k in req else k for k in params) or "no args"
+            lines.append("- %s(%s): %s" % (
+                fn["name"], sig,
+                (fn.get("description") or "").strip().splitlines()[0]))
         out = chat_fn([
             {"role": "system",
              "content": "Choose the tools needed to answer. Reply with JSON only: "
                         '{"calls":[{"name":"<tool>","args":{...}}]}. '
-                        "Available tools:\n"
-                        + "\n".join(f"- {s['function']['name']}: "
-                                    f"{(s['function']['description'] or '').strip().splitlines()[0]}"
-                                    for s in SPECS)},
+                        "Use the exact argument names shown; * marks required. "
+                        "Available tools:\n" + "\n".join(lines)},
             {"role": "user", "content": question}],
             temperature=0.0, max_tokens=300, json_mode=True)
         data = json.loads(out[out.find("{"):out.rfind("}") + 1])
         calls = [c for c in data.get("calls", []) if c.get("name") in TOOLS]
-        return calls[:3] or None
+        calls = calls[:3]
+        if not calls or not _plan_is_callable(calls):
+            return None
+        return calls
     except Exception:
         return None
 
@@ -437,7 +507,7 @@ def plan_for(question: str, chat_fn=None,
     routable = bool(RO_RE.search(question) or ID_RE.search(question)
                     or _timeframe(question) or _ROUTABLE_RE.search(question))
     plan = (plan_llm(question, chat_fn)
-            if (use_llm_router and generic and routable) else None)
+            if (use_llm_router and LLM_ROUTER and generic and routable) else None)
     return (plan or kw), ("llm" if plan else "keyword")
 
 
