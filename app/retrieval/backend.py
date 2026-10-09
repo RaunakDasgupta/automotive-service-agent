@@ -15,9 +15,14 @@ rest of the project uses avoids the collision as well as being consistent.
     LANCE_URI        unchanged, for the lancedb backend
 
 The URI decides whether Milvus runs embedded or against a server, exactly the way
-`app/nim/client.py` decides local NIM versus hosted endpoint. Embedded needs
-nothing installed and runs on a laptop; the server is a URI change, not a code
-change, and the collection schema is identical either way.
+`app/nim/client.py` decides local NIM versus hosted endpoint. The deployment uses
+the SERVER - `ASOIA_MILVUS_URI=http://localhost:19530`, started by
+`scripts/start_milvus.sh`. Embedded needs nothing installed, which makes it a
+useful fallback and a dangerous default: a process that never read `.env` opens
+the embedded file instead and reports its stale contents with a straight face.
+That is the decoy `scripts/store_report.py` warns about and `scripts/
+build_index.py` exists to avoid. The schema is identical either way, so the
+difference is invisible until you notice you indexed the wrong store.
 
 WHY THE INTERFACE IS THIS SHAPE
 

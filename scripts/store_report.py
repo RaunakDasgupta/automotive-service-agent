@@ -74,11 +74,11 @@ LITE_PATH = "data/generated/milvus.db"
 # laxer than the service it administers.
 ATTU_PORT = int(os.environ.get("ASOIA_ATTU_PORT", "8101"))
 SQLITEWEB_PORT = int(os.environ.get("ASOIA_SQLITEWEB_PORT", "8102"))
-# No default host. This used to be "capstone-poc", which was the GPU box;
-# that box was deleted and the report went on printing a tunnel command to
-# a machine that does not exist. When the stack runs where you are - which
-# is now the normal case - there is nothing to tunnel. Set ASOIA_SSH_ALIAS
-# to print the tunnel line for a remote box.
+# Env-driven, with no default, and deliberately not the current instance name.
+# This was once hard-coded to "capstone-poc"; that box was deleted and the report
+# went on printing a tunnel command to a machine that did not exist. The stack
+# runs on a Brev box, so a tunnel is the normal way in - set ASOIA_SSH_ALIAS in
+# .env to the instance name and this prints the command filled in.
 SSH_ALIAS = os.environ.get("ASOIA_SSH_ALIAS", "")
 
 
@@ -307,10 +307,9 @@ def render(d: dict) -> str:
             f"{d['admin']['sqlite_web']['port']} {SSH_ALIAS}")
         add("  then open the two http://127.0.0.1 links above in your own browser.")
     else:
-        add("  both UIs are bound to 127.0.0.1 - open the two links above "
-            "directly.")
-        add("  For a remote box, set ASOIA_SSH_ALIAS and this prints the "
-            "tunnel command.")
+        add("  both UIs are bound to 127.0.0.1, so from your own machine they")
+        add("  need one ssh -L forward. Set ASOIA_SSH_ALIAS in .env to the")
+        add("  instance name and this prints that command filled in.")
     add("-" * 74)
     return "\n".join(L)
 
