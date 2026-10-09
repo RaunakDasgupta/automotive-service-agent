@@ -1,5 +1,6 @@
 /**
- * make_architecture_deck.js - the architecture as a seven-slide deck.
+ * make_architecture_deck.js - the architecture as a nine-slide deck:
+ * seven of architecture, then two of usage built from docs/screenshots/.
  *
  *   node scripts/make_architecture_deck.js [out.pptx]
  *
@@ -573,6 +574,146 @@ function slideLifecycle(pres) {
   return s;
 }
 
+
+// =========================================================== 8-9 · usage
+// The screenshots, as usage examples. Everything on these two slides was
+// captured from a live run on the L40S with all three NIMs local - see
+// docs/screenshots/README.md for which frame came from which date, and
+// docs/EXAMPLES.md for the answers behind the manager-assistant shot.
+//
+// Images carry their own aspect ratio: the 2026-10-09 captures are 1600x1100
+// and the four older Gradio frames are 800x600. Fitting every image to one box
+// would stretch half of them, so fit() solves for whichever of width or height
+// binds first and centres the result in its cell.
+
+const FW = W - 2 * M;   // the existing slides declare their own and shadow this
+const SHOT_DIR = "docs/screenshots/";
+
+/** Fit w x h inside (maxW, maxH) at the image's own ratio, centred. */
+function fit(x, y, maxW, maxH, ratio) {
+  let w = maxW, h = w / ratio;
+  if (h > maxH) { h = maxH; w = h * ratio; }
+  return { x: x + (maxW - w) / 2, y: y + (maxH - h) / 2, w, h };
+}
+
+/** A screenshot with a hairline frame, so a white UI does not bleed into the page. */
+function shot(s, file, ratio, x, y, maxW, maxH) {
+  const b = fit(x, y, maxW, maxH, ratio);
+  s.addShape("rect", {
+    x: b.x - 0.02, y: b.y - 0.02, w: b.w + 0.04, h: b.h + 0.04,
+    fill: { color: PAPER }, line: { color: EDGE, width: 1 },
+    objectName: "frame-" + file.slice(0, 16),
+  });
+  s.addImage({ path: SHOT_DIR + file, x: b.x, y: b.y, w: b.w, h: b.h });
+  return b;
+}
+
+/** The read path, condensed to one strip. Six steps, five arrows, full width. */
+function flowStrip(s, y) {
+  const steps = [
+    ["Question", "typed or spoken", "std"],
+    ["Router", "keywords, no model", "std"],
+    ["Typed tools", "SQL · Milvus + rerank", "std"],
+    ["Compose", "Python 87.5% · else narrate", "std"],
+    ["Rails", "grounding + output", "fw"],
+    ["Answer", "every figure cited", "nv"],
+  ];
+  const aw = 0.22, gap = 0.04;
+  const bw = (FW - (steps.length - 1) * (aw + 2 * gap)) / steps.length;
+  let x = M;
+  steps.forEach(([name, sub, kind], i) => {
+    // No ss override: SUB_PT is the floor this deck sets for itself, and
+    // slides 1-7 never go under it.
+    card(s, x, y, bw, 0.72, kind, name, sub);
+    x += bw;
+    if (i < steps.length - 1) { arrow(s, x + gap, y + 0.22, aw, 0.22); x += aw + 2 * gap; }
+  });
+}
+
+/** One cell: screenshot on the left, the claim it evidences on the right. */
+function cell(s, x, y, cw, ch, file, ratio, head, lines) {
+  const iw = Math.min(3.05, cw * 0.52);
+  shot(s, file, ratio, x, y, iw, ch);
+  const tx = x + iw + 0.16, tw = cw - iw - 0.16;
+  s.addText(head, txt(null, {
+    x: tx, y: y + 0.04, w: tw, h: 0.3, fontSize: 12, bold: true, color: INK, fontFace: "Arial",
+  }));
+  s.addText(lines.map((t, i) => ({
+    text: t, options: { fontSize: 10, color: MUTE, bullet: true, breakLine: i < lines.length - 1 },
+  })), txt(null, { x: tx, y: y + 0.36, w: tw, h: ch - 0.4, lineSpacingMultiple: 1.0, paraSpaceAfter: 3 }));
+}
+
+function slideUsageCore(pres) {
+  const s = pres.addSlide({ sectionTitle: "Usage" });
+  slideTitle(s, "What it looks like in use",
+    "One question, end to end — and the three consoles that show it happened. Captured from a live run on the L40S, all three NIMs local.");
+  flowStrip(s, 1.12);
+
+  const cw = (FW - 0.3) / 2, ch = 2.28, top = 2.16;
+  cell(s, M, top, cw, ch, "05-app-manager-assistant.jpg", 1.333,
+    "Manager Assistant", [
+      "Asks in plain English; the router picks a typed tool",
+      "Answer cites every record it used",
+      "8 of 11 questions need no model call at all",
+    ]);
+  cell(s, M + cw + 0.3, top, cw, ch, "09-grafana-dashboard.jpg", 1.455,
+    "Grafana — the claim, measured", [
+      "Answers composed in Python: 87.5%",
+      "Latency split by path: python ~0s, llm ~4-5s",
+      "GPU to 100% on the semantic queries only",
+    ]);
+  cell(s, M, top + ch + 0.22, cw, ch, "08-prometheus-tool-calls.jpg", 1.455,
+    "Prometheus — which tools ran", [
+      "One asoia_tool_calls_total series per tool called",
+      "Counters are per-process: traffic must go through",
+      "the API on :8080, not a standalone script",
+    ]);
+  cell(s, M + cw + 0.3, top + ch + 0.22, cw, ch, "11-attu-collection-1690.jpg", 1.455,
+    "Attu — the vector store", [
+      "updates collection, 1,690 entities",
+      "Built by nv-embedqa-e5-v5 at 1024 dimensions",
+      "Rebuilt whenever the embedder changes width",
+    ]);
+
+  s.addNotes("The flow strip is the read path. The four frames are the same run seen from the app, from Grafana, from Prometheus and from the store. 87.5% composed in Python is the project's thesis, and Grafana reports it independently of the eleven timings in docs/EXAMPLES.md.");
+  return s;
+}
+
+function slideUsageSurface(pres) {
+  const s = pres.addSlide({ sectionTitle: "Usage" });
+  slideTitle(s, "The rest of the surface",
+    "Five tabs a service advisor actually uses, and the two store consoles behind them. The agent's UI shows no vector internals — that is an operator's view, and it lives in Attu and sqlite-web.");
+
+  const items = [
+    ["01-app-dashboard.jpg", 1.455, "Dashboard", "Every RO, filtered to safety, blocked, at-risk or waiting"],
+    ["02-app-repair-order.jpg", 1.455, "Repair Order", "State folded from the event log, with the updates as written"],
+    ["03-app-technician-update.jpg", 1.333, "Technician Update", "Log work by voice or text, then read the diff card"],
+    ["04-app-shift-handover.jpg", 1.333, "Shift Handover", "Prioritised brief: safety, breached, at-risk, blocked"],
+    ["06-app-data-and-retrieval.jpg", 1.333, "Data & Retrieval", "Points at the store consoles rather than embedding them"],
+    ["12-sqlite-web.jpg", 1.455, "sqlite-web", "The system of record, read-write, bound to loopback"],
+  ];
+  const cols = 3, gapX = 0.26, gapY = 0.3;
+  const cw = (FW - (cols - 1) * gapX) / cols, ih = 2.08, top = 1.40;
+  items.forEach(([file, ratio, name, sub], i) => {
+    const cx = M + (i % cols) * (cw + gapX);
+    const cy = top + Math.floor(i / cols) * (ih + 0.66 + gapY);
+    shot(s, file, ratio, cx, cy, cw, ih);
+    s.addText(name, txt(null, {
+      x: cx, y: cy + ih + 0.06, w: cw, h: 0.26, fontSize: 12, bold: true,
+      color: INK, fontFace: "Arial", align: "center",
+    }));
+    s.addText(sub, txt(null, {
+      x: cx, y: cy + ih + 0.32, w: cw, h: 0.42, fontSize: 10, color: MUTE,
+      align: "center", lineSpacingMultiple: 0.95,
+    }));
+  });
+
+  s.addText("Technician Update, Shift Handover and Data & Retrieval were captured against the hosted models rather than the local NIMs — Chromium hangs on those three Gradio tabs, so they are not re-taken automatically. docs/screenshots/README.md dates every frame.",
+    txt(null, { x: M, y: 6.95, w: FW, h: 0.34, fontSize: 10, italic: true, color: MUTE }));
+  s.addNotes("Nothing here needs a GPU except the voice leg and the semantic tab. The store consoles are deliberately outside the advisor's UI.");
+  return s;
+}
+
 // ================================================================= build
 async function main() {
   const out = process.argv[2] || "docs/architecture-deck.pptx";
@@ -583,7 +724,7 @@ async function main() {
   pres.title = "Automotive Service Operations Intelligence Agent";
 
   ["Overview", "Architecture", "Application flow", "Components", "Deployment",
-   "Data model", "Lifecycle"].forEach((t) => pres.addSection({ title: t }));
+   "Data model", "Lifecycle", "Usage"].forEach((t) => pres.addSection({ title: t }));
 
   slideTitleCard(pres);
   slideArchitecture(pres);
@@ -592,8 +733,10 @@ async function main() {
   slideDeployment(pres);
   slideDataModel(pres);
   slideLifecycle(pres);
+  slideUsageCore(pres);
+  slideUsageSurface(pres);
 
   await pres.writeFile({ fileName: out });
-  console.log("wrote " + out + "  (7 slides)");
+  console.log("wrote " + out + "  (9 slides)");
 }
 main().catch((e) => { console.error(e); process.exit(1); });

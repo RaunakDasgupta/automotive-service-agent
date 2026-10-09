@@ -40,3 +40,11 @@ evals/data/*.jsonl
 
 # macOS turd. One of these rode in with a batch of stray files.
 .DS_Store
+
+# ------------------------------------------------------------------- node
+# scripts/make_architecture_deck.js needs pptxgenjs, and the README tells you to
+# `npm install pptxgenjs` in this directory - which drops a node_modules of a
+# few thousand files right next to the source. Following the project's own
+# instructions should not stage a dependency tree.
+node_modules/
+package-lock.json
