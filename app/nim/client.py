@@ -177,8 +177,40 @@ def _headers(local: bool) -> dict:
     return h
 
 
-def _post(url: str, payload: dict, local: bool, timeout: float = 120.0,
+# Default read budget for one model call. Generous, because a long narration on
+# a busy box legitimately takes tens of seconds; override per deployment rather
+# than editing this.
+NIM_TIMEOUT = float(os.environ.get("ASOIA_NIM_TIMEOUT", "120"))
+
+
+def _post(url: str, payload: dict, local: bool, timeout: float | None = None,
           retries: int = 4) -> dict:
+    """POST to a model endpoint, retrying only what a retry can actually help.
+
+    WHY A READ TIMEOUT IS NOT RETRIED
+
+    Every exception used to land in one `except Exception` and get retried four
+    times with a backoff. For a connect failure that is right - the container may
+    still be starting, and the next attempt costs nothing. For a READ timeout it
+    is wrong twice over:
+
+      * the server already has the request and is working on it. Retrying does
+        not replace that work, it ADDS a second generation to a box that is
+        already too slow to finish the first.
+      * the caller pays 4 x timeout. At the 120s default that is EIGHT MINUTES
+        for one question, and it is why `POST /updates` looked like it hung at
+        240s - it was not hung, it was on its third attempt.
+
+    Measured on the L40S before this changed: 48 ReadTimeouts on the exporter
+    from 12 questions, exactly 4 apiece, every one of them a retry of a call the
+    model was still running.
+
+    So a read timeout now fails immediately, with a message that says what to do
+    about it. The agent's narration path already falls back to the deterministic
+    composer when a model call raises, so failing fast turns an eight-minute
+    stall into a prompt, correct Python answer.
+    """
+    timeout = NIM_TIMEOUT if timeout is None else timeout
     last = None
     for attempt in range(retries):
         if not local:
@@ -194,6 +226,14 @@ def _post(url: str, payload: dict, local: bool, timeout: float = 120.0,
                 continue
             r.raise_for_status()
             return r.json()
+        except (httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout) as e:
+            # Do not retry: see the docstring. One attempt, one error, fail now.
+            raise RuntimeError(
+                f"{url} did not answer within {timeout:.0f}s "
+                f"({type(e).__name__}). Not retried - the server still has the "
+                f"request, so a retry would queue a second generation behind it. "
+                f"Raise ASOIA_NIM_TIMEOUT if this model is legitimately this "
+                f"slow, or find out why it is.") from e
         except httpx.HTTPStatusError as e:
             # The body is the only thing that says what was wrong with the
             # request, and it was being discarded in favour of a bare status code.
@@ -204,6 +244,8 @@ def _post(url: str, payload: dict, local: bool, timeout: float = 120.0,
             if attempt < retries - 1:
                 time.sleep(2 ** attempt)
         except Exception as e:
+            # Connect errors and the like: the request never landed, so trying
+            # again is free and often works.
             last = e
             if attempt < retries - 1:
                 time.sleep(2 ** attempt)
@@ -260,7 +302,7 @@ def _chat_inner(messages: list[dict], temperature: float = 0.0,
 
 
 def chat_stream(messages: list[dict], temperature: float = 0.0,
-                max_tokens: int = 1024, timeout: float = 120.0,
+                max_tokens: int = 1024, timeout: float | None = None,
                 meta: dict | None = None):
     """Yield the narration as it is generated.
 
@@ -277,7 +319,8 @@ def chat_stream(messages: list[dict], temperature: float = 0.0,
                                "temperature": temperature,
                                "max_tokens": max_tokens, "stream": True}
     with httpx.stream("POST", f"{base}/chat/completions", json=payload,
-                      headers=_headers(local), timeout=timeout) as r:
+                      headers=_headers(local),
+                      timeout=(NIM_TIMEOUT if timeout is None else timeout)) as r:
         r.raise_for_status()
         for line in r.iter_lines():
             if not line or not line.startswith("data:"):

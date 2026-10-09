@@ -132,3 +132,54 @@ bash scripts/stack.sh logs milvus
 Do not `pkill -f <pattern>` when your own command line contains that pattern —
 it matches the shell you are typing in and kills your session. Use the exact
 process name, or bracket a letter: `pgrep -f "captu[r]e_screenshots"`.
+
+## When the model is slow — read this before raising the timeout
+
+Measured on `capstone-asoia`, 2026-10-09: the LLM NIM took **~43 seconds to
+generate 16 tokens**, three times running, and a 400-token generation did not
+finish in 300 seconds. That is about 0.37 tokens/sec from an 8B FP8 engine on an
+L40S that should manage 50–100.
+
+Sampling `nvidia-smi` every 3s during one of those calls:
+
+```
+t+ 3s … t+33s   0 %, 29963 MiB, 2520 MHz
+t+36s           9 %
+```
+
+**The GPU is idle for the first ~35 seconds.** So this is not slow generation,
+it is a stall before any compute starts. The NIM's own log says what is
+happening in that window:
+
+```
+Compiling FSM index for all state transitions:   0%|  | 0/23 [00:00<?, ?it/s]
+```
+
+That is guided/structured decoding building a finite-state machine, on the CPU,
+per request. The profile selected is correct — `tensorrt_llm-l40s-fp8-tp1-pp1-
+throughput` — so this is not a CPU fallback or a wrong engine.
+
+**Not yet fixed, and not yet root-caused past this point.** Worth checking
+before anything else: whether the app is asking for JSON/guided decoding on
+calls that do not need it, and whether the NIM can cache a compiled FSM between
+requests.
+
+### What was fixed
+
+`_post` in `app/nim/client.py` retried **every** exception four times, including
+read timeouts. A read timeout means the server already has the request and is
+working on it, so a retry does not replace that work — it queues a second
+generation behind it, and the caller pays `4 × timeout`. At the 120s default
+that is **eight minutes for one question**, which is why `POST /updates` looked
+like it hung at 240s: it was on its third attempt.
+
+Read, write and pool timeouts now fail on the first attempt with a message
+naming the budget and the override. Connect errors are still retried, because
+there the request never landed and another attempt is free. Verified: a call
+against a 5s budget fails in 5.0s rather than 20s, and records **one**
+`asoia_nim_errors_total` instead of four.
+
+`ASOIA_NIM_TIMEOUT` sets the budget (default 120s). On a box where the model is
+in the state described above, a lower value — say 45 — makes narration fail fast
+and fall back to the deterministic composer, which keeps the app responsive. It
+treats the symptom; the FSM stall is the disease.
