@@ -37,3 +37,6 @@ evals/data/*.jsonl
 
 # ---------------------------------------------------------------- archives
 *.tar.gz
+
+# macOS turd. One of these rode in with a batch of stray files.
+.DS_Store

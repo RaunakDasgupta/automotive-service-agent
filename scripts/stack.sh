@@ -76,21 +76,12 @@ svc_log()    { echo "/tmp/asoia-$1.log"; }
 # The API has no route at /, so probing / reported a perfectly healthy API as
 # http=404. Each service is asked the question it can answer.
 svc_health() { case "$1" in api) echo "/health" ;; ui) echo "/" ;; esac; }
-# setsid is Linux-only and macOS has no equivalent. The box this was written for
-# was Linux, so `setsid` was called unguarded and `stack.sh up` died on a Mac
-# with `setsid: command not found` - which only surfaced once the box was gone
-# and the Mac was the only machine left.
-#
-# The reason setsid was used still holds on Linux: an ssh session being killed
-# would otherwise take the servers' process group with it. `nohup` alone detaches
-# from the terminal but not from the process group, which is enough when nothing
-# is going to kill a session - the local case - and is why the fallback is
-# acceptable rather than merely convenient.
-detach() {
-  if command -v setsid >/dev/null 2>&1; then setsid nohup "$@"
-  else nohup "$@"
-  fi
-}
+# setsid, not nohup alone. The target is a Linux GPU box reached over ssh, and an
+# ssh session being killed would otherwise take the servers' process group with
+# it - that has been tested twice, by killing the session mid-request. `nohup`
+# detaches from the terminal but not from the process group, so it is not enough
+# here. setsid is Linux-only; so is the deployment.
+detach() { setsid nohup "$@"; }
 
 svc_pidfile(){ echo "$RUN/$1.pid"; }
 

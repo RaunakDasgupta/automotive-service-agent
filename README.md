@@ -87,58 +87,6 @@ node scripts/make_architecture_deck.js docs/architecture-deck.pptx
 That one needs `node` and `pptxgenjs` (`npm install pptxgenjs`), unlike the
 diagram generator, which is standard library only.
 
-## Run it without a GPU
-
-The reference deployment above is one L40S with all three NIMs local, and it is
-what every measurement in `ENGINEERING.md` was taken against. You do not need it
-to run the thing. Everything except the models is containers, and the models can
-come from the hosted endpoints — a laptop with Docker and an `NVIDIA_API_KEY` is
-enough.
-
-```bash
-python3.12 -m venv .venv && . .venv/bin/activate && pip install -e .
-cp .env.example .env            # add your key; set NIM_MODE=hosted
-                                # and ASOIA_MILVUS_URI=http://localhost:19530
-python -m app.data.generate
-bash scripts/start_milvus.sh up
-bash scripts/start_observability.sh up
-bash scripts/stack.sh stores provision && bash scripts/stores.sh up
-python scripts/build_index.py
-bash scripts/stack.sh up
-```
-
-UI :7860, API :8080, Prometheus :9090, Grafana :3000, Attu :8101,
-sqlite-web :8102. `docs/screenshots/` is this, running.
-
-**Anything that touches the app must load `.env` first.** The application does
-not read it — `stack.sh` does — so a bare
-`python -c 'from app.retrieval.index import build; print(build())'` runs with
-`NVIDIA_API_KEY`, `NIM_MODE` and `ASOIA_MILVUS_URI` all unset. Sometimes that
-fails loudly, with "NVIDIA_API_KEY is not set" while the key sits in `.env`.
-Worse, sometimes it does not: it builds the *embedded* Milvus Lite decoy with
-the *hosted* embedder and prints a row count. `scripts/build_index.py` loads
-`.env` and prints the store and the embedder it used; a script of your own does
-it with `sys.path[:0]=['.','scripts']; import _env` (see `scripts/_env.py`).
-
-### What is worse this way, measured rather than guessed
-
-| | local NIMs | hosted |
-|---|---|---|
-| Reranking | `nv-rerankqa-mistral-4b-v3` | **none exists** — vector-only retrieval |
-| Embedding | `nv-embedqa-e5-v5`, 1024-d | `nemotron-3-embed-1b`, **2048-d** |
-| Narrated answer | ~1.8 s | **28–46 s** |
-| Same question twice | identical | **not reproducible** |
-
-The last row is the one that matters most. Every hosted chat model in the
-catalogue is now a *reasoning* model, and the endpoint does not return identical
-output at `temperature=0` the way a pinned container does. The baselines in
-`evals/baseline.json` were taken against the local NIMs, so **a hosted eval run
-is indicative, not comparable** — do not record one as a regression or an
-improvement.
-
-Switching `NIM_MODE` changes the embedder's width, so rebuild the index after
-you switch it or every search fails on a dimension mismatch.
-
 ## Deploy on NVIDIA Brev
 
 Target: **L40S 48GB**. All three NIMs co-reside in ~40GB.
@@ -171,17 +119,28 @@ bash scripts/stack.sh up                  # 5. API, UI, stores, observability
 
 Two things in that order are load-bearing, and both have gone wrong here:
 
-**`.env.example` ships `NIM_MODE=hosted`, and `hosted` skips the local probe.**
-Leave it and all three containers can be healthy while every request still goes
-to the hosted endpoints — you pay for the GPU and use none of it. Nothing fails;
+**`NIM_MODE` must be `local`, and `.env.example` now ships that.** It used to
+ship `hosted`, which does not merely prefer the hosted endpoints — it skips the
+local probe entirely, so all three containers can be healthy while every request
+still leaves the box. You pay for the GPU and use none of it. Nothing fails;
 `stack.sh status` notes it as *"3 local NIM container(s) up and NOTHING routes to
-them."*
+them."* If you inherit an older `.env`, check this first.
 
 **Set it to `local` before building the index, not after.** The embedder changes
 width with the mode — `nv-embedqa-e5-v5` is 1024, `nemotron-3-embed-1b` is 2048 —
 so building first and switching later means building twice. If you do switch
 later, `/health` fails with both model ids and the fix rather than letting every
 search break on a dimension error.
+
+**Anything that touches the app must load `.env` first.** The application does
+not read it — `stack.sh` does — so a bare
+`python -c 'from app.retrieval.index import build; print(build())'` runs with
+`NVIDIA_API_KEY`, `NIM_MODE` and `ASOIA_MILVUS_URI` all unset. Sometimes that
+fails loudly, with "NVIDIA_API_KEY is not set" while the key sits in `.env`.
+Worse, sometimes it does not: it builds the *embedded* Milvus Lite decoy with
+the *hosted* embedder and prints a row count. `scripts/build_index.py` loads
+`.env` and prints the store and the embedder it used; a script of your own does
+it with `sys.path[:0]=['.','scripts']; import _env` (see `scripts/_env.py`).
 
 There is nothing to pin and nothing to generate by hand. Both used to be
 required, and both were easy to get wrong.
@@ -220,11 +179,62 @@ That script and not a bare `python -c`: the application does not read `.env`,
 either way. `--check` prints the store and the embedder it would use before you
 spend the minutes.
 
-and if the data is ever regenerated without rebuilding it, `/health`, the review
+Build it once, after the NIMs are healthy — and if the data is ever regenerated
+without rebuilding the index, `/health`, the review
 Overview and any affected answer all say so, because a stale index otherwise
 produces confident, well-formed answers citing records that no longer exist.
 
-Jupyter: `.venv/bin/python -m jupyterlab --ip 0.0.0.0 --port 8888`
+**Jupyter.** Brev already runs a supervised JupyterLab on `0.0.0.0:8888` — with
+an empty token and an empty password, which is a Python REPL as `ubuntu` for
+anyone who can reach the port. Keep 8888 off the public internet. It also runs
+from `~/.venv`, not this project's, so its default kernel has none of these
+dependencies and every notebook dies on `No module named 'gradio'`. Register
+this venv once:
+
+```bash
+.venv/bin/python -m ipykernel install --user --name asoia --display-name "Python 3.11 (asoia)"
+```
+
+then pick **Python 3.11 (asoia)**. Or run your own on loopback, where there is
+no wrong kernel to pick:
+
+```bash
+.venv/bin/python -m jupyterlab --no-browser --ip 127.0.0.1 --port 8899
+```
+
+## Without a GPU — a degraded fallback
+
+**This is not how the project is meant to run.** It is what you fall back to
+when there is no box, and it exists because that happened: both GPU instances
+were deleted mid-project and this was the only way to keep the stack serving.
+
+Everything except the models is containers, so the sequence above still applies
+with three changes:
+
+- `NIM_MODE=hosted` in `.env` instead of `local`
+- skip the NIM pull and run entirely — there is nothing to start
+- the index gets built at 2048-d, because that is the hosted embedder's width
+
+Ports are the same: UI :7860, API :8080, Prometheus :9090, Grafana :3000,
+Attu :8101, sqlite-web :8102. `docs/screenshots/` is the stack running.
+
+Read the table below before relying on it.
+
+### What is worse this way, measured rather than guessed
+
+| | local NIMs | hosted |
+|---|---|---|
+| Reranking | `nv-rerankqa-mistral-4b-v3` | **none exists** — vector-only retrieval |
+| Embedding | `nv-embedqa-e5-v5`, 1024-d | `nemotron-3-embed-1b`, **2048-d** |
+| Narrated answer | ~1.8 s | **28–46 s** |
+| Same question twice | identical | **not reproducible** |
+
+The last row is the one that matters most. Every hosted chat model in the
+catalogue is now a *reasoning* model, and the endpoint does not return identical
+output at `temperature=0` the way a pinned container does. The baselines in
+`evals/baseline.json` were taken against the local NIMs, so **a hosted eval run
+is indicative, not comparable** — do not record one as a regression or an
+improvement.
 
 ## Notebooks — one per application segment
 
@@ -439,7 +449,7 @@ at all, because a labelled counter is only emitted once incremented.
 | `PORT` | `7860` | the Gradio UI |
 | `ASOIA_MILVUS_URI` | embedded file | `http://localhost:19530` for standalone; unset locks the store to one process |
 | `VECTOR_BACKEND` | `milvus` | `lance` restores the previous store |
-| `NIM_MODE` | `auto` | `hosted` skips the local probe, `local` requires the containers; changing it changes the embedder, so rebuild the index — `/health` fails until you do |
+| `NIM_MODE` | `auto` unset, **`local` as shipped in `.env.example`** | `local` requires the containers and is the intended setting; `hosted` SKIPS the local probe, so healthy containers can sit idle; changing it changes the embedder, so rebuild the index — `/health` fails until you do |
 | `NIM_MODE_{LLM,EMBED,RERANK}` | `NIM_MODE` | per-service override; `NIM_MODE_RERANK=local` is the useful one — there is no hosted reranking model |
 | `ASOIA_REVIEW_WRITES` | `1` | `0` makes the API's four edit endpoints return 403 |
 | `GRADIO_AUTH` | — | `user:password`; required by `stack.sh up --share` |

@@ -15,7 +15,6 @@ set -uo pipefail
 # dashboard listening on 0.0.0.0 is exactly the exposure the store UIs
 # in scripts/stores.sh are bound away from. Reach these the same way:
 #   ssh -N -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 <your-box>
-# Running the stack locally needs no tunnel at all: open the links directly.
 PROM_PORT="${PROM_PORT:-9090}"
 GRAF_PORT="${GRAF_PORT:-3000}"
 APP_METRICS="${ASOIA_METRICS_PORT:-9400}"
