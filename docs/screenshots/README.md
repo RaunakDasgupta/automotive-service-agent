@@ -1,25 +1,40 @@
 # Screenshots
 
-Captured 2026-10-07 on a Mac with the stack running locally: Milvus, Prometheus,
-Grafana, Attu and sqlite-web in containers, inference on the **hosted** NVIDIA
-endpoints. The GPU box these were previously taken on no longer exists.
+**Mixed vintage. Read the date column before believing one.**
 
-| | |
-|---|---|
-| 01 | Dashboard — 41 open ROs, 12 safety, and the action list |
-| 02 | Repair Order — state folded from events: ops, parts, safety, promise risk |
-| 03 | Technician Update — logging work against an RO |
-| 04 | Shift Handover — generated brief, worst first |
-| 05 | Manager Assistant — a cited answer with its tools and sources |
-| 06 | Data & Retrieval — note the store consoles are pointed to, not embedded |
-| 07 | Prometheus targets — `asoia` up; `dcgm` down because a Mac has no GPU |
-| 08 | Prometheus — `asoia_tool_calls_total`, one series per tool actually called |
-| 09 | Grafana — compose path, latency p50/p95, NIM latency, tool usage |
-| 10 | Attu — the `updates` collection, loaded, 1,857 entities |
-| 11 | Attu — schema showing `FloatVector(2048)`, the hosted embedder's width |
-| 12 | sqlite-web — 9 tables, 4.5 MB |
+`scripts/capture_screenshots.py` drives the stack and re-takes these, so they can
+be refreshed rather than redrawn by hand. It captures the four non-Gradio UIs
+reliably; Chromium hangs on four of the six Gradio tabs, headless or headed, so
+those are still taken by hand.
 
-Two things are honestly different from the GPU-box runs: there is **no hosted
-reranker**, so retrieval is vector-only here; and the hosted chat model is a
-reasoning model, which makes narrated answers take tens of seconds rather than
-under two.
+| | | captured | against |
+|---|---|---|---|
+| 01 | Dashboard — open ROs, safety, and the action list | **2026-10-09** | GPU box, local NIMs |
+| 02 | Repair Order — state folded from events | **2026-10-09** | GPU box, local NIMs |
+| 03 | Technician Update — logging work against an RO | 2026-10-07 | Mac, hosted |
+| 04 | Shift Handover — generated brief, worst first | 2026-10-07 | Mac, hosted |
+| 05 | Manager Assistant — a cited answer with its tools | 2026-10-07 | Mac, hosted |
+| 06 | Data & Retrieval — the store consoles are pointed at, not embedded | 2026-10-07 | Mac, hosted |
+| 07 | Prometheus targets — `asoia` **and `dcgm` both up** | **2026-10-09** | GPU box |
+| 08 | Prometheus — `asoia_tool_calls_total` | 2026-10-07 | Mac, hosted |
+| 09 | Grafana — compose path, latency, NIM latency, tool usage | 2026-10-07 | Mac, hosted |
+| 10 | Attu — the `updates` collection | 2026-10-07 | Mac, hosted |
+| 11 | Attu — schema showing `FloatVector(2048)` | 2026-10-07 | Mac, hosted |
+| 12 | sqlite-web — the system of record | **2026-10-09** | GPU box |
+
+## What is out of date, specifically
+
+**11 is wrong now.** It shows `FloatVector(2048)`, the hosted embedder's width.
+The store on the GPU box holds **1,690 rows at 1024** — `nv-embedqa-e5-v5`, the
+local NIM. 10's entity count is stale for the same reason.
+
+**07 replaced a shot captioned "dcgm down because a Mac has no GPU".** It now
+shows `asoia (1/1 up)` and `dcgm (1/1 up)`: the DCGM exporter is live and the
+Grafana GPU panels have real data for the first time.
+
+**08, 09 and 10 were re-taken on 2026-10-09 and then discarded**, because they
+showed the stack up and the application idle — `asoia_tool_calls_total` returned
+*Empty query result*, every Grafana application panel read *No data*, and Attu
+was sitting on its connect screen. A screenshot of an idle dashboard does not
+show the application working. They need re-taking **after** traffic has gone
+through the app, not just after it has started.
