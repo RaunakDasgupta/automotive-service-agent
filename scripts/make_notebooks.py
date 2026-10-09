@@ -54,6 +54,47 @@ os.environ.setdefault("NGC_API_KEY", key)
 assert key.startswith("nvapi-"), "key should start with nvapi-"
 print("key loaded:  nvapi-...%s  (len %d)" % (key[-4:], len(key)))
 '''),
+ md("""## Config — point the app at the local NIMs
+
+**This is the step that makes the GPU box worth having, and it is easy to skip.**
+
+`.env.example` ships `NIM_MODE=hosted`, and `hosted` does not merely *prefer* the
+hosted endpoints — it **skips the local probe entirely**. Leave it and all three
+containers can be pulled, built and healthy while every single request still
+goes to `integrate.api.nvidia.com`. Nothing errors. The only hint is a note from
+`scripts/stack.sh status`: *"3 local NIM container(s) up and NOTHING routes to
+them."*
+
+It has to be in `.env`, not just this kernel, because the API and the UI are
+separate processes that read `.env` through `scripts/stack.sh`.
+
+Set it **before** notebook 04 builds the index. The embedder changes width with
+the mode — `nv-embedqa-e5-v5` is 1024-d, the hosted `nemotron-3-embed-1b` is
+2048-d — so building first and switching after means building twice."""),
+ code('''
+WRITE_ENV = True        # set False to be told what to change instead of changing it
+import pathlib, re
+envp = pathlib.Path(".env")
+cur = os.environ.get("NIM_MODE", "(unset -> auto)")
+print("NIM_MODE in this kernel:", cur)
+if envp.exists():
+    body = envp.read_text()
+    found = re.search(r"^NIM_MODE=(.*)$", body, re.M)
+    print("NIM_MODE in .env      :", found.group(1) if found else "(absent)")
+    if found and found.group(1).strip() == "local":
+        print("  already local - nothing to do")
+    elif WRITE_ENV:
+        body = (re.sub(r"^NIM_MODE=.*$", "NIM_MODE=local", body, count=1, flags=re.M)
+                if found else body.rstrip() + "\\nNIM_MODE=local\\n")
+        envp.write_text(body)
+        os.environ["NIM_MODE"] = "local"
+        print("  -> set NIM_MODE=local in .env")
+        print("     restart any already-running stack: bash scripts/stack.sh restart")
+    else:
+        print("  !! change it by hand:  NIM_MODE=local")
+else:
+    print("no .env yet - cp .env.example .env, add your key, set NIM_MODE=local")
+'''),
  md("""## Execute — GPU check
 
 If this reports less than ~40GB free, use the 1B reranker instead of the 4B one
@@ -61,8 +102,18 @@ If this reports less than ~40GB free, use the 1B reranker instead of the 4B one
  code('!nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free --format=csv'),
  md("""## Execute — pull the NIM containers
 
-Long pole: 30–90 minutes including TensorRT engine builds. Run this **first** and
-work through notebooks 01 and 02 (neither needs a GPU) while it downloads."""),
+Long pole: 30–90 minutes including TensorRT engine builds.
+
+**Run it in a terminal, not here.** A `!` cell holds the kernel for its whole
+duration, so this one notebook cannot pull *and* let you work through 01 and 02
+meanwhile — one kernel runs one cell at a time. In a terminal on the box:
+
+```
+cd ~/automotive-service-agent && bash scripts/start_nims.sh pull
+```
+
+then come back and carry on. It reads each pull's exit code and fails loudly, so
+you do not need to watch it. Left here for when you would rather just block."""),
  code('!bash scripts/start_nims.sh pull'),
  md("## Execute — start the three services"),
  code('!bash scripts/start_nims.sh run'),
@@ -84,6 +135,41 @@ for name, port, path in [("llm", 8000, "/v1/models"),
         print(f"  OK      {name:7s} :{port}  -> {ids}")
     except Exception as e:
         print(f"  NOT UP  {name:7s} :{port}  ({type(e).__name__})")
+'''),
+ md("""## Execute — the vector store
+
+**No other notebook starts this, and 04 cannot build the index without it.**
+`.env` points the app at a standalone Milvus on :19530. If nothing is listening
+there the build fails; and if `ASOIA_MILVUS_URI` is unset the app quietly falls
+back to an embedded Milvus Lite file in `data/generated/`, which is a *different*
+store from the one the API serves — so the index lands somewhere nothing reads.
+"""),
+ code('!bash scripts/start_milvus.sh up'),
+ md("""## Execute — observability and the store admin UIs
+
+Prometheus scrapes the app on :9400 and, because this box has a GPU, the **DCGM
+exporter** on :9401 — so the Grafana GPU panels have something to show for the
+first time. `provision` is a one-off download of the Attu image and sqlite-web.
+
+Everything binds `127.0.0.1`. Grafana runs anonymous with no login form and
+sqlite-web is read-write, so reach them over an `ssh -L` forward and do not
+publish these ports."""),
+ code('!bash scripts/start_observability.sh up'),
+ code('!bash scripts/stack.sh stores provision && bash scripts/stores.sh up'),
+ md("""## What you should see — everything that should be listening
+
+Milvus 19530, Prometheus 9090, Grafana 3000, Attu 8101, sqlite-web 8102, and the
+three NIMs on 8000/8001/8002. The API (8080) and UI (7860) come up in 07."""),
+ code('''
+import socket
+for name, port in [("nim-llm", 8000), ("nim-embed", 8001), ("nim-rerank", 8002),
+                   ("milvus", 19530), ("prometheus", 9090), ("grafana", 3000),
+                   ("dcgm", 9401), ("attu", 8101), ("sqlite-web", 8102)]:
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+            print(f"  up        {name:12s} :{port}")
+    except Exception:
+        print(f"  NOT UP    {name:12s} :{port}")
 '''),
 ]
 
@@ -240,7 +326,12 @@ NOTEBOOKS["07_app.ipynb"] = [
 
 **Prerequisites** — notebook 01 has been run so the database exists. The app runs
 on the deterministic engine alone, so it works **with or without** the NIMs up;
-the voice and agent surfaces activate once they are.
+the voice and agent surfaces activate once they are. For the semantic tab and
+grounded narration you also want 00 (NIMs) and 04 (the index).
+
+> This cell **blocks the kernel for as long as the app is up** — that is how it
+> stays serving. Run it last, in its own notebook, and use Kernel -> Interrupt
+> to stop the server.
 
 ### Tabs
 | Tab | What it shows |
@@ -254,13 +345,23 @@ the voice and agent surfaces activate once they are.
  code(BOOT),
  md("""## Config
 
-On Brev, use `share=True` to get a public link, or forward port 7860 over SSH."""),
+Forward port 7860 over SSH and open http://127.0.0.1:7860 — that is the default
+below. `share=True` publishes a world-reachable `gradio.live` link instead, and
+the Technician Update tab **writes to the event log**, so set `GRADIO_AUTH` in
+`.env` before you turn it on.
+
+**"now" is not pinned here, deliberately.** The clock follows the newest event
+in the log, so a dataset is never stale. This cell used to hard-code
+`ASOIA_NOW = "2026-09-24T16:55:00"`; against a dataset generated today that is a
+moment weeks before the data, so every time-window question — the handover,
+"this week", "overnight" — returns nothing, cites nothing, and is refused by the
+output rail. The demo looked broken and the data was fine."""),
  code('''
 PORT = 7860
-SHARE = True          # set False if you are forwarding the port yourself
-# Pin "now" so the demo is reproducible against the generated window.
-# Comment out to use real wall-clock time.
-os.environ["ASOIA_NOW"] = "2026-09-24T16:55:00"
+SHARE = False         # True publishes a public link; set GRADIO_AUTH in .env first
+# os.environ["ASOIA_NOW"] = "2026-09-24T16:55:00"   # pin the clock, to reproduce one run
+from app.state import clock
+print("clock:", clock.source())
 '''),
  md("## Execute"),
  code('''
@@ -353,7 +454,8 @@ else:
  code("""
 from datetime import datetime
 from app.pipeline.run import run
-NOW = datetime.fromisoformat(os.environ.get("ASOIA_NOW", "2026-09-24T17:45:00"))
+from app.state import clock
+NOW = clock.event_time()           # follows the data unless ASOIA_NOW pins it
 res = run(con, text=f"{TARGET}. {TEXT}", actor_id="EMP020", at=NOW, embed_fn=nim_embed)
 print(res.diff_card)
 """),
@@ -377,11 +479,16 @@ print("Pass audio_path= instead of text= to run the ASR stage first.")
 # ---------------------------------------------------------------- 04 retrieval
 NOTEBOOKS["04_retrieval.ipynb"] = [
  md("""
-# 04 · Retrieval — LanceDB + nv-embedqa + nv-rerankqa
+# 04 · Retrieval — Milvus + nv-embedqa + nv-rerankqa
 
 **Purpose** — build the semantic index and show reranking earning its place.
 
-**Prerequisites** — 01 has been run. Embedding and reranking endpoints reachable.
+**Prerequisites** — 01 has been run (the database exists) and 00 has been run
+(Milvus is up, the embed and rerank NIMs are healthy, and `NIM_MODE=local`).
+
+> The store is **Milvus**. It was LanceDB until pass 26 and the heading here
+> still said so; `app/retrieval/backend.py` keeps the LanceDB backend only so
+> that migration reverses.
 
 ### Scope
 Most manager questions ("what is the state of RO-x", "which are blocked",
@@ -392,11 +499,38 @@ fault before*, *what did the last technician say*.
 Building the index is a one-off batch job; only the query embedding is per-call.
 """),
  code(BOOT),
+ md("""## Config — check what you are about to build, and where
+
+Read this before building. Two things go wrong silently and both are visible
+here: the **store** must be the server on :19530 and not an embedded file, and
+the **embedder** must be the one you intend — its width is baked into the
+collection, so a mismatch makes every later search fail on a dimension error.
+
+`scripts/build_index.py --check` is the same check from a shell."""),
+ code('''
+from app.nim.client import resolve
+from app.retrieval.backend import backend
+from app.retrieval.index import index_meta
+
+base, model, mode = resolve("embed")          # (base_url, model_id, mode)
+b = backend()
+print(f"  store     {b.uri}   ({b.mode})")
+print(f"  embedder  {model}   ({mode})")
+if b.mode == "embedded":
+    print("  !! that is an embedded Milvus Lite FILE, not the server the API reads.")
+    print("     ASOIA_MILVUS_URI is not set in this kernel.")
+if mode != "local":
+    print("  !! not using the local NIM. On this box that is probably wrong -")
+    print("     see notebook 00, and note the hosted embedder is a different width.")
+have = index_meta()
+print("  on disk  ", have or "nothing recorded yet")
+'''),
  md("## Execute — build the index (one pass over every update)"),
  code("""
 from app.retrieval.index import build
 stats = build()
 print(stats)
+print("recorded:", index_meta())      # dim + embed_model, what the guard reads
 """),
  md("## What you should see — search, then rerank"),
  code("""
@@ -465,11 +599,11 @@ for q in ["What's the status of RO-26-08165?",
 """),
  md("## Execute — ask the agent"),
  code("""
-os.environ.setdefault("ASOIA_NOW", "2026-09-24T17:45:00")
+# "now" follows the newest event in the log; set ASOIA_NOW only to pin one run.
 from app.agent.agent import ask
 a = ask("Which vehicles cannot be released on safety grounds, and what needs doing?")
 print(a.text)
-print("\n--- tools used:", [c["name"] for c in a.tool_calls])
+print("\\n--- tools used:", [c["name"] for c in a.tool_calls])
 print("--- grounded:", a.grounded, "| citations:", len(a.citations))
 if a.warnings: print("--- warnings:", a.warnings)
 """),
@@ -477,7 +611,7 @@ if a.warnings: print("--- warnings:", a.warnings)
  code("""
 a = ask("Are any parts holding up more than one job at once?")
 print(a.text)
-print("\ncitations:", a.citations[:8])
+print("\\ncitations:", a.citations[:8])
 """),
  code("""
 a = ask("Give me the afternoon handover, worst first.")
@@ -596,8 +730,45 @@ for q in e.clarifying_questions(): print("  -", q)
  code('!.venv/bin/python -m pytest tests/test_guardrails.py -q || python -m pytest tests/test_guardrails.py -q'),
 ]
 
+def _check(name, cells):
+    """Compile every code cell before writing it out.
+
+    Two cells in 05_agent shipped broken for a long time and nothing noticed,
+    because a notebook is only validated by running it. The cause is this file:
+    code() takes a NON-raw triple-quoted string, so a lone \\n inside one becomes
+    a real newline in the generated source and the cell is an unterminated
+    string literal. Escapes meant for the notebook must be doubled here. This
+    turns that into a build failure instead of a surprise at the demo.
+    """
+    import ast
+    bad = []
+    for i, c in enumerate(cells):
+        if c["cell_type"] != "code":
+            continue
+        src = c["source"]
+        src = "".join(src) if isinstance(src, list) else src
+        # IPython strips ! and % lines before compiling; mirror that.
+        clean = "\n".join("pass" if l.lstrip().startswith(("!", "%")) else l
+                           for l in src.splitlines())
+        try:
+            ast.parse(clean)
+        except SyntaxError as e:
+            bad.append(f"    cell {i}: {e.msg} (line {e.lineno})")
+    return bad
+
+
 out = pathlib.Path("notebooks"); out.mkdir(exist_ok=True)
+failed = 0
 for name, cells in NOTEBOOKS.items():
+    bad = _check(name, cells)
+    if bad:
+        failed += len(bad)
+        print(f"BROKEN notebooks/{name}")
+        for b in bad:
+            print(b)
+        continue
     (out / name).write_text(json.dumps(
         {"cells": cells, "metadata": NB_META, "nbformat": 4, "nbformat_minor": 5}, indent=1))
     print(f"wrote notebooks/{name}  ({len(cells)} cells)")
+if failed:
+    raise SystemExit(f"{failed} code cell(s) do not compile - nothing written for those")

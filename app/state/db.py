@@ -14,6 +14,32 @@ SCHEMA = Path(__file__).with_name("schema.sql")
 _local = threading.local()
 
 
+def _alive(con: sqlite3.Connection) -> bool:
+    """Is this cached connection still usable?
+
+    sqlite3 exposes no `closed` flag, so the only way to know is to ask it
+    something. The cache used to hand back whatever it held, and a CLOSED
+    connection in it poisons every later call with "Cannot operate on a closed
+    database" - because `app/data/generate.py` closes the connection it was
+    given, and that connection is this cache's.
+
+    It only bites a process that generates and then queries, which is why it
+    survived: running `python -m app.data.generate` exits, and the API and UI
+    start fresh. A notebook does not - notebook 01 generates in one cell and
+    reads in the next, and failed there every time. app/state/bootstrap.py
+    already worked around it by evicting the cache after generating, at that one
+    call site; this fixes the cache instead, so every caller is covered.
+
+    One `SELECT 1` against an open in-process SQLite connection is far cheaper
+    than the alternative of being wrong.
+    """
+    try:
+        con.execute("SELECT 1")
+        return True
+    except sqlite3.ProgrammingError:
+        return False
+
+
 def connect(path: str | None = None) -> sqlite3.Connection:
     p = str(Path(path or DEFAULT_DB))
     cache = getattr(_local, "conns", None)
@@ -21,7 +47,9 @@ def connect(path: str | None = None) -> sqlite3.Connection:
         cache = _local.conns = {}
     con = cache.get(p)
     if con is not None:
-        return con
+        if _alive(con):
+            return con
+        cache.pop(p, None)          # closed behind our back; open a fresh one
     Path(p).parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(p, detect_types=0)
     con.row_factory = sqlite3.Row
