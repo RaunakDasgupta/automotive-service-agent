@@ -34,9 +34,16 @@ IMAGE="${CLOUDFLARED_IMAGE:-cloudflare/cloudflared:latest}"
 # name:port - the UI, the two observability consoles, and the two store admins.
 SERVICES="gradio:${PORT:-7860} grafana:${GRAF_PORT:-3000} prometheus:${PROM_PORT:-9090} attu:${ASOIA_ATTU_PORT:-8101} sqlite-web:${ASOIA_SQLITEWEB_PORT:-8102}"
 
-url_of() {   # read the quick-tunnel URL back out of the container's log
+url_of() {   # read the CURRENT quick-tunnel URL back out of the container's log
+  # tail -1, not head -1. `docker logs` keeps the whole history across restarts,
+  # and a restarted cloudflared announces a NEW hostname while the old one stays
+  # in the log above it. head -1 therefore returns the hostname from the FIRST
+  # time the container ever started - which, after a reboot, is a dead URL that
+  # does not even resolve. Measured: every tunnel had two distinct hostnames in
+  # its log after the box rebooted, and this function was handing back the stale
+  # one while the live one sat on the next line.
   docker logs "asoia-cf-$1" 2>&1 \
-    | grep -ohE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1
+    | grep -ohE 'https://[a-z0-9-]+\.trycloudflare\.com' | tail -1
 }
 
 up() {
