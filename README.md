@@ -76,7 +76,10 @@ app, or with the VS Code *Draw.io Integration* extension. It is uncompressed XML
 so it diffs in git.
 
 **[`docs/architecture-deck.pptx`](docs/architecture-deck.pptx)** is the same
-material as a seven-slide deck — one slide per section, with the write path and
+material as a nine-slide deck — seven of architecture, one slide per section,
+then two of **usage** built from `docs/screenshots/`: the manager's question
+end to end beside Grafana, Prometheus and Attu, and the rest of the surface.
+The architecture slides have the write path and
 the read path condensed into a single end-to-end application flow, because they
 were always one loop and splitting them over two pages hid that:
 
@@ -315,7 +318,7 @@ docs/         EXAMPLES.md - what it actually answers, captured from a live run
               on an L40S; BREV_RUNBOOK.md - bringing up a GPU box, in order,
               with a gate per phase; OPERATING.md - restart and refresh, day to
               day; screenshots/ - the running stack; architecture.drawio -
-              seven pages, and architecture-deck.pptx - seven slides; both
+              seven pages, and architecture-deck.pptx - nine slides; both
               generated, by scripts/make_architecture_diagram.py and
               scripts/make_architecture_deck.js
 tests/        engine tests - no GPU, no network
