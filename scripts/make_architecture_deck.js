@@ -608,15 +608,17 @@ function shot(s, file, ratio, x, y, maxW, maxH) {
   return b;
 }
 
-/** The read path, condensed to one strip. Six steps, five arrows, full width. */
+/** The read path, condensed to one strip: six steps, five arrows, full width.
+ *  Each step says what it DOES, not just what it is called - the earlier version
+ *  read like a list of nouns and told you nothing about where the model enters. */
 function flowStrip(s, y) {
   const steps = [
-    ["Question", "typed or spoken", "std"],
-    ["Router", "keywords, no model", "std"],
-    ["Typed tools", "SQL · Milvus + rerank", "std"],
-    ["Compose", "Python 87.5% · else narrate", "std"],
-    ["Rails", "grounding + output", "fw"],
-    ["Answer", "every figure cited", "nv"],
+    ["1 · Question", "typed in the UI,\nor spoken and transcribed", "std"],
+    ["2 · Route", "keyword match picks one typed tool.\nNo model call here", "std"],
+    ["3 · Read", "SQL over the event log, or\nembed > Milvus > rerank", "std"],
+    ["4 · Compose", "Python builds the answer.\nThe model only narrates prose", "std"],
+    ["5 · Check", "every figure must trace back\nto a tool result, or it is blocked", "fw"],
+    ["6 · Answer", "with the record ids\nit was built from", "nv"],
   ];
   const aw = 0.22, gap = 0.04;
   const bw = (FW - (steps.length - 1) * (aw + 2 * gap)) / steps.length;
@@ -624,10 +626,14 @@ function flowStrip(s, y) {
   steps.forEach(([name, sub, kind], i) => {
     // No ss override: SUB_PT is the floor this deck sets for itself, and
     // slides 1-7 never go under it.
-    card(s, x, y, bw, 0.72, kind, name, sub);
+    card(s, x, y, bw, 0.92, kind, name, sub);
     x += bw;
-    if (i < steps.length - 1) { arrow(s, x + gap, y + 0.22, aw, 0.22); x += aw + 2 * gap; }
+    if (i < steps.length - 1) { arrow(s, x + gap, y + 0.33, aw, 0.22); x += aw + 2 * gap; }
   });
+  s.addText([
+    { text: "Steps 1, 2, 4 and 6 never touch a model. ", options: { bold: true, color: INK } },
+    { text: "Only step 3's semantic branch and step 4's narration do - which is why eight of eleven questions answer in under a tenth of a second.", options: { color: MUTE } },
+  ], txt(null, { x: M, y: y + 0.96, w: FW, h: 0.26, fontSize: 10, align: "center" }));
 }
 
 /** One cell: screenshot on the left, the claim it evidences on the right. */
@@ -649,30 +655,31 @@ function slideUsageCore(pres) {
     "One question, end to end — and the three consoles that show it happened. Captured from a live run on the L40S, all three NIMs local.");
   flowStrip(s, 1.12);
 
-  const cw = (FW - 0.3) / 2, ch = 2.28, top = 2.16;
+  const cw = (FW - 0.3) / 2, ch = 2.14, top = 2.48;
   cell(s, M, top, cw, ch, "05-app-manager-assistant.jpg", 1.333,
-    "Manager Assistant", [
-      "Asks in plain English; the router picks a typed tool",
-      "Answer cites every record it used",
-      "8 of 11 questions need no model call at all",
+    "Manager Assistant — the question", [
+      "Plain English in; the router picks one typed tool",
+      "Every figure traces to a record id",
+      "Refusals read the record first, then decline",
     ]);
   cell(s, M + cw + 0.3, top, cw, ch, "09-grafana-dashboard.jpg", 1.455,
-    "Grafana — the claim, measured", [
-      "Answers composed in Python: 87.5%",
-      "Latency split by path: python ~0s, llm ~4-5s",
-      "GPU to 100% on the semantic queries only",
+    "Grafana — under real load", [
+      "Ungrounded answers 0  ·  answers cut short 0",
+      "p95 by path: python ~0s against llm ~10s",
+      "Six tools in use; GPU tracks the semantic queries",
     ]);
   cell(s, M, top + ch + 0.22, cw, ch, "08-prometheus-tool-calls.jpg", 1.455,
     "Prometheus — which tools ran", [
-      "One asoia_tool_calls_total series per tool called",
-      "Counters are per-process: traffic must go through",
-      "the API on :8080, not a standalone script",
+      "rate(asoia_tool_calls_total[5m]) x 60, six series",
+      "list_ros dominates; search_updates is the rare one",
+      "Counters are per-process - traffic must hit the API",
     ]);
   cell(s, M + cw + 0.3, top + ch + 0.22, cw, ch, "11-attu-collection-1690.jpg", 1.455,
-    "Attu — the vector store", [
-      "updates collection, 1,690 entities",
-      "Built by nv-embedqa-e5-v5 at 1024 dimensions",
-      "Rebuilt whenever the embedder changes width",
+    "Milvus — 1,690 vectors, and the rerank", [
+      "updates collection, 1,690 entities at 1024 dims",
+      "\"whistling noise\": vector-only tops out at knocking",
+      "and vibration; the reranker returns blowing-noise",
+      "passages instead - a different set of ROs entirely",
     ]);
 
   s.addNotes("The flow strip is the read path. The four frames are the same run seen from the app, from Grafana, from Prometheus and from the store. 87.5% composed in Python is the project's thesis, and Grafana reports it independently of the eleven timings in docs/EXAMPLES.md.");
