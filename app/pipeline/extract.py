@@ -8,7 +8,7 @@ hours, never resolves an op code - all of that is deterministic downstream.
 """
 from __future__ import annotations
 import json, re
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.data.catalog import OP_BY_CODE, DTC_CODES

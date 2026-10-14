@@ -347,9 +347,9 @@ grounded narration you also want 00 (NIMs) and 04 (the index).
  md("""## Config
 
 Forward port 7860 over SSH and open http://127.0.0.1:7860 — that is the default
-below. `share=True` publishes a world-reachable `gradio.live` link instead, and
-the Technician Update tab **writes to the event log**, so set `GRADIO_AUTH` in
-`.env` before you turn it on.
+below. `share=True` publishes a world-reachable `gradio.live` link instead, with
+**no login in front of it**: anyone with the URL can use every tab, and the
+Technician Update tab **writes to the event log**. Leave it off unless you mean it.
 
 **"now" is not pinned here, deliberately.** The clock follows the newest event
 in the log, so a dataset is never stale. This cell used to hard-code
@@ -359,7 +359,7 @@ moment weeks before the data, so every time-window question — the handover,
 output rail. The demo looked broken and the data was fine."""),
  code('''
 PORT = 7860
-SHARE = False         # True publishes a public link; set GRADIO_AUTH in .env first
+SHARE = False         # True publishes a public link with NO login - see the note above
 # os.environ["ASOIA_NOW"] = "2026-09-24T16:55:00"   # pin the clock, to reproduce one run
 from app.state import clock
 print("clock:", clock.source())
@@ -487,9 +487,8 @@ NOTEBOOKS["04_retrieval.ipynb"] = [
 **Prerequisites** — 01 has been run (the database exists) and 00 has been run
 (Milvus is up, the embed and rerank NIMs are healthy, and `NIM_MODE=local`).
 
-> The store is **Milvus**. It was LanceDB until pass 26 and the heading here
-> still said so; `app/retrieval/backend.py` keeps the LanceDB backend only so
-> that migration reverses.
+> The store is **Milvus**, standalone on the box (`ASOIA_MILVUS_URI`). It was
+> LanceDB until pass 26; that backend has since been removed.
 
 ### Scope
 Most manager questions ("what is the state of RO-x", "which are blocked",

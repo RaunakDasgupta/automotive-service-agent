@@ -199,7 +199,7 @@ def describe(path: str) -> str:
         if peak < 0.02:
             warn = "  <-- effectively silent, nothing to transcribe"
         elif rate not in (8000, 16000, 22050, 44100, 48000):
-            warn = f"  <-- unusual rate; Riva expects 16000"
+            warn = "  <-- unusual rate; Riva expects 16000"
         return (f"{rate} Hz mono, {len(a) / rate:.1f}s, "
                 f"peak {peak:.0%}, rms {rms:.1%}{warn}")
     except Exception as e:
@@ -336,8 +336,8 @@ def main() -> int:
               f"matters: the prose can be rough and the update still lands, but a "
               f"dropped measurement is a silently wrong record.")
     if not bad:
-        print(f"\n  GOOD: words and every figure came through.")
-        print(f"\nNow put it through the whole update pipeline:")
+        print("\n  GOOD: words and every figure came through.")
+        print("\nNow put it through the whole update pipeline:")
         print(f"  .venv/bin/python scripts/test_voice_update.py --audio {wav}")
 
     if made and not args.keep:

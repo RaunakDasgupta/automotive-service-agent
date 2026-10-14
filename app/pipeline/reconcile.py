@@ -7,13 +7,11 @@ rather than like a form.
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 from app.state import db as dbm
 from app.state.events import Event, EventType as E
 from app.state.engine import fold, ROSnapshot
 from app.state.transitions import ROState, is_legal, reason_illegal
-from app.data.catalog import OP_BY_CODE
 
 
 @dataclass

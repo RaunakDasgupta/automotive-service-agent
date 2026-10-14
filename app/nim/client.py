@@ -10,14 +10,12 @@ calls go through a shared limiter with retry and exponential backoff.
 """
 from __future__ import annotations
 import os, time, threading, json
-from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 
 import httpx
 
 HOSTED_BASE = "https://integrate.api.nvidia.com/v1"
-HOSTED_ASR = "https://ai.api.nvidia.com/v1/speech"
 
 # Local NIM ports, matching scripts/start_nims.sh
 LOCAL = {"llm": "http://localhost:8000/v1",

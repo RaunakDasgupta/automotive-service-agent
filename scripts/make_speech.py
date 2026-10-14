@@ -198,7 +198,7 @@ def synthesise(text: str, out: str, voice: str | None, wpm: int | None,
     model = os.environ.get("PIPER_MODEL", "")
     if shutil.which("piper") and model:
         try:
-            with open(out, "wb") as fh:
+            with open(out, "wb"):
                 p = subprocess.run(["piper", "--model", model, "--output_file", out],
                                    input=text.encode(), capture_output=True,
                                    timeout=180)
@@ -295,13 +295,13 @@ def main() -> int:
     print(f"  {args.out}")
     print(f"  {engine}, {rate} Hz -> {TARGET_RATE} Hz mono, "
           f"{secs:.1f}s, peak {peak:.0%} of full scale")
-    print(f"\nNext, transcribe it and grade what comes back:")
+    print("\nNext, transcribe it and grade what comes back:")
     if args.sample:
         print(f"  .venv/bin/python scripts/test_asr.py --sample {args.sample}")
     else:
         print(f"  .venv/bin/python scripts/test_asr.py --wav {args.out} "
               f"--expect {text!r}")
-    print(f"\nOr put it through the whole update pipeline:")
+    print("\nOr put it through the whole update pipeline:")
     print(f"  .venv/bin/python scripts/test_voice_update.py --audio {args.out}"
           + (f" --ro {ron}" if ron else ""))
     return 0

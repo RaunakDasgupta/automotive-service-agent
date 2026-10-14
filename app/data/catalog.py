@@ -5,7 +5,7 @@ basis every shop works to). DTCs are genuine SAE J2012 codes. Fleet entries
 carry real World Manufacturer Identifiers so generated VINs decode correctly.
 """
 from __future__ import annotations
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Literal
 
 SkillLevel = Literal["APPRENTICE", "TECH_C", "TECH_B", "TECH_A", "MASTER", "DIAG_SPEC"]
@@ -199,9 +199,3 @@ FLEET = [
 
 PAY_TYPES = ["CUSTOMER_PAY", "WARRANTY", "INTERNAL", "GOODWILL"]
 WAIT_TYPES = ["DROP_OFF", "WAITER", "LOANER", "RENTAL"]
-
-PART_AVAILABILITY = ["IN_STOCK", "NEXT_DAY", "BACKORDER", "NLA"]
-
-
-def catalog_as_dicts() -> list[dict]:
-    return [asdict(o) for o in LABOUR_OPS]

@@ -11,7 +11,7 @@ import json
 
 from app.state import db as dbm
 from app.state.engine import fold, ROSnapshot
-from app.state.transitions import ROState, BLOCKING_STATES
+from app.state.transitions import ROState
 from app.data.catalog import OP_BY_CODE
 
 

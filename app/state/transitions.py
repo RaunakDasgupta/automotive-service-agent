@@ -47,9 +47,6 @@ LEGAL: dict[ROState, set[ROState]] = {
 }
 
 BLOCKING_STATES = {S.AWAITING_AUTHORISATION, S.PARTS_HOLD}
-TERMINAL_STATES = {S.INVOICED}
-# Work that cannot legitimately begin before the customer has said yes.
-REQUIRES_AUTHORISATION = {S.REPAIR_IN_PROGRESS}
 
 
 def is_legal(src: ROState, dst: ROState) -> bool:

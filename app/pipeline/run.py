@@ -7,7 +7,6 @@ Each stage is inspectable, which is what notebook 03 walks through.
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 from app.state import db as dbm
 from app.pipeline.asr import transcribe, Transcript

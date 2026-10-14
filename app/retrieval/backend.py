@@ -1,9 +1,9 @@
-"""One interface over the vector store, so nothing else knows which one it is.
+"""The vector store: Milvus, embedded or standalone, behind one small interface.
 
-Milvus is the default. LanceDB is still here because it was the store for the
-first twenty-six passes and a migration you cannot reverse is not a migration.
+Milvus is the store. LanceDB was the first one, and was removed once the
+deployment had run on Milvus standalone long enough that reversing the migration
+was no longer a real option; it is in git history if it is ever wanted again.
 
-    VECTOR_BACKEND   "milvus" (default) or "lancedb"
     ASOIA_MILVUS_URI   a file path  -> embedded Milvus Lite, no server
                        http://host:19530 -> a Milvus standalone/cluster
     ASOIA_MILVUS_COLLECTION  default "updates"
@@ -12,7 +12,6 @@ NOT `MILVUS_URI`: pymilvus reads that name itself, at import, and rejects
 anything that is not `http[s]://host:port` - so setting it to a Milvus Lite file
 path makes `import pymilvus` raise before any of this runs. The ASOIA_ prefix the
 rest of the project uses avoids the collision as well as being consistent.
-    LANCE_URI        unchanged, for the lancedb backend
 
 The URI decides whether Milvus runs embedded or against a server, exactly the way
 `app/nim/client.py` decides local NIM versus hosted endpoint. The deployment uses
@@ -31,13 +30,11 @@ vector. That split is not tidiness: a 1024-float vector per row is about 8 KB, s
 listing two thousand chunks to read their text used to move 15 MB of numbers that
 nothing looked at. The review browser calls `scan`, the detail view calls `get`.
 
-Every method returns plain dicts with the same keys regardless of backend, so
-`app/review/store.py` and `app/retrieval/index.py` contain no per-store branching.
+Every method returns plain dicts, so `app/review/store.py` and
+`app/retrieval/index.py` stay free of pymilvus types.
 """
 from __future__ import annotations
 
-import json
-import math
 import os
 import threading
 from typing import Any
@@ -332,155 +329,18 @@ class MilvusBackend:
                 "collection": self.collection}
 
 
-# -------------------------------------------------------------------- LanceDB
-
-class LanceBackend:
-    """The store used up to pass 26. Kept so the migration is reversible."""
-    name = "lancedb"
-
-    def __init__(self, uri: str | None = None, table: str | None = None):
-        self.uri = uri or os.environ.get("LANCE_URI", "data/generated/lancedb")
-        self.collection = table or "updates"
-
-    mode = "embedded"
-
-    def _tbl(self):
-        try:
-            import lancedb
-        except ImportError:
-            raise BackendError(
-                "lancedb is not installed. uv pip install --python .venv lancedb"
-            ) from None
-        db = lancedb.connect(self.uri)
-        if self.collection not in db.table_names():
-            raise BackendError(
-                f"no '{self.collection}' table at {self.uri} - build the index first")
-        return db.open_table(self.collection)
-
-    def exists(self) -> bool:
-        try:
-            self._tbl()
-            return True
-        except Exception:
-            return False
-
-    def create(self, dim: int) -> None:      # lancedb creates on first write
-        self._pending_dim = dim
-
-    def upsert(self, rows: list[dict]) -> int:
-        import lancedb
-        db = lancedb.connect(self.uri)
-        data = [dict(r) for r in rows]
-        if self.collection in db.table_names():
-            tbl = db.open_table(self.collection)
-            ids = [r["update_id"] for r in data]
-            if ids:
-                quoted = ",".join("'" + i.replace("'", "") + "'" for i in ids)
-                try:
-                    tbl.delete(f"update_id IN ({quoted})")
-                except Exception:
-                    pass
-            tbl.add(data)
-        else:
-            db.create_table(self.collection, data=data)
-        return len(data)
-
-    def drop(self) -> None:
-        import lancedb
-        db = lancedb.connect(self.uri)
-        if self.collection in db.table_names():
-            db.drop_table(self.collection)
-
-    def scan(self) -> list[dict]:
-        tbl = self._tbl()
-        try:
-            t = tbl.to_arrow()
-            if "vector" in t.column_names:
-                t = (t.drop_columns(["vector"]) if hasattr(t, "drop_columns")
-                     else t.drop(["vector"]))
-            return t.to_pylist()
-        except Exception:
-            rows = tbl.search().limit(100000).to_list()
-            for r in rows:
-                r.pop("vector", None)
-            return rows
-
-    def get(self, update_id: str) -> dict | None:
-        tbl = self._tbl()
-        safe = update_id.replace("'", "")
-        try:
-            rows = tbl.search().where(f"update_id = '{safe}'").limit(1).to_list()
-        except Exception:
-            rows = [r for r in tbl.search().limit(100000).to_list()
-                    if r.get("update_id") == update_id]
-        return dict(rows[0]) if rows else None
-
-    def search(self, vector: list[float], k: int,
-               ro_number: str | None = None) -> list[dict]:
-        q = self._tbl().search(vector).limit(k)
-        if ro_number:
-            q = q.where(f"ro_number = '{ro_number}'")
-        hits = []
-        for h in q.to_list():
-            h.pop("vector", None)
-            h["vector_score"] = h.pop("_distance", None)
-            hits.append(h)
-        return hits
-
-    def delete(self, update_ids: list[str]) -> int:
-        if not update_ids:
-            return 0
-        quoted = ",".join("'" + i.replace("'", "") + "'" for i in update_ids)
-        self._tbl().delete(f"update_id IN ({quoted})")
-        return len(update_ids)
-
-    def sample_vectors(self, n: int = 64) -> list[dict]:
-        rows = self._tbl().search().limit(max(1, n)).to_list()
-        return [{"update_id": r.get("update_id"), "vector": r.get("vector")}
-                for r in rows]
-
-    def count(self) -> int | None:
-        try:
-            return self._tbl().count_rows()
-        except Exception:
-            return None
-
-    def dim(self) -> int | None:
-        try:
-            one = self._tbl().search().limit(1).to_list()
-            v = one[0].get("vector") if one else None
-            return len(v) if v is not None else None
-        except Exception:
-            return None
-
-    def flush(self) -> None:
-        """Nothing to do: LanceDB writes are visible as soon as they return."""
-
-    def stats(self) -> dict:
-        return {"backend": "lancedb", "mode": "embedded", "uri": self.uri,
-                "collection": self.collection}
-
-
 # ------------------------------------------------------------------ selection
 
 _cached: dict[str, Any] = {}
 
 
-def backend(name: str | None = None):
-    """The configured store. Cached, because opening Milvus Lite is not free."""
-    which = (name or os.environ.get("VECTOR_BACKEND", "milvus")).lower()
-    if which not in ("milvus", "lancedb"):
-        raise BackendError(
-            f"VECTOR_BACKEND={which!r} is not a store. Use 'milvus' or 'lancedb'.")
-    if which not in _cached:
-        _cached[which] = MilvusBackend() if which == "milvus" else LanceBackend()
-    return _cached[which]
+def backend() -> "MilvusBackend":
+    """The store. Cached, because opening Milvus Lite is not free."""
+    if "milvus" not in _cached:
+        _cached["milvus"] = MilvusBackend()
+    return _cached["milvus"]
 
 
 def reset():
     """Forget the cached backend - for tests, and after changing the URI."""
     _cached.clear()
-
-
-def norm(vector) -> float:
-    return math.sqrt(sum(float(x) * float(x) for x in vector))

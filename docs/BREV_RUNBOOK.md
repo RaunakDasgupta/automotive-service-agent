@@ -407,8 +407,11 @@ Then open the `http://127.0.0.1:...` links directly. Set `ASOIA_SSH_ALIAS` in
 `.env` on the box and `scripts/stack.sh stores` prints this command for you,
 filled in.
 
-A public `gradio.live` link instead — note that the Technician Update tab
-**writes** to the event log, so this needs `GRADIO_AUTH` in `.env` first:
+A public `gradio.live` link instead. **There is no login in front of it**, by
+decision (`ENGINEERING.md` §30): anyone with the URL can use every tab, the
+Technician Update tab writes to the event log, and every model call spends this
+box's NVIDIA key. Take it down with `bash scripts/stack.sh down` when you are
+finished and rotate the key afterwards.
 
 ```bash
 bash scripts/stack.sh restart --share

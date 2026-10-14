@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------- secrets
-# .env holds a live NVIDIA key. So do the dated backups the patch scripts
-# write beside it - `*.bak` did NOT match `.env.bak.p41`, and six such files
+# .env holds a live NVIDIA key. So did the dated backups the old patch scripts
+# wrote beside it - `*.bak` did NOT match `.env.bak.p41`, and six such files
 # were carrying real key material before this line existed.
 .env
 .env.*

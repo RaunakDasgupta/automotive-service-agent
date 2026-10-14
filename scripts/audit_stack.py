@@ -131,7 +131,7 @@ else:
     line(OK if key else BAD, "an API key is present" if key else "no NVIDIA_API_KEY",
          "hosted ASR needs it")
     try:
-        from app.pipeline.asr import transcribe
+        from app.pipeline.asr import transcribe  # noqa: F401 - the import IS the check
         line(OK, "the ASR pipeline imports")
         line("          ", "", "end-to-end: .venv/bin/python scripts/test_asr.py")
     except Exception as e:

@@ -12,7 +12,7 @@ from typing import Any
 from app.state import db as dbm
 from app.state.engine import fold
 from app.state.transitions import ROState
-from app.analytics.queries import _snapshot, _vehicle, list_ros
+from app.analytics.queries import _snapshot, _vehicle
 from app.data.catalog import OP_BY_CODE
 
 PRIORITY = {"SAFETY": 0, "BREACHED": 1, "AT_RISK": 2, "BLOCKED": 3, "IN_FLIGHT": 4}

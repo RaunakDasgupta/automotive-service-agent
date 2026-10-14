@@ -6,7 +6,7 @@ file is the whole brief: assume you have no other context.
 ## What this repository is
 
 An automotive service-advisor agent on the NVIDIA stack. A router picks from
-eleven tools, most answers are assembled in Python from DuckDB and an event
+eleven tools, most answers are assembled in Python from SQLite and an event
 log, and only free-text search is narrated by a model. There is a measurement
 suite over 37 labelled questions - seven NeMo Evaluator benchmarks plus a
 second, independent implementation in `scripts/evaluate.py` that exists to
@@ -194,10 +194,10 @@ an honest one. Inventing a change to have something to show is not.
 
 ## Conventions you must follow
 
-- Every behaviour change gets an idempotent, anchor-asserting patch script
-  `patches/quality_passNN.py` supporting `--check`, plus a row in
-  `patches/README.md` and a numbered section in `ENGINEERING.md` explaining what
-  was wrong and how it was proved wrong.
+- Every behaviour change is its own commit, with a numbered section in
+  `ENGINEERING.md` explaining what was wrong and how it was proved wrong, and a
+  row in `docs/PASS_INDEX.md`. There are no patch scripts any more: change the
+  code, and let the measurement say whether it was an improvement.
 - Comments explain *why*, and particularly why the obvious alternative was not
   chosen. Match the surrounding density.
 - Do not commit `.env`, and never print a key.

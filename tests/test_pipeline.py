@@ -1,10 +1,8 @@
 """Extraction, resolution and reconciliation - all offline, no GPU, no network."""
-import sys, json, pytest
-from datetime import datetime
+import sys, pytest
 sys.path.insert(0, '.')
-from app.pipeline.extract import parse_json, validate, Extraction
+from app.pipeline.extract import parse_json, validate
 from app.pipeline.resolve import resolve_ro, resolve_op, Resolution, expand_aliases
-from app.data.catalog import OP_BY_CODE
 
 ROS = ["RO-26-08165", "RO-26-08166", "RO-26-08394"]
 
