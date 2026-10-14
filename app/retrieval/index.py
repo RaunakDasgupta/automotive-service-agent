@@ -6,10 +6,9 @@ deterministic tools, not by this. Retrieval serves the narrative slice - "has
 anyone seen this fault before", "what did the last technician say about it".
 Building the index is a one-off batch job; only the query embedding is per-call.
 
-The store is behind `app/retrieval/backend.py`, so Milvus and LanceDB are a
-config change rather than a code change:
+The store is behind `app/retrieval/backend.py`. Whether Milvus runs embedded or
+against a server is a URI, not a code change:
 
-    VECTOR_BACKEND=milvus        (default)
     ASOIA_MILVUS_URI=data/generated/milvus.db      embedded, no server
     ASOIA_MILVUS_URI=http://localhost:19530        a Milvus standalone
 
@@ -17,10 +16,9 @@ Nothing in this file knows which one is in use.
 """
 from __future__ import annotations
 import os, pathlib, re, time
-from typing import Any
 
 from app.state import db as dbm
-from app.retrieval.backend import backend, BackendError
+from app.retrieval.backend import backend
 from app.nim.client import (embed as nim_embed, embed_query as nim_embed_query,
                             rerank as nim_rerank, resolve as nim_resolve)
 

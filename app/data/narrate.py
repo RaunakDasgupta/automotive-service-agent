@@ -73,8 +73,6 @@ FILLER = ["", "", "", "Bay 4. ", "On the ramp now. ", "Quick one - ", "FYI ", ""
 SIGNOFF = ["", "", "", " Will pick up next shift.", " Handing over to afternoon.",
            " Back on it after lunch.", " Notes on the RO."]
 
-SIDE = {"LF": "left front", "RF": "right front", "LR": "left rear", "RR": "right rear"}
-
 
 def _op_text(code: str, rnd: random.Random, shorthand: bool = True) -> str:
     op = OP_BY_CODE.get(code)

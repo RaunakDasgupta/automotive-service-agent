@@ -869,7 +869,7 @@ def page_data_model() -> Page:
     staff = _table(p, 60, 400, 290, "staff", "50 rows",
                    ["staff_id  PK", "name · role", "skill · shift · team"],
                    F_SRC)
-    ops = _table(p, 60, 530, 290, "labour_ops", "104 rows",
+    _table(p, 60, 530, 290, "labour_ops", "104 rows",
                  ["op_code  PK", "description · category",
                   "flat_rate_hrs · min_skill", "safety_critical"], F_SRC,
                  "The catalogue resolve_op() matches against.")
@@ -889,7 +889,7 @@ def page_data_model() -> Page:
                  "Who re-indexed or excluded what, and when.")
     exc = _table(p, 400, 790, 300, "index_exclusions", "0 rows",
                  ["update_id  PK", "at · actor_id · reason"], F_AUD)
-    ans = _table(p, 60, 720, 290, "answer_log", "601 rows",
+    _table(p, 60, 720, 290, "answer_log", "601 rows",
                  ["answer_id  PK · at", "question · answer", "route · composed",
                   "grounded · tools", "citations · warnings", "seconds"],
                  F_AUD, "The flywheel's raw material.")

@@ -15,15 +15,10 @@ import pandas as pd
 
 from app.state import db as dbm
 from app.analytics.queries import get_ro_state, get_ro_timeline, list_ros, get_technician_activity
-from app.analytics.insights import generate_handover, detect_anomalies, diff_ro
+from app.analytics.insights import generate_handover, detect_anomalies
 from app.pipeline.reconcile import reconcile
 from app.pipeline.diffcard import render as render_diff
-from app.data.catalog import LABOUR_OPS, OP_BY_CODE
-
-
-def CON_() -> 'dbm.sqlite3.Connection':
-    """Per-thread connection - Gradio handlers run in a worker pool."""
-    return dbm.connect()
+from app.data.catalog import LABOUR_OPS
 
 
 class _ConProxy:
@@ -539,7 +534,8 @@ def _ask_streaming(q, history):
     """
     from app.agent.agent import (plan_for, _summarise, _collect_citations,
                                  check_grounding, check_negations,
-                                 _narration_system, _render, _figures, Answer)
+                                 _narration_system, _render, _figures, Answer,
+                                 NARRATION_MAX_TOKENS)
     from app.agent.tools import call
     from app.guardrails.rails import check_output
     from app.nim.client import chat, chat_stream
@@ -571,18 +567,20 @@ def _ask_streaming(q, history):
         yield history, False
         acc, meta = "", {}
         try:
-            for piece in chat_stream(msgs, temperature=0.0, max_tokens=400,
-                                     meta=meta):
+            for piece in chat_stream(msgs, temperature=0.0,
+                                     max_tokens=NARRATION_MAX_TOKENS, meta=meta):
                 acc += piece
                 history[-1]["content"] = acc
                 yield history, False
         except Exception:
             if not acc:                      # nothing shown yet - fall back cleanly
-                acc = chat(msgs, temperature=0.0, max_tokens=400, meta=meta)
+                acc = chat(msgs, temperature=0.0,
+                           max_tokens=NARRATION_MAX_TOKENS, meta=meta)
         a.text = acc
         if meta.get("finish_reason") == "length":
             a.compose_notes = list(a.compose_notes) + [
-                "the model ran out of room at 400 tokens - the answer is cut short"]
+                f"the model ran out of room at {NARRATION_MAX_TOKENS} tokens "
+                f"- the answer is cut short"]
         if os.environ.get("ASOIA_FIGURES", "1") == "1":
             fig = _figures(a.results)
             if fig:
@@ -1076,7 +1074,7 @@ def build() -> gr.Blocks:
                     ev_count = gr.Markdown()
                     ev_df = gr.Dataframe(wrap=True, max_height=460)
                     gr.Markdown("#### Every type, and how often it occurs")
-                    ev_types = gr.Dataframe(value=ui_review_event_types, wrap=True)
+                    gr.Dataframe(value=ui_review_event_types, wrap=True)
                     for _t in (ev_btn.click, ev_ro.submit, ev_actor.submit):
                         _t(ui_review_events, [ev_ro, ev_type, ev_actor, ev_hours, ev_limit],
                            [ev_count, ev_df])

@@ -1,8 +1,7 @@
 """SQLite access. One file, no server - deploys anywhere, including a CPU box."""
 from __future__ import annotations
-import sqlite3, json, os, threading
+import sqlite3, os, threading
 from pathlib import Path
-from datetime import datetime
 from app.state.events import Event
 
 DEFAULT_DB = os.environ.get("ASOIA_DB", "data/generated/service.sqlite")

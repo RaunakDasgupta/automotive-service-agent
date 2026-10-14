@@ -35,11 +35,6 @@ from typing import Any
 
 from app.state import db as dbm
 
-# Mirrors app/retrieval/index.py. Imported lazily everywhere so that the event and
-# update views keep working on a box where lancedb is not installed.
-LANCE_URI = os.environ.get("LANCE_URI", "data/generated/lancedb")
-TABLE = "updates"
-
 # What search_updates() actually uses. The trace has to match it or it is a
 # demonstration of something else; test_review.py asserts they agree.
 RETRIEVE_N = 18
@@ -95,14 +90,6 @@ def event_types(con: sqlite3.Connection | None = None) -> list[dict]:
     return _rows(c.execute(
         "SELECT type, COUNT(*) AS n, MIN(at) AS first_at, MAX(at) AS last_at "
         "FROM events GROUP BY type ORDER BY n DESC"))
-
-
-def actors(con: sqlite3.Connection | None = None) -> list[dict]:
-    c = _con(con)
-    return _rows(c.execute(
-        "SELECT e.actor_id, COALESCE(s.name, e.actor_id) AS name, COUNT(*) AS n "
-        "FROM events e LEFT JOIN staff s ON s.staff_id = e.actor_id "
-        "GROUP BY e.actor_id ORDER BY n DESC"))
 
 
 # ------------------------------------------------------- the fold, and its inputs
@@ -213,9 +200,7 @@ def updates(ro_number: str | None = None, staff_id: str | None = None,
 # ------------------------------------------------------------- the vector store
 
 # The store is behind app/retrieval/backend.py, so none of these functions know
-# whether they are reading Milvus or LanceDB. Before pass 27 they spoke LanceDB
-# directly, which is why swapping the store meant touching the review layer at
-# all - and why it will not next time.
+# whether Milvus is embedded or a server - the review layer never speaks pymilvus.
 
 def _backend():
     from app.retrieval.backend import backend

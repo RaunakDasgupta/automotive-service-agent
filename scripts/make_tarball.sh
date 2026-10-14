@@ -21,7 +21,7 @@
 # simply absent on Linux, so this script is meant to run on the Mac.
 #
 # Secrets. .env holds a live key and must never travel in an archive, nor must
-# the dated .bak copies the patch scripts used to write. Those are excluded, and
+# the dated .bak copies the old patch scripts used to write. Those are excluded, and
 # then the result is CHECKED - the script refuses to finish if an .env or a .bak
 # made it in, rather than trusting the exclude list it just wrote.
 #

@@ -6,7 +6,7 @@ event/update ids that produced it, so any claim built on it can be cited.
 """
 from __future__ import annotations
 from datetime import datetime
-from typing import Any, Callable
+from typing import Callable
 
 from app.state import db as dbm
 from app.analytics import queries as Q

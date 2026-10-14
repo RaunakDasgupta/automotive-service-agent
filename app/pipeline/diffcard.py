@@ -6,7 +6,6 @@ and what that means for the promised time.
 """
 from __future__ import annotations
 from datetime import datetime
-from app.state.engine import ROSnapshot
 from app.pipeline.reconcile import Reconciliation
 
 TICK, PLUS, OPEN, WARN, BLOCK, CLOCK = "✓", "+", "○", "⚠", "⛔", "⏰"

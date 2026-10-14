@@ -25,7 +25,7 @@ from __future__ import annotations
 import os
 from typing import Any, Literal
 
-from fastapi import Body, FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.agent.tools import TOOLS, call

@@ -506,7 +506,7 @@ where a silent failure matters most.
 Section 1 describes four defects in `scripts/start_nims.sh` that stopped the stack
 dead on a fresh L40S. They were fixed interactively on the instance with `sed`,
 which meant they existed in one shell history and on one disk: a clone of this
-repository would have hit all four again. `patches/quality_pass16.py` puts them in
+repository would have hit all four again. Pass 16 (see `docs/PASS_INDEX.md`) put them in
 the file — the reranker tag, the writable cache, the port mapping, and sourcing
 `.env` before requiring the key.
 
@@ -827,8 +827,12 @@ the shape beats assuming it.
 ## 19. Milvus, and editing a store that is derived
 
 The vector store is Milvus, behind `app/retrieval/backend.py` so that Milvus and
-the previous LanceDB store are a config change rather than a code change
-(`VECTOR_BACKEND`). `scripts/start_milvus.sh` runs standalone in one container —
+the previous LanceDB store were a config change rather than a code change
+(`VECTOR_BACKEND`). *(That reversibility has since been given up: the LanceDB
+backend, `VECTOR_BACKEND` and the `lancedb` dependency were removed once the
+deployment had run on Milvus standalone for long enough that going back was no
+longer a real option. See `docs/TECHNICAL.md` §6.)*
+`scripts/start_milvus.sh` runs standalone in one container —
 etcd in-process, local filesystem instead of MinIO, which is the right trade for a
 single box.
 
@@ -1457,7 +1461,8 @@ Neither is a control and neither is pretending to be one.
 
 ### The check sets GRADIO_AUTH on purpose
 
-`scripts/quality_pass41.py` starts a real UI on a spare port **with
+Pass 41's own check - it lived in the patch script, which is in git history now,
+not in the tree - started a real UI on a spare port **with
 `GRADIO_AUTH=demo:leftover-from-before` in its environment**, then asserts that
 `GET /` returns 200 rather than a login redirect and that `POST /login` is no longer
 served. Leaving a stale credential in `.env` and finding the login still there
@@ -3151,7 +3156,7 @@ the benchmark stays independent evidence, or a different model.
 
 ### A flaw in how this repository generates patches
 
-Worth recording because every pass uses the method. `quality_pass61.py` was
+Worth recording because every pass used the method. Pass 61's script was
 generated from `difflib` opcodes widened for uniqueness, and the first version
 reproduced a DIFFERENT file while reporting success. Six opcodes with two lines
 of context each had overlapping contexts: applying one hunk consumed text the

@@ -29,8 +29,6 @@ ROLES = [("SERVICE_ADVISOR", "ADV", None, 6), ("PARTS", "PRT", None, 4),
          ("TECHNICIAN", "EMP", "TECH_B", 9), ("TECHNICIAN", "EMP", "TECH_A", 7),
          ("TECHNICIAN", "EMP", "MASTER", 4), ("TECHNICIAN", "EMP", "DIAG_SPEC", 3)]
 
-SHIFTS = {"MORNING": (time(6, 0), time(14, 0)), "AFTERNOON": (time(14, 0), time(22, 0))}
-SKILL_RANK = {"APPRENTICE":0,"TECH_C":1,"TECH_B":2,"TECH_A":3,"MASTER":4,"DIAG_SPEC":4}
 
 
 def make_staff(rnd: random.Random) -> list[dict]:
@@ -414,5 +412,4 @@ def build_dataset(db_path: str = "data/generated/service.sqlite", n_ros: int = 4
 
 
 if __name__ == "__main__":
-    import sys
     print(json.dumps(build_dataset(), indent=2))
