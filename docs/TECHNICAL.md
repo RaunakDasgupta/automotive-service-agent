@@ -601,6 +601,7 @@ latency: worst Python path 64 ms, narrated path 3.7 s with 3 model calls.
 | NIM containers | `scripts/start_nims.sh pull \| run \| health \| logs \| stop` — 12 + 5 + 24 GB budget; **29,963 MiB measured resident** of 46,068 MiB on the L40S |
 | Vector store | `scripts/start_milvus.sh up` (`--restart unless-stopped`) |
 | Pack for a box without GitHub | `scripts/make_tarball.sh` (refuses an archive containing `.env`, `*.bak` or AppleDouble entries) |
+| Keep that archive current | `git config core.hooksPath scripts/hooks` — `scripts/hooks/post-commit` rebuilds `automotive-service-agent-final.tar.gz` (gitignored) after every commit |
 | Public URLs for the UIs | `scripts/publish.sh up \| urls \| down` (cloudflared quick tunnels, **no auth**) |
 
 After a reboot the containers return (`--restart unless-stopped`); the API, UI

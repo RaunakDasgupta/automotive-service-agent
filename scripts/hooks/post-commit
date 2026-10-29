@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Rebuild automotive-service-agent-final.tar.gz after every commit, so the archive
+# is always the latest committed state. Enable once per clone:
+#
+#   git config core.hooksPath scripts/hooks
+#
+# It uses scripts/make_tarball.sh, which refuses to pack .env, *.bak, macOS
+# metadata, node_modules or local notes, and checks its own output. The archive is
+# gitignored. A hook cannot fail a commit that already happened, so a failure here
+# only prints a warning; macOS only (bsdtar flags), elsewhere it does nothing.
+[ "$(uname)" = "Darwin" ] || exit 0
+ROOT="$(git rev-parse --show-toplevel)" || exit 0
+cd "$ROOT" || exit 0
+OUT="$ROOT/automotive-service-agent-final.tar.gz"
+if bash scripts/make_tarball.sh "$OUT" >/tmp/asoia-tarball.log 2>&1; then
+  echo "tarball: $(basename "$OUT") rebuilt at $(git log --oneline -1)"
+else
+  echo "warning: tarball not rebuilt - see /tmp/asoia-tarball.log" >&2
+fi
+exit 0

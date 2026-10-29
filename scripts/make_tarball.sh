@@ -45,6 +45,7 @@ COPYFILE_DISABLE=1 tar --no-mac-metadata --no-xattrs --no-acls --no-fflags \
   --exclude='.pytest_cache' --exclude='.ipynb_checkpoints' \
   --exclude='evals/data/*.jsonl' --exclude='*.tar.gz' \
   --exclude='.DS_Store' --exclude='._*' \
+  --exclude='node_modules' --exclude='package-lock.json' --exclude='CLAUDE.md' \
   -czf "$OUT" -C "$(dirname "$ROOT")" "$NAME" || { echo "tar failed"; exit 1; }
 
 # ------------------------------------------------------------------ check it
@@ -54,6 +55,9 @@ if tar -tzf "$OUT" | grep -qE "(^|/)\.env$|\.bak(\$|\.)"; then
 fi
 if tar -tzf "$OUT" | grep -q '/\._'; then
   echo "REFUSING: AppleDouble ._ entries are in the archive"; fail=1
+fi
+if tar -tzf "$OUT" | grep -qE "(^|/)(node_modules|CLAUDE\.md)(/|$)"; then
+  echo "REFUSING: node_modules or a local notes file is in the archive"; fail=1
 fi
 if ! tar -tzf "$OUT" | grep -q 'data/generated/.gitkeep'; then
   echo "warning: data/generated/.gitkeep missing - git will report it deleted"
