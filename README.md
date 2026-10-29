@@ -42,7 +42,7 @@ silently clobbered.
 | **Ingest** | A technician types or *speaks* an update. ASR → extraction to the 3 C's (Concern / Cause / Correction) → resolution to real repair orders and operation codes → reconciliation against the lifecycle → a **diff card** of exactly what changed. Ambiguity becomes a question, not a guess |
 | **Derive** | Repair-order state is *folded* from events on every read: blocked, at risk, safety-critical, promise breached, hours against flat rate |
 | **Hand over** | A MORNING / AFTERNOON brief, safety first, then breached, at-risk, blocked — each with a next action |
-| **Answer** | A manager asks in plain English. Structured questions are composed in Python in tens of milliseconds with **no model call** (0.00–0.11 s in `docs/EXAMPLES.md`); only free-text search reaches the model. Every figure and citation is checked against the tool payload; action requests are refused before any tool runs |
+| **Answer** | A manager asks in plain English. Structured questions are composed in Python in tens of milliseconds with **no model call** (0.00–0.11 s in `docs/EXAMPLES.md`); free-text search and an RO's timeline are the paths that reach the model. Every figure and citation is checked against the tool payload; action requests are refused before any tool runs |
 | **Show its evidence** | The Data & Retrieval tab and `/review/*` expose the event log, the fold beside its inputs, the vector index, a real two-stage retrieval trace, and every answer with what it cited |
 
 ## Architecture

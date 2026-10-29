@@ -46,8 +46,9 @@ contradictions are surfaced as conflicts rather than silently clobbered.
 Exactly two things, both on the local Nemotron Nano 8B NIM:
 
 1. **Extraction** — a technician's free text → the 3 C's JSON (`app/pipeline/extract.py`).
-2. **Narration** — prose over `search_updates` results (`app/agent/agent.py`).
-   Every *structured* question (state, handover, blocked, shift activity, …) is
+2. **Narration** — prose over `search_updates` results, and over `get_ro_timeline`
+   results, which have no Python renderer (`app/agent/agent.py`, §4). Every other
+   *structured* question (state, handover, blocked, shift activity, intake, …) is
    composed in Python and makes **no model call**.
 
 ---
@@ -190,9 +191,15 @@ the vector index; that costs embedding calls (§6).
    includes the ids it drew from.
 4. **Composition** — `_summarise` picks a per-tool Python renderer
    (`_RENDERERS`). If one exists the answer is **composed in Python**
-   (`composed = "python"`) and the model is not called. Only `search_updates`
-   has no renderer by design; it goes to the model (`composed = "llm"`) with a
-   prompt fitted to that payload (`SYSTEM_SEARCH`).
+   (`composed = "python"`) and the model is not called. Eight of the eleven tools
+   have a renderer. `search_updates` has none **by design** (`_NARRATED`).
+   `get_ro_timeline` and `get_op_code_info` have none **by omission**: a plan
+   that contains either returns no Python answer, goes to the model
+   (`composed = "llm"`) and records the compose note `no renderer for …`.
+   `get_ro_timeline` is planned for "history / timeline / said / notes" questions
+   about one RO, so those are model calls; `get_op_code_info` is not reachable
+   from the keyword router at all. A narrated answer gets a prompt fitted to its
+   payload (`SYSTEM_SEARCH` when every tool is in `_NARRATED`).
 5. **Narration checks** (model path only): finish-reason `length` is noted; one
    *re-ask* if the answer opens by naming the records ("Notes indicate …"),
    kept only if clean **and** no less cited; a computed **Figures** block is
@@ -224,7 +231,7 @@ and `compose_notes` (retries discarded, truncation, stale index).
 | `generate_handover(shift)` | safety first, then breached, at-risk, blocked, in-flight |
 | `detect_anomalies(days)` | shared part holds, stalled work, comebacks across ROs |
 | `diff_ro(ro_number, since_hours)` | what changed on a repair order in a window |
-| `search_updates(query, k, ro_number)` | semantic search over update text — the only narrated path |
+| `search_updates(query, k, ro_number)` | semantic search over update text — narrated by design |
 | `get_op_code_info(op_code)` | a labour operation: hours, category, skill |
 | `get_shift_activity(day_offset, shift, view, days, brief)` | who worked / what was worked on, over a day or window |
 | `get_intake(days)` | how many vehicles *came in*, and what became of them |

@@ -48,3 +48,7 @@ evals/data/*.jsonl
 # instructions should not stage a dependency tree.
 node_modules/
 package-lock.json
+
+# ------------------------------------------------------- local assistant notes
+# Kept on the machine, not in the project.
+CLAUDE.md

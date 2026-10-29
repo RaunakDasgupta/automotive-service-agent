@@ -7,7 +7,7 @@ file is the whole brief: assume you have no other context.
 
 An automotive service-advisor agent on the NVIDIA stack. A router picks from
 eleven tools, most answers are assembled in Python from SQLite and an event
-log, and only free-text search is narrated by a model. There is a measurement
+log, and only free-text search (and an RO's timeline) is narrated by a model. There is a measurement
 suite over 37 labelled questions - seven NeMo Evaluator benchmarks plus a
 second, independent implementation in `scripts/evaluate.py` that exists to
 disagree with the first one.
