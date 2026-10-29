@@ -5,7 +5,8 @@
 # Every field name here was established by reading the native loader's own errors:
 # nothing about this schema is documented, `picker` is a string and not a callable,
 # `llm_client` is a REFERENCE to a named client rather than an inline table, and
-# `format` must be one of openai_chat / openai_responses / anthropic_messages.
+# `format` must be one of the formats the loader accepts; both clients here use
+# openai_chat, which is what the NIMs speak.
 schema_version = 1
 
 # ---------------------------------------------------------------- clients

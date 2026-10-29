@@ -1394,7 +1394,7 @@ loader's own rejections, one at a time:
 |---|---|
 | file format | TOML, not YAML |
 | `schema_version` | an integer; a string is rejected |
-| `format` | `openai_chat` / `openai_responses` / `anthropic_messages` |
+| `format` | one of the formats the loader accepts; this project uses `openai_chat` |
 | `llm_client` | a **reference** to a named client, not an inline table |
 | route `type` | one of ten, including `stage_router`, `composite`, `advisor` |
 | `stage_router` | requires `picker`, `confidence_threshold`, `efficient_target`, `capable_target` |
