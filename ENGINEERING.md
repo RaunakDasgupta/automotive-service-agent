@@ -2865,7 +2865,7 @@ is the failure every measure in this repository has had at least once.
 
     gate exit             0
     cross-check           agree
-    all 19 metrics        flat against the baseline at 8c77cc9
+    all 19 metrics        flat against the baseline at 5da6b0c
     tamper test           fast exited 2 and named the edited file
 
 ## 49. Measured, printed, and never compared

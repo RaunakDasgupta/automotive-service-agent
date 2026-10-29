@@ -121,7 +121,7 @@ service="llm"}`** on the exporter while the LLM NIM itself stayed healthy.
 `_post` retried **every** exception four times, so one `POST /updates` whose
 extraction exceeded the 120s budget occupied the LLM for up to eight minutes;
 everything queued behind it timed out too, and each of those was retried four
-times. Fixed in `b9a80f9`: read timeouts now fail on the first attempt. The
+times. Fixed in `450b388`: read timeouts now fail on the first attempt. The
 frames here were taken across two load bursts with **no NIM error series at
 all** — the panel is flat at zero because nothing failed.
 

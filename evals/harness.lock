@@ -1,5 +1,5 @@
 {
-  "commit": "45ffc7d02c064abe62c53dff3bb297c388dc2fab",
+  "commit": "8306fb74cc7cc273f7ea7cc0debda450fb37d368",
   "files": {
     "evals/asoia_byob.py": "eaca7696efa81b974e03fe6af77e88bc3f74cee251bb6ead74c149fdaae8307b",
     "evals/truth.py": "915ebd32eb3f0f9fc8941b369f86de9d9acb906cedd4a03dfff05b7c1eab589a",

@@ -8,11 +8,11 @@ have been **removed from the tree** because they are history, not tooling: every
 one is already reflected in the code, several would now undo later work if run,
 and a directory of 62 scripts beside the source suggests otherwise.
 
-Nothing was lost. They are in git history, as of commit `0da0c58`:
+Nothing was lost. They are in git history, as of commit `3141b47`:
 
 ```bash
-git show 0da0c58:patches/quality_pass41.py        # read one
-git ls-tree -r --name-only 0da0c58 patches/       # list them all
+git show 3141b47:patches/quality_pass41.py        # read one
+git ls-tree -r --name-only 3141b47 patches/       # list them all
 ```
 
 This page is the index that `patches/README.md` used to be: what each pass

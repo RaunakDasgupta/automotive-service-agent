@@ -64,7 +64,7 @@ does not merely *prefer* the hosted endpoints — it **skips the local probe
 entirely**, so all three containers can be pulled, built and healthy while every
 single request still goes to `integrate.api.nvidia.com`. Nothing errors. The only
 hint is a note from `scripts/stack.sh status`: *"3 local NIM container(s) up and
-NOTHING routes to them."* An `.env` inherited from before 379e97c will have it.
+NOTHING routes to them."* An `.env` inherited from before a5fd7fa will have it.
 
 It has to be in `.env`, not just this kernel, because the API and the UI are
 separate processes that read `.env` through `scripts/stack.sh`.
