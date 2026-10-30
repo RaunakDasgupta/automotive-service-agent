@@ -35,6 +35,12 @@ OUT="${1:-$ROOT/../asoia.tar.gz}"
 case "$OUT" in /*) ;; *) OUT="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")" ;; esac
 
 rm -f "$OUT"
+# Anything this machine keeps out of git locally (.git/info/exclude) stays out of the
+# archive too, so a local-only file never travels to the box. The file itself is not
+# packed either: it describes this machine, not the project.
+LOCAL_EXCLUDES="$(mktemp)"
+trap 'rm -f "$LOCAL_EXCLUDES"' EXIT
+grep -vE '^[[:space:]]*(#|$)' .git/info/exclude 2>/dev/null > "$LOCAL_EXCLUDES" || true
 COPYFILE_DISABLE=1 tar --no-mac-metadata --no-xattrs --no-acls --no-fflags \
   --exclude='.venv' --exclude='.venv-curator' \
   --exclude='__pycache__' --exclude='*.pyc' --exclude='*.egg-info' \
@@ -45,6 +51,7 @@ COPYFILE_DISABLE=1 tar --no-mac-metadata --no-xattrs --no-acls --no-fflags \
   --exclude='.pytest_cache' --exclude='.ipynb_checkpoints' \
   --exclude='evals/data/*.jsonl' --exclude='*.tar.gz' \
   --exclude='.DS_Store' --exclude='._*' \
+  --exclude-from="$LOCAL_EXCLUDES" --exclude='.git/info/exclude' \
   --exclude='node_modules' --exclude='package-lock.json' --exclude='CLAUDE.md' \
   -czf "$OUT" -C "$(dirname "$ROOT")" "$NAME" || { echo "tar failed"; exit 1; }
 
@@ -59,6 +66,11 @@ fi
 if tar -tzf "$OUT" | grep -qE "(^|/)(node_modules|CLAUDE\.md)(/|$)"; then
   echo "REFUSING: node_modules or a local notes file is in the archive"; fail=1
 fi
+while IFS= read -r pat; do
+  if tar -tzf "$OUT" | grep -qE "(^|/)${pat%/}(/|$)"; then
+    echo "REFUSING: $pat is in .git/info/exclude but is in the archive"; fail=1
+  fi
+done < "$LOCAL_EXCLUDES"
 if ! tar -tzf "$OUT" | grep -q 'data/generated/.gitkeep'; then
   echo "warning: data/generated/.gitkeep missing - git will report it deleted"
 fi
