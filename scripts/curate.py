@@ -263,8 +263,8 @@ def selftest() -> int:
     bad += 0 if caught else 1
 
     df = load_corpus()
-    flagged = [(r.update_id, r.text) for r in df.itertuples()
-               if not f.keep_document(f.score_document(r.text))]
+    flagged = [(u, t) for u, t in zip(df["update_id"], df["text"])
+               if not f.keep_document(f.score_document(t))]
     clean = not flagged
     print(f"  [{'ok' if clean else 'FAIL'}] no false positives across "
           f"{len(df)} live notes ({len(flagged)} flagged)")

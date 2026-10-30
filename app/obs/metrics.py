@@ -22,7 +22,7 @@ import time
 from contextlib import contextmanager
 
 try:
-    from prometheus_client import Counter, Gauge, Histogram, start_http_server
+    from prometheus_client import Counter, Gauge, Histogram, start_http_server  # type: ignore[assignment]
     ENABLED = True
 except ImportError:                                   # pragma: no cover
     ENABLED = False
