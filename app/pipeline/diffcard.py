@@ -11,7 +11,7 @@ from app.pipeline.reconcile import Reconciliation
 TICK, PLUS, OPEN, WARN, BLOCK, CLOCK = "✓", "+", "○", "⚠", "⛔", "⏰"
 
 
-def render(rec: Reconciliation, ro: dict, now: datetime | None = None) -> str:
+def render(rec: Reconciliation, ro: dict | None, now: datetime | None = None) -> str:
     now = now or datetime.now()
     if not rec.accepted:
         lines = [f"{WARN} Update NOT applied to {rec.ro_number}", ""]
@@ -21,6 +21,7 @@ def render(rec: Reconciliation, ro: dict, now: datetime | None = None) -> str:
         return "\n".join(lines)
 
     b, a = rec.before, rec.after
+    assert ro is not None and a is not None   # an accepted update has both
     head = (f"{rec.ro_number} · {ro['model_year']} {ro['make']} {ro['model']} "
             f"· {ro['odometer_miles']:,} mi")
     lines = [head, "=" * len(head)]

@@ -107,7 +107,7 @@ def ensure_dataset(verbose: bool = True) -> dict:
         if not target:
             return {"status": "error",
                     "error": "could not determine which database file to write"}
-        kw = {"db_path": target}
+        kw: dict = {"db_path": target}
         if os.environ.get("ASOIA_GEN_ROS"):
             kw["n_ros"] = int(os.environ["ASOIA_GEN_ROS"])
         if os.environ.get("ASOIA_GEN_DAYS"):

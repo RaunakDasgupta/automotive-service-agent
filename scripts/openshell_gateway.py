@@ -247,7 +247,7 @@ def _report(rows: list[tuple[str, bool, str]]) -> int:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     w = sub.add_parser("write", help="create or replace the gateway entry")
@@ -255,12 +255,15 @@ def main() -> int:
     w.add_argument("--endpoint", required=True,
                    help="e.g. https://nemoclaw-xxxx.gobrev.dev:443")
     w.add_argument("--auth-mode", default="oidc", choices=["oidc", "none"])
-    w.add_argument("--oidc-issuer"), w.add_argument("--client-id")
-    w.add_argument("--audience"), w.add_argument("--scopes")
+    w.add_argument("--oidc-issuer")
+    w.add_argument("--client-id")
+    w.add_argument("--audience")
+    w.add_argument("--scopes")
     w.set_defaults(fn=cmd_write)
 
     c = sub.add_parser("check", help="resolve, connect, and report each fact")
-    c.add_argument("--name"), c.add_argument("--timeout", default="10")
+    c.add_argument("--name")
+    c.add_argument("--timeout", default="10")
     c.set_defaults(fn=cmd_check)
 
     s = sub.add_parser("show", help="print the entry, secrets redacted")

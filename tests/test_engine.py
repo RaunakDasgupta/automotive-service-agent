@@ -85,7 +85,7 @@ class TestFold:
             ev(E.PARTS_ORDERED, 20, part_no="45022-T2G-A01", availability="BACKORDER"),
             ev(E.STATE_CHANGED, 25, to="PARTS_HOLD")]
         snap = fold(evs)
-        assert snap.is_blocked and "45022-T2G-A01" in snap.blocked_on
+        assert snap.is_blocked and "45022-T2G-A01" in (snap.blocked_on or "")
 
     def test_received_parts_clear_the_block_reason(self):
         evs = base() + [

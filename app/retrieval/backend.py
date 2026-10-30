@@ -71,7 +71,7 @@ class MilvusBackend:
     def mode(self) -> str:
         return "server" if self.uri.startswith(("http://", "https://")) else "embedded"
 
-    def client(self):
+    def client(self) -> Any:
         if self._client is not None:
             return self._client
         with self._lock:

@@ -15,7 +15,7 @@ from app.state.transitions import ROState
 from app.data.catalog import OP_BY_CODE
 
 
-def _snapshot(con, ro_number: str) -> tuple[dict, ROSnapshot] | tuple[None, None]:
+def _snapshot(con, ro_number: str) -> tuple[dict | None, ROSnapshot | None]:
     ro = dbm.get_ro(con, ro_number)
     if not ro:
         return None, None
@@ -91,6 +91,7 @@ def list_ros(con, filter: str = "active", limit: int = 50,
         ro, snap = _snapshot(con, ro_no)
         if not snap:
             continue
+        assert ro is not None   # a snapshot exists only for a repair order that exists
         risk = snap.promise_risk(now)
         rec = {"ro_number": ro_no, "vehicle": _vehicle(ro), "state": snap.state.value,
                "blocked": snap.is_blocked, "blocked_on": snap.blocked_on,

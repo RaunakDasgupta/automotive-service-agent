@@ -118,7 +118,7 @@ def main() -> int:
             agreed += 1
         else:
             disagreements.append(f"{ron}: review={mine} analytics={other}")
-    check("the review fold agrees with get_ro_state", checked and agreed == checked,
+    check("the review fold agrees with get_ro_state", bool(checked and agreed == checked),
           f"{agreed}/{checked} repair orders")
     for d in disagreements[:5]:
         print(f"           {d}")

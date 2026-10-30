@@ -9,6 +9,7 @@ three tabs of it competing for attention.
 """
 from __future__ import annotations
 import os, json
+from typing import Any
 from datetime import datetime
 import gradio as gr
 import pandas as pd
@@ -26,7 +27,7 @@ class _ConProxy:
         return getattr(dbm.connect(), name)
 
 
-CON = _ConProxy()
+CON: Any = _ConProxy()
 # Reads use NOW: ASOIA_NOW if pinned, else the newest event in the log, else the
 # wall clock. Writes use EVENT_TIME, which is one second later so the log stays
 # strictly ordered. app/state/clock.py says why the default is the data.
@@ -1226,7 +1227,8 @@ if __name__ == "__main__":
         print("[ui] SHARE=1 and NO login: anyone with the gradio.live URL can "
               "write to the event log and spend this box's NVIDIA key. Take the "
               "link down with `scripts/stack.sh down` when you are done.")
+    from gradio.themes import Soft
     build().launch(server_name="0.0.0.0",
                    server_port=int(os.environ.get("PORT", 7860)),
                    share=_share,
-                   theme=gr.themes.Soft())
+                   theme=Soft())

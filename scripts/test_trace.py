@@ -92,8 +92,8 @@ def main() -> int:
         f"{len(ls)} llm span(s); composed={getattr(a1, 'composed', '?')}")
     # The trace must agree with what the answer itself says it did. If these drift,
     # the trace is describing a different execution from the one that answered.
-    traced = sorted({r.get("name") for r in ts})
-    claimed = sorted({c.get("name") for c in (a1.tool_calls or []) if c.get("name")})
+    traced = sorted({r.get("name") or "" for r in ts})
+    claimed = sorted({n for c in (a1.tool_calls or []) if (n := c.get("name"))})
     chk("traced tools match the answer's own tool_calls",
         traced == claimed, f"traced={traced} claimed={claimed}")
 
@@ -110,7 +110,7 @@ def main() -> int:
     else:
         chk("an llm span was recorded", len(ls2) > 0, f"{len(ls2)}")
         chk("every llm start has an end", len(ls2) == len(le2), f"{len(ls2)} vs {len(le2)}")
-        models = sorted({r.get("name") for r in ls2})
+        models = sorted({r.get("name") or "" for r in ls2})
         chk("the llm span is named", all(models), str(models))
 
     print("\nthe payload is actually in there, not just the shape:")

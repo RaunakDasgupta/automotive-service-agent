@@ -116,9 +116,9 @@ def wer(ref: list[str], hyp: list[str]) -> tuple[float, int, int, int]:
     if n == 0:
         return (0.0 if m == 0 else 1.0), 0, 0, m
     # (cost, subs, dels, ins) per cell; one row at a time.
-    prev = [(j, 0, 0, j) for j in range(m + 1)]
+    prev: list = [(j, 0, 0, j) for j in range(m + 1)]
     for i in range(1, n + 1):
-        cur = [(i, 0, i, 0)] + [None] * m
+        cur: list = [(i, 0, i, 0)] + [None] * m
         for j in range(1, m + 1):
             if ref[i - 1] == hyp[j - 1]:
                 cur[j] = prev[j - 1]
@@ -188,6 +188,7 @@ def describe(path: str) -> str:
         import importlib.util
         spec = importlib.util.spec_from_file_location(
             "_ms", os.path.join("scripts", "make_speech.py"))
+        assert spec is not None and spec.loader is not None   # the file exists, so it loads
         ms = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ms)
         a, rate = ms.read_wav(path)
@@ -242,6 +243,7 @@ def main() -> int:
         import importlib.util
         spec = importlib.util.spec_from_file_location(
             "_ms", os.path.join("scripts", "make_speech.py"))
+        assert spec is not None and spec.loader is not None   # the file exists, so it loads
         ms = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ms)
         if args.sample:

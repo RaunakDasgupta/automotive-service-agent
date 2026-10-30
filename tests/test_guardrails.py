@@ -73,7 +73,7 @@ class TestDialogRail:
 
     def test_unclear_update_asks_rather_than_guesses(self):
         r = check_dialog(self._E(True))
-        assert not r.allowed and "Which repair order" in r.text
+        assert not r.allowed and "Which repair order" in (r.text or "")
 
     def test_clear_update_passes(self):
         assert check_dialog(self._E(False)).allowed

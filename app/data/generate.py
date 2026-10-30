@@ -65,6 +65,7 @@ def make_ros(rnd: random.Random, n: int, days: int, start: datetime, staff: list
     ros = []
     for i in range(n):
         # Realistic arrival curve: Monday peak, Friday bulge, quiet weekends.
+        d = start
         for _ in range(40):
             day = rnd.randrange(days + 1)
             d = start + timedelta(days=day)

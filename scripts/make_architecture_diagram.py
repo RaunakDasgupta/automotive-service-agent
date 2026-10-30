@@ -1041,7 +1041,7 @@ def main() -> int:
     for d in diagrams:
         # Ids are page-scoped in draw.io - "0" and "1" repeat on every page by
         # convention - so uniqueness is checked per page, not across the file.
-        seen: set[str] = set()
+        seen: set = set()
         for cell in d.iter("mxCell"):
             cid = cell.get("id")
             if cid in seen:

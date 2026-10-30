@@ -24,6 +24,7 @@ Two promises hold for every section:
 from __future__ import annotations
 
 import glob
+from typing import Any
 import json
 import os
 import socket
@@ -166,7 +167,7 @@ def milvus_section() -> dict:
         out["error"] = f"pymilvus unavailable: {type(e).__name__}: {e}"
         return out
     try:
-        client = MilvusClient(uri=uri if "://" in uri or uri.endswith(".db")
+        client: Any = MilvusClient(uri=uri if "://" in uri or uri.endswith(".db")
                               else "http://" + uri)
     except Exception as e:
         out["error"] = f"{type(e).__name__}: {e}"

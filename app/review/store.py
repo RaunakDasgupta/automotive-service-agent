@@ -325,7 +325,7 @@ def index_staleness(uri: str | None = None, con: sqlite3.Connection | None = Non
             f"{db_updates} updates"
             + (f" ({len(excluded)} deliberately excluded)" if excluded else ""))
 
-    indexed = {r.get("update_id") for r in rows if r.get("update_id")}
+    indexed = {u for r in rows if (u := r.get("update_id"))}
     known = {r[0] for r in c.execute("SELECT update_id FROM updates")}
     dangling = sorted(indexed - known)
     out["dangling"] = len(dangling)

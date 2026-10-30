@@ -236,6 +236,7 @@ def sample_text(n: int) -> tuple[str, str | None]:
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "_tvu", os.path.join("scripts", "test_voice_update.py"))
+    assert spec is not None and spec.loader is not None   # the file exists, so it loads
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     if not 1 <= n <= len(m.SAMPLES):

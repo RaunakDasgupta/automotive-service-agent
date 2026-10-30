@@ -150,6 +150,7 @@ def _pick_ro(con, want: str) -> str | None:
         if not evs:
             continue
         ro = dbm.get_ro(con, ro_no)
+        assert ro is not None   # events exist, so the repair order does
         snap = fold(evs, promised_time=datetime.fromisoformat(ro["promised_time"]))
         if want == "open" and snap.state == ROState.INVOICED:
             continue
@@ -255,6 +256,7 @@ def main() -> int:
     elif args.text:
         text = args.text
     else:
+        assert sample is not None   # no audio and no text means a sample was chosen
         text = sample["text"].replace("{RO}", ron)
 
     print(f"-- transcript {'-' * 61}")

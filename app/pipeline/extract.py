@@ -145,7 +145,7 @@ def validate(raw: dict, text: str, known_ros: list[str], embed_fn=None) -> Extra
                 continue
             r = resolve_op(str(work), embed_fn=embed_fn)
             if r.is_certain(Resolution.OP_THRESHOLD):
-                rec = {"op_code": r.value}
+                rec: dict = {"op_code": r.value}
                 if key == "completed":
                     rec["actual_hrs"] = _clean_hours(item.get("hours"))
                 if key == "recommended":

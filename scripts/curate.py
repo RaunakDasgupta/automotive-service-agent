@@ -205,7 +205,7 @@ def run(write: bool) -> int:
     print()
 
     kept = set(cur["update_id"]) if "update_id" in cur else set()
-    dropped = df.loc[~df["update_id"].isin(kept)]
+    dropped = df.loc[~df["update_id"].isin(list(kept))]
     print(f"result: {len(cur)} of {len(df)} updates survive "
           f"({len(dropped)} dropped, {100 * len(cur) / max(1, len(df)):.1f}% kept)")
     if len(dropped):
@@ -243,6 +243,7 @@ def selftest() -> int:
     """
     import importlib.util as iu
     spec = iu.spec_from_file_location("ti", "scripts/test_injection.py")
+    assert spec is not None and spec.loader is not None   # the file exists, so it loads
     ti = iu.module_from_spec(spec)
     try:
         spec.loader.exec_module(ti)
@@ -287,7 +288,7 @@ def selftest() -> int:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--write", action="store_true",
                     help="save curated.jsonl and report.json under run/curation/")
     ap.add_argument("--selftest", action="store_true",

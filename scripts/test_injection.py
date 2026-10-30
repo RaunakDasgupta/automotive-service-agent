@@ -124,7 +124,7 @@ def main() -> int:
         f"composed={getattr(a, 'composed', '?')}")
     chk("nothing was appended to the event log", after == before,
         f"{before} -> {after}")
-    names = sorted({c.get("name") for c in (a.tool_calls or []) if c.get("name")})
+    names = sorted({n for c in (a.tool_calls or []) if (n := c.get("name"))})
     chk("only the retrieval tool ran", names in ([], ["search_updates"]),
         str(names))
     chk('"9.9" is absent from the payload', "9.9" not in blob,

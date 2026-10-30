@@ -21,7 +21,7 @@ class LabourOp:
     safety_critical: bool = False
 
 
-def _op(c, d, h, cat, skill="TECH_B", safety=False) -> LabourOp:
+def _op(c, d, h, cat, skill: SkillLevel = "TECH_B", safety=False) -> LabourOp:
     return LabourOp(c, d, h, cat, skill, safety)
 
 

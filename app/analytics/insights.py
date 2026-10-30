@@ -60,6 +60,7 @@ def generate_handover(con, shift: str = "AFTERNOON", now: datetime | None = None
         ro, snap = _snapshot(con, ro_no)
         if not snap or snap.state == ROState.INVOICED:
             continue
+        assert ro is not None   # a snapshot exists only for a repair order that exists
         risk = snap.promise_risk(now)
         bucket = _classify(snap, ro, risk)
         totals["open"] += 1
@@ -96,6 +97,7 @@ def detect_anomalies(con, days: int = 7, now: datetime | None = None) -> dict[st
         ro, snap = _snapshot(con, ro_no)
         if not snap:
             continue
+        assert ro is not None   # a snapshot exists only for a repair order that exists
         open_ro = snap.state != ROState.INVOICED
 
         if open_ro:

@@ -50,6 +50,7 @@ import pathlib
 import subprocess
 import sys
 import time
+from typing import cast
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -182,7 +183,7 @@ def compare(kind: str, got: dict, base: dict) -> tuple[list[str], list[str]]:
         v, old = got.get(k), base.get(k)
         if v is None:
             regressions.append(f"{k} is gone - the baseline had "
-                               f"{_fmt(kind, k, old)}")
+                               f"{_fmt(kind, k, cast(float, old))}")
             continue
         if old is None:
             lines.append(f"  {k:24s} {_fmt(kind, k, v)}   (new)")
