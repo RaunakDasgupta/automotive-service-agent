@@ -708,6 +708,6 @@ the data is derived, not precious.
 | `docs/screenshots/README.md` | what each captured frame shows, and how it was taken |
 | `docs/VOICE-UPDATE-FORMAT.md` | what to say so an update is captured accurately |
 | `docs/PASS_INDEX.md` | the 61 numbered passes: what each addressed, and where it is recorded |
-| `docs/architecture.drawio`, `docs/architecture-deck.pptx` | the architecture as seven diagrams / nine slides, generated |
+| `docs/architecture.drawio`, `docs/architecture-deck.pptx` | the architecture as seven diagrams / ten slides, generated |
 | `ENGINEERING.md` | the history: each defect, how it was found, what the measurement said |
 | `AGENT_LOOP.md` | the brief for a coding agent working on this repository |

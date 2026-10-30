@@ -1,6 +1,7 @@
 /**
- * make_architecture_deck.js - the architecture as a nine-slide deck:
- * seven of architecture, then two of usage built from docs/screenshots/.
+ * make_architecture_deck.js - the architecture as a ten-slide deck: the process
+ * for a business audience, seven of architecture, then two of usage built from
+ * docs/screenshots/. The process slide is animated (see addAnimation).
  *
  *   node scripts/make_architecture_deck.js [out.pptx]
  *
@@ -106,8 +107,8 @@ function slideTitleCard(pres) {
   }));
   const stats = [
     ["14", "NVIDIA components\n13 running, 1 blocked"],
-    ["10", "typed tools\ndeterministic SQL and vector reads"],
-    ["100%", "grounded and traceable\n524 of 524 citations resolve"],
+    ["11", "typed tools\ndeterministic SQL and vector reads"],
+    ["100%", "grounded and traceable\n905 of 905 citations resolve"],
     ["5 of 6", "question classes answered\nwith no model call at all"],
   ];
   const sw = (W - 2 * M - 3 * 0.26) / 4;
@@ -118,6 +119,77 @@ function slideTitleCard(pres) {
     s.addText(l, txt(null, { x: x + 0.16, y: 5.4, w: sw - 0.3, h: 0.8, fontSize: 11, color: "C8D6BE", lineSpacingMultiple: 0.95 }));
   });
   s.addNotes("One L40S carries all three NIMs. Nothing in the answer path calls a hosted model; speech is the single hosted dependency.");
+  return s;
+}
+
+
+// ============================================ 1b · the process, for a client
+// The first thing a client should see after the title: what happens to an update,
+// in their words, with the one thing a decision-maker asks - "where does the AI
+// actually come in?" - answered on every stage by its badge. Five stages, each a
+// verb. Shapes are named "anim-*" so addAnimation() can find them in the XML.
+const STAGES = [
+  ["Capture", "A technician speaks or types the update at the bay.",
+   "No forms. No end-of-shift retyping.", "nv", "NVIDIA Riva\nParakeet speech-to-text"],
+  ["Understand", "Free-form shop talk becomes structured facts: concern, cause, correction.",
+   "Hours, parts and measurements pulled out automatically.", "nv", "NVIDIA NIM\nNemotron 8B"],
+  ["Verify", "Every fact is checked against the catalogue. Conflicts are raised, never overwritten.",
+   "Nothing is guessed. An unclear update asks a question.", "std", "Deterministic Python\nno model involved"],
+  ["Record", "The update joins an append-only log; each order's state is derived from it.",
+   "A full audit trail, and no stale status.", "std", "Event log\nSQLite, on the box"],
+  ["Decide", "Managers ask in plain English. Answers are computed, cited and checked.",
+   "Structured questions answered in about a tenth of a second.", "nv", "NVIDIA NIM retrieval\nNeMo Guardrails"],
+];
+
+function slideProcess(pres) {
+  const s = pres.addSlide({ sectionTitle: "Process" });
+  slideTitle(s, "From a shop-floor update to a decision",
+    "Five steps. The model reads and writes language; everything that counts - figures, status, safety - is checked by code");
+
+  const FW = W - 2 * M, n = STAGES.length, gap = 0.3;
+  const cw = (FW - (n - 1) * gap) / n, top = 1.62, ch = 3.28;
+  STAGES.forEach(([name, what, gets, kind, badge], i) => {
+    const x = M + i * (cw + gap);
+    if (i) s.addShape("rightArrow", {
+      x: x - gap + 0.04, y: top + 0.18, w: gap - 0.08, h: 0.26,
+      fill: { color: NV }, line: { color: NV }, objectName: "anim-a" + i });
+    s.addShape("rect", { x, y: top, w: cw, h: ch, fill: { color: PAPER }, line: { color: EDGE, width: 1 },
+      objectName: "anim-s" + i + "-card" });
+    s.addText(String(i + 1), { shape: "ellipse", x: x + 0.14, y: top - 0.27, w: 0.54, h: 0.54,
+      fill: { color: NVF }, line: { color: PAPER, width: 2 }, align: "center", valign: "middle",
+      fontSize: 16, bold: true, color: "FFFFFF", margin: 0, isTextBox: true, objectName: "anim-s" + i + "-num" });
+    s.addText([
+      { text: name, options: { bold: true, fontSize: 16, color: INK, fontFace: "Arial", breakLine: true } },
+      { text: what, options: { fontSize: 11, color: MUTE, breakLine: true, paraSpaceBefore: 4 } },
+      { text: "WHAT YOU GET", options: { bold: true, fontSize: 10, color: NVF, breakLine: true, paraSpaceBefore: 10 } },
+      { text: gets, options: { fontSize: 11, color: INK } },
+    ], txt(null, { x: x + 0.14, y: top + 0.36, w: cw - 0.28, h: ch - 1.02, valign: "top",
+      lineSpacingMultiple: 0.95, objectName: "anim-s" + i + "-text" }));
+    const nv = kind === "nv";
+    s.addText(badge, { shape: "rect", x: x + 0.1, y: top + ch - 0.62, w: cw - 0.2, h: 0.52,
+      fill: { color: nv ? NVF : "EEF2EB" }, line: { color: nv ? "446B29" : EDGE, width: 1 },
+      align: "center", valign: "middle", fontSize: 10, bold: nv, color: nv ? "FFFFFF" : MUTE,
+      margin: 0, isTextBox: true, lineSpacingMultiple: 0.9, objectName: "anim-s" + i + "-badge" });
+  });
+
+  band(s, M, 5.28, FW, 0.26, "WHAT THAT MEANS FOR THE BUSINESS", { fs: 10.5 });
+  const sw = (FW - 2 * 0.2) / 3;
+  [["~0.1 s", "for a structured answer - computed, no model call"],
+   ["905 / 905", "answer citations resolve to a real record, in our evaluation set"],
+   ["1.8 < 3.0 mm", "an out-of-spec measurement flags the vehicle unsafe to release, automatically"],
+  ].forEach(([big, cap], i) => {
+    const x = M + i * (sw + 0.2);
+    s.addShape("rect", { x, y: 5.62, w: sw, h: 1.0, fill: { color: LANE }, line: { color: "2E5245" },
+      objectName: "anim-o" + i + "-card" });
+    s.addText(big, txt(null, { x: x + 0.16, y: 5.68, w: sw - 0.3, h: 0.46, fontSize: 26, bold: true,
+      color: NV, fontFace: "Arial", valign: "middle", objectName: "anim-o" + i + "-big" }));
+    s.addText(cap, txt(null, { x: x + 0.16, y: 6.16, w: sw - 0.3, h: 0.42, fontSize: 11, color: "DCE8CF",
+      valign: "top", lineSpacingMultiple: 0.95, objectName: "anim-o" + i + "-cap" }));
+  });
+  s.addText("Speech recognition runs on NVIDIA-hosted Riva; every other model runs on the L40S in the box.",
+    txt(null, { x: M, y: 6.82, w: FW, h: 0.26, fontSize: 10, italic: true, color: MUTE }));
+
+  s.addNotes("Narration (demo scene 2): A technician speaks or types an update. NVIDIA Riva Parakeet transcribes it. A Nemotron model extracts the facts. Python checks every one against the catalogue, folds it into an event log, and derives the state of the repair order. Nothing is guessed, and every answer cites its records. The slide builds itself in about eight seconds on entry; it does not need a click.");
   return s;
 }
 
@@ -730,6 +802,69 @@ function slideUsageSurface(pres) {
   return s;
 }
 
+
+// ------------------------------------------------------------- animation
+// pptxgenjs has no animation API, so the timing tree is written into the slide
+// XML after the file exists. Every "anim-*" shape gets an entrance effect (fade;
+// wipe for arrows and badges) with an absolute start delay, all inside ONE
+// auto-start group: the slide builds itself on entry, left to right, then the
+// three business figures. "With previous + delay" is how PowerPoint stores
+// "after previous" inside a single click group, and it plays unattended - which
+// is what a screen recording and an unattended kiosk both need.
+const STEP_MS = 1300, FADE_MS = 500;
+function delayFor(name) {
+  const m = /^anim-s(\d)-(card|num|text|badge)$/.exec(name);
+  if (m) { const t = +m[1] * STEP_MS; return m[2] === "badge" ? [t + 450, "wipe(left)", 400] : [t, "fade", FADE_MS]; }
+  const a = /^anim-a(\d)$/.exec(name);
+  if (a) return [+a[1] * STEP_MS - 300, "wipe(left)", 300];
+  const o = /^anim-o(\d)-/.exec(name);
+  if (o) return [STEP_MS * STAGES.length + 200 + +o[1] * 450, "fade", FADE_MS];
+  return null;
+}
+
+async function addAnimation(file) {
+  const fs = require("fs"), JSZip = require("jszip");
+  const zip = await JSZip.loadAsync(fs.readFileSync(file));
+  const slidePath = Object.keys(zip.files).find((p) => /^ppt\/slides\/slide\d+\.xml$/.test(p));
+  let hit = null;
+  for (const p of Object.keys(zip.files).filter((q) => /^ppt\/slides\/slide\d+\.xml$/.test(q))) {
+    if ((await zip.file(p).async("string")).includes('name="anim-s0-card"')) hit = p;
+  }
+  if (!hit) throw new Error("addAnimation: the process slide was not found");
+  let xml = await zip.file(hit).async("string");
+  if (xml.includes("<p:timing")) return;
+  const targets = [...xml.matchAll(/<p:cNvPr id="(\d+)" name="(anim-[^"]+)"/g)]
+    .map(([, id, name]) => ({ id, name, d: delayFor(name) })).filter((t) => t.d);
+  if (!targets.length) throw new Error("addAnimation: no anim-* shapes");
+  let nid = 4;
+  const effects = targets.map(({ id, d: [at, filter, dur] }) => {
+    const e = `<p:par><p:cTn id="${nid++}" presetID="${filter === "fade" ? 10 : 22}" presetClass="entr" ` +
+      `presetSubtype="${filter === "fade" ? 0 : 8}" fill="hold" nodeType="withEffect">` +
+      `<p:stCondLst><p:cond delay="${at}"/></p:stCondLst><p:childTnLst>` +
+      `<p:set><p:cBhvr><p:cTn id="${nid++}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>` +
+      `<p:tgtEl><p:spTgt spid="${id}"/></p:tgtEl><p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst></p:cBhvr>` +
+      `<p:to><p:strVal val="visible"/></p:to></p:set>` +
+      `<p:animEffect transition="in" filter="${filter}"><p:cBhvr><p:cTn id="${nid++}" dur="${dur}"/>` +
+      `<p:tgtEl><p:spTgt spid="${id}"/></p:tgtEl></p:cBhvr></p:animEffect></p:childTnLst></p:cTn></p:par>`;
+    return e;
+  }).join("");
+  const timing = `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst>` +
+    `<p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>` +
+    `<p:par><p:cTn id="3" fill="hold"><p:stCondLst><p:cond delay="indefinite"/><p:cond evt="onBegin" delay="0"><p:tn val="2"/></p:cond></p:stCondLst>` +
+    `<p:childTnLst><p:par><p:cTn id="${nid++}" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>${effects}</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par>` +
+    `</p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst>` +
+    `<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq>` +
+    `</p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`;
+  // schema order inside <p:sld>: cSld, clrMapOvr, transition, timing, extLst
+  const at = xml.indexOf("</p:clrMapOvr>");
+  if (at < 0) throw new Error("addAnimation: no clrMapOvr to anchor on");
+  xml = xml.slice(0, at + "</p:clrMapOvr>".length) + timing + xml.slice(at + "</p:clrMapOvr>".length);
+  zip.file(hit, xml);
+  fs.writeFileSync(file, await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
+  console.log("animated " + hit + ": " + targets.length + " shapes, " +
+    (STEP_MS * STAGES.length + 200 + 2 * 450 + FADE_MS) / 1000 + " s");
+}
+
 // ================================================================= build
 async function main() {
   const out = process.argv[2] || "docs/architecture-deck.pptx";
@@ -739,10 +874,11 @@ async function main() {
   pres.author = "Automotive Service Operations Intelligence Agent";
   pres.title = "Automotive Service Operations Intelligence Agent";
 
-  ["Overview", "Architecture", "Application flow", "Components", "Deployment",
+  ["Overview", "Process", "Architecture", "Application flow", "Components", "Deployment",
    "Data model", "Lifecycle", "Usage"].forEach((t) => pres.addSection({ title: t }));
 
   slideTitleCard(pres);
+  slideProcess(pres);
   slideArchitecture(pres);
   slideFlow(pres);
   slideComponents(pres);
@@ -753,6 +889,7 @@ async function main() {
   slideUsageSurface(pres);
 
   await pres.writeFile({ fileName: out });
-  console.log("wrote " + out + "  (9 slides)");
+  await addAnimation(out);
+  console.log("wrote " + out + "  (10 slides)");
 }
 main().catch((e) => { console.error(e); process.exit(1); });

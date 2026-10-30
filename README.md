@@ -86,7 +86,7 @@ node scripts/make_architecture_deck.js docs/architecture-deck.pptx   # needs: np
 [`docs/architecture.drawio`](docs/architecture.drawio) is seven pages (system map,
 write path, read path, component inventory, deployment, data model, lifecycle),
 uncompressed XML so it diffs. [`docs/architecture-deck.pptx`](docs/architecture-deck.pptx)
-is nine slides: seven of architecture and two of usage built from
+is ten slides: the process in business terms (animated, builds itself on entry), seven of architecture and two of usage built from
 [`docs/screenshots/`](docs/screenshots/README.md).
 
 ## Deploy on NVIDIA Brev
