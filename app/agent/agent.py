@@ -352,7 +352,7 @@ def plan_keyword(question: str) -> list[dict]:
         # today" and "who worked today" hit the same tool over the same window,
         # but one wants vehicles and the other wants people - and until this,
         # both got a roster of technicians.
-        args = dict(tf or {"day_offset": 0})
+        args: dict = dict(tf or {"day_offset": 0})
         if win and win > 1:
             args["days"] = win
         if re.search(r"\bhow many\b|\bhow much\b", q):
@@ -908,7 +908,7 @@ def _ro_state_summary(d: dict) -> str:
     L.append(head)
 
     status = f"Status: **{_titlecase(d.get('state'))}**"
-    risk = _RISK_WORDS.get(d.get("promise_risk"))
+    risk = _RISK_WORDS.get(d.get("promise_risk") or "")
     if risk:
         status += f" - {risk}"
     if d.get("promised_time"):
@@ -1070,7 +1070,7 @@ def _diff_summary(d: dict) -> str:
         L.append(f"- **New safety finding:** {s}")
     if d.get("technician_changed"):
         L.append(f"- Handed from {d.get('from_actor')} to **{d.get('to_actor')}**")
-    risk = _RISK_WORDS.get(d.get("promise_risk"))
+    risk = _RISK_WORDS.get(d.get("promise_risk") or "")
     if risk:
         L.append(f"- Promise status: {risk}")
     if len(L) == 1:
@@ -1226,7 +1226,7 @@ def _shift_summary(d: dict) -> str:
 
 
 
-def _intake_summary(d: dict) -> str:
+def _intake_summary(d: dict) -> str | None:
     """How much work came in. Count first - the question is a number."""
     if not d.get("found"):
         return None
@@ -1297,7 +1297,7 @@ def _summarise(results: list[dict], notes: list | None = None) -> str | None:
     blocks = []
     for r in results:
         tool = r.get("tool")
-        fn = _RENDERERS.get(tool)
+        fn = _RENDERERS.get(tool) if tool else None
         if fn is None:
             if tool not in _NARRATED:
                 note(f"no renderer for {tool}")
