@@ -706,6 +706,7 @@ the data is derived, not precious.
 | `docs/OPERATING.md` | day to day: restart, refresh, reboot, the model's real speed |
 | `docs/EXAMPLES.md` | what it actually answers, from a live run, with timings |
 | `docs/screenshots/README.md` | what each captured frame shows, and how it was taken |
+| `docs/DEMO_VIDEO.md`, `docs/demo/` | the client demo video: plan and narration script, and a voiced preview built by `scripts/make_demo_preview.py` |
 | `docs/VOICE-UPDATE-FORMAT.md` | what to say so an update is captured accurately |
 | `docs/PASS_INDEX.md` | the 61 numbered passes: what each addressed, and where it is recorded |
 | `docs/architecture.drawio`, `docs/architecture-deck.pptx` | the architecture as seven diagrams / ten slides, generated |
