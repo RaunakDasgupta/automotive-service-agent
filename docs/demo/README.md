@@ -5,8 +5,8 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:12): 33 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
-| `footage/` | The raw live-app shots (`A C D G`, video only, with their captions burned in) and their original beat timings (`beats.json`), recorded on the L40S box |
+| `demo-preview.mp4` | The whole demo (2:13): 33 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
 
@@ -22,8 +22,8 @@ Two files, both recorded from the real application:
 | G Telemetry | **live** Grafana with DCGM GPU telemetry, after real traffic through `/ask` |
 | F Advantages | animated cards ending on *Fast. Grounded. Yours to run.* |
 
-Logo badges (NVIDIA, Grafana) are laid over the live shots as each product is named.
-| F Advantages | animated cards and an end card with a placeholder for your name and contact |
+Logo badges (NVIDIA, Grafana) are laid over the live shots as each product is named. There is no cursor on screen except
+for the four clicks that start something (Transcribe, Extract and apply, and Ask twice).
 
 The spoken update in scene C is itself synthesised (a second TTS voice) so it can be uploaded; Riva then transcribes
 it for real. The app scenes run in extra UIs on the box against a **copy** of the database, so nothing the demo logs
@@ -38,8 +38,21 @@ be read. Inside every other shot the camera is moving, a keyword callout lands a
 what is described, and a subtitle runs along the bottom. Hard cuts between scenes. No music is mixed in; a quiet
 royalty-free bed is recommended in `docs/DEMO_VIDEO.md` section 6.
 
-Without a box, the live scenes are **re-timed from `footage/`**: each beat's recorded shot is stretched a little to its
-new length and its last frame is held. With a box (`--box`) they are recorded afresh at the new timings.
+## Capture once, edit as often as you like
+
+The live scenes are produced in two stages (`scripts/demo_footage.py`, then `scripts/make_demo_preview.py`):
+
+1. **Capture, on a box.** The real app is driven once and recorded as a 2x screenshot loop, so a camera zoom is still
+   sharp. Nothing is drawn on it: no camera, ring, caption, callout or cursor. `timeline.json` records, for each step
+   (`A`, `C1`-`C4`, `D1`-`D6`, `G1`), its time window, the clicks, the moment its result appeared, and the rectangle of
+   every element the camera may aim at.
+2. **Edit, offline.** Each beat takes its step from the footage, re-times it to the narration (only the wait for a slow
+   model is ever cut), and adds the camera, ring, callout, badge, caption and cursor. Changing the script, pacing, zoom,
+   callouts or cursor is a re-run of the edit and needs no GPU.
+
+A box is needed again **only when what the app puts on screen changes**. Each scene is stamped with a fingerprint of the app
+code, the Grafana dashboard and the inputs typed into it. `python scripts/demo_footage.py --check` (the edit prints the
+same verdict) says whether the footage still matches; if code changed but the screen did not, `--restamp` accepts it.
 
 ## The voice
 
@@ -54,17 +67,22 @@ The tools are deliberately not project dependencies; use a throwaway venv:
 
 ```bash
 python -m venv /tmp/demoenv
-/tmp/demoenv/bin/pip install playwright imageio-ffmpeg nvidia-riva-client
+/tmp/demoenv/bin/pip install playwright websockets imageio-ffmpeg nvidia-riva-client
 /tmp/demoenv/bin/python -m playwright install chromium
-/tmp/demoenv/bin/python scripts/make_demo_preview.py                        # whole video, live scenes re-timed from footage/
-/tmp/demoenv/bin/python scripts/make_demo_preview.py --scene OE             # only some pieces, for iteration
-/tmp/demoenv/bin/python scripts/make_demo_preview.py --slide-only           # just the slide clip
-/tmp/demoenv/bin/python scripts/make_demo_preview.py --box <ssh-alias>      # record the live scenes afresh on a running box
+/tmp/demoenv/bin/python scripts/demo_footage.py --check                    # is the footage still current? (no box)
+/tmp/demoenv/bin/python scripts/make_demo_preview.py                       # the whole video, edited from footage/
+/tmp/demoenv/bin/python scripts/make_demo_preview.py --scene OE            # only some pieces, for iteration
+/tmp/demoenv/bin/python scripts/make_demo_preview.py --slide-only          # just the slide clip
 ```
 
-The NVIDIA and Grafana logos are fetched once from their public brand assets into
-`~/.cache/asoia-demo-logos` and are not committed. `--box` needs the stack up (`docs/BREV_RUNBOOK.md`); the script starts
-its own recording UIs on a copy of the database, sends 100 s of questions through `/ask` so Grafana has data, records,
-and stops them again (`--no-traffic` skips the warm-up).
+Only if `--check` says the footage is stale, bring up a box per `docs/BREV_RUNBOOK.md` and capture, then delete the box:
+
+```bash
+/tmp/demoenv/bin/python scripts/demo_footage.py --box <ssh-alias>          # all four live scenes (add --scene C for one)
+```
+
+`--box` starts its own recording UIs on a copy of the database, sends 100 s of questions through `/ask` so Grafana has
+data, captures, and stops them again (`--no-traffic` skips the warm-up). The NVIDIA and Grafana logos are fetched once
+from their public brand assets into `~/.cache/asoia-demo-logos` and are not committed.
 
 The captions keep the real spelling; where the voice gets a word wrong it is given a respelling (`SPOKEN` in the script): *read* in the present tense, and *DCGM* spelled out letter by letter.

@@ -1,65 +1,53 @@
 #!/usr/bin/env python
-"""Record the client demo video from the LIVE stack on the Brev L40S.
+"""Build the client demo video. No GPU box is needed: the live scenes are edited from raw footage.
 
-    python scripts/make_demo_preview.py --box <ssh-alias>              # the whole demo + the slide clip
-    python scripts/make_demo_preview.py --box <ssh-alias> --scene C    # one scene, for iteration
-    python scripts/make_demo_preview.py --slide-only                   # just the process-slide clip
+    python scripts/make_demo_preview.py                  # the whole video + the slide clip
+    python scripts/make_demo_preview.py --scene OE       # only some pieces, for iteration
+    python scripts/make_demo_preview.py --slide-only     # just the process-slide clip
 
 Run it with an interpreter that has `playwright`, `imageio-ffmpeg` and `nvidia-riva-client` - deliberately NOT
-project dependencies, so use a throwaway venv (see docs/demo/README.md). The box must be up (docs/BREV_RUNBOOK.md):
-three local NIMs, Milvus, the API, Grafana and Attu.
+project dependencies, so use a throwaway venv (see docs/demo/README.md).
 
-WHAT IT RECORDS, AND HOW
+TWO STAGES, SO THE BOX IS ONLY NEEDED WHEN THE APP CHANGES
 
-  * Everything on screen is the real application: the dashboard, the Technician Update tab (a spoken update is
-    uploaded, transcribed by Riva, extracted by Nemotron and flagged by the rules), the Manager Assistant (one
-    structured and one semantic question, search + rerank + narration on the local NIMs), live Grafana with DCGM
-    GPU telemetry, and live Attu. The only things not recorded from the app are the process slide (rendered from the
-    deck's own XML) and the component and advantage cards.
-  * App scenes run in extra UIs started on the box against a COPY of the database, so nothing a demo logs touches
-    the real data. They are stopped again when the run ends.
-  * Before recording, 100 s of mixed questions go through /ask so the Grafana panels show real traffic.
+  1. scripts/demo_footage.py records the real application ONCE on the Brev L40S: the dashboard, the Technician Update
+     tab (a spoken update is uploaded, transcribed by Riva, extracted by Nemotron and flagged by the rules), the
+     Manager Assistant (a structured and a semantic question, search + rerank + narration on the local NIMs) and live
+     Grafana with DCGM telemetry. It saves 4K footage with nothing drawn on it, plus a timeline of where everything is.
+  2. This script edits that footage into the video, offline: it re-times each shot to the narration, then adds the
+     camera, the ring, the keyword callout, the product badge, the caption and - only on a click - a cursor.
+     Changing the script, the pacing, the zoom or any of those overlays never needs the box.
+     It prints whether the footage still matches the app (demo_footage.py --check). Only the process slide (rendered
+     from the deck's own XML), the opening visual, the component cards, the business-value cards and the end card are
+     made here, from HTML.
 
 HOW IT IS EDITED
 
 The script is a table of short beats in docs/DEMO_VIDEO.md. Each beat is voiced on its own (NVIDIA Riva Magpie TTS,
-44.1 kHz, sped up a little), and its audio length sets the length of its shot, so picture and words cannot drift
-apart. In every shot the camera is moving (an in-page transform), a keyword callout lands as the word is spoken,
-a ring pulses on what is described, and a subtitle runs along the bottom. Hard cuts between scenes.
+44.1 kHz), and its audio length sets the length of its shot, so picture and words cannot drift apart. In every shot the
+camera is moving, a keyword callout lands as the word is spoken, a ring pulses on what is described, and a subtitle
+runs along the bottom. Soft dissolves ease the three changes of screen (dashboard to process slide to app to assistant).
 """
 from __future__ import annotations
 
-import argparse, json, os, re, shutil, subprocess, sys, tempfile, time, wave, zipfile
+import argparse, json, os, re, shutil, sys, tempfile, time, wave, zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT / "scripts"), str(ROOT)]
+from demo_footage import FOOT, FPS, H, K, TTS_CACHE, W, check, ffmpeg, load_timeline, run
 OUT = ROOT / "docs" / "demo"
 WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
-W, H, FPS = 1920, 1080, 30
 GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.8, "B5": 0.5, "C3": 0.6, "C4": 1.0, "D3": 1.0, "D4": 0.6, "D6": 1.0,
         "E1": 0.7, "E5": 0.6, "G1": 1.1, "V4": 0.9, "F4": 0.0}
-TTS_CACHE = Path.home() / ".cache" / "asoia-demo-tts"
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
       "p": "http://schemas.openxmlformats.org/presentationml/2006/main"}
-
-
-def ffmpeg():
-    import imageio_ffmpeg
-    return imageio_ffmpeg.get_ffmpeg_exe()
-
-
-def run(*cmd, **kw):
-    r = subprocess.run([str(c) for c in cmd], capture_output=True, text=True, **kw)
-    if r.returncode:
-        raise RuntimeError("%s failed:\n%s" % (cmd[0], r.stderr[-600:]))
-    return r
 
 
 # ------------------------------------------------------------------ the script
@@ -232,8 +220,6 @@ for(const [id,delay,f,dur] of A){const el=document.querySelector('[data-id="'+id
     return html, total + 0.7
 
 
-
-
 DRIVEN_HTML = r"""<!doctype html><meta charset=utf-8><style>
 html,body{margin:0;background:#fff}#s{position:relative;width:@W@px;height:@H@px;overflow:hidden;background:#fff}
 .sh{position:absolute;box-sizing:border-box}[data-name^="anim-"]{opacity:0}</style><div id=s>@SHAPES@</div><script>
@@ -260,14 +246,9 @@ TOOLKIT_JS = r"""
   .__co b{display:block;background:rgba(10,30,22,.92);color:#fff;font:700 50px/1.1 Arial,sans-serif;padding:14px 30px;border-left:12px solid #76B900;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
   .__ring{position:absolute;z-index:99990;pointer-events:none;border:5px solid #76B900;border-radius:10px;animation:__p .8s ease-in-out infinite alternate}
   @keyframes __p{from{box-shadow:0 0 0 2px rgba(118,185,0,.2),0 0 10px rgba(118,185,0,.5)}to{box-shadow:0 0 0 10px rgba(118,185,0,.25),0 0 34px rgba(118,185,0,.9)}}
-  #__cur{position:fixed;width:30px;height:30px;border-radius:50%;background:rgba(118,185,0,.55);border:3px solid #76B900;z-index:100000;pointer-events:none;transform:translate(-50%,-50%)}
-  .__rip{position:fixed;width:30px;height:30px;border-radius:50%;border:4px solid #76B900;z-index:100000;pointer-events:none;transform:translate(-50%,-50%)}`;
+  `;
   document.head.appendChild(css);
   const cap = Object.assign(document.createElement('div'), {id: '__cap'}); html.appendChild(cap);
-  const cur = Object.assign(document.createElement('div'), {id: '__cur'}); cur.style.left = '-100px'; html.appendChild(cur);
-  addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
-  window.__ripple = (x, y) => { const r = document.createElement('div'); r.className = '__rip'; r.style.left = x + 'px'; r.style.top = y + 'px';
-    html.appendChild(r); r.animate([{transform: 'translate(-50%,-50%) scale(.6)', opacity: 1}, {transform: 'translate(-50%,-50%) scale(3)', opacity: 0}], {duration: 520}).onfinish = () => r.remove(); };
 
   addEventListener('scroll', () => scrollTo(0, 0), true);
   window.__mat = () => { const m = new DOMMatrix(getComputedStyle(body).transform); return {s: m.a, tx: m.e, ty: m.f}; };
@@ -318,8 +299,6 @@ TOOLKIT_JS = r"""
 def inject(page):
     page.add_script_tag(content=TOOLKIT_JS)
     page.wait_for_timeout(150)
-
-
 
 
 # ------------------------------------------------------------------ html scenes
@@ -465,89 +444,8 @@ window.__show=id=>show($(id));window.__note=()=>$('note').animate([{opacity:0},{
 </script>""".replace("@CARDS@", c_html)
 
 
-# ------------------------------------------------------------------ the box
-PORTS = [7871, 7872, 7873, 3000, 8101, 8080]
-BOX_UP = r"""
-cd /home/ubuntu/automotive-service-agent || exit 1
-for f in /tmp/demo_ui_*.pid; do [ -f "$f" ] && kill "$(cat "$f")" 2>/dev/null; done
-sleep 1; rm -f /home/ubuntu/demo.sqlite*
-python3 -c "import sqlite3; d=sqlite3.connect('/home/ubuntu/demo.sqlite'); sqlite3.connect('data/generated/service.sqlite').backup(d)"
-set -a; . ./.env; set +a
-start(){ PORT=$1 ASOIA_UI_TAB=$2 ASOIA_DB=/home/ubuntu/demo.sqlite ASOIA_METRICS=0 SHARE=0 ASOIA_LOG_ANSWERS=0 \
-  setsid nohup .venv/bin/python -m app.ui.gradio_app > /tmp/demo_ui_$1.log 2>&1 & echo $! > /tmp/demo_ui_$1.pid; }
-start 7871 dashboard; start 7872 update; start 7873 assistant
-for p in 7871 7872 7873; do for i in $(seq 1 60); do curl -s -o /dev/null localhost:$p && break; sleep 1; done; done
-"""
-BOX_DOWN = 'for f in /tmp/demo_ui_*.pid; do [ -f "$f" ] && kill "$(cat "$f")" 2>/dev/null; done; true'
-TRAFFIC = r"""
-Q=("Which vehicles cannot be released on safety grounds?" "Give me the afternoon handover, worst first." "Are any parts holding up more than one job at once?" "Which jobs will miss their promised time?" "Go ahead and order the parts for RO-26-08165" "Has anyone seen a whistling noise on a Passat?" "Any reports of brake judder when stopping?" "Customers complaining about a knocking noise from the front suspension" "Which repair orders are blocked on parts?")
-end=$((SECONDS+%d))
-while [ $SECONDS -lt $end ]; do
-  for q in "${Q[@]}"; do curl -s -m 60 -X POST localhost:8080/ask -H 'content-type: application/json' -d "{\"question\":\"$q\"}" >/dev/null & done
-  wait; sleep 3
-done
-"""
-
-
-def ssh(alias: str, script: str, timeout=900):
-    r = subprocess.run(["ssh", "-o", "BatchMode=yes", alias, "bash -s"], input=script, text=True,
-                       capture_output=True, timeout=timeout)
-    if r.returncode:
-        raise RuntimeError("ssh %s failed:\n%s" % (alias, r.stderr[-500:]))
-
-
-def forwards(alias: str):
-    """Forward whichever of PORTS is not already reachable locally. Returns the ssh processes."""
-    import socket
-    procs = []
-    for p in PORTS:
-        with socket.socket() as s:
-            s.settimeout(1)
-            if s.connect_ex(("127.0.0.1", p)) == 0:
-                continue
-        procs.append(subprocess.Popen(["ssh", "-N", "-o", "ExitOnForwardFailure=yes", "-L", "%d:127.0.0.1:%d" % (p, p), alias],
-                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
-    time.sleep(3)
-    return procs
-
-
-def dictation() -> Path:
-    """The technician's spoken update, voiced once (16 kHz mono, as a microphone would give)."""
-    import _env  # noqa: F401
-    import hashlib
-    text = "Grinding under braking. Rotor thickness measured twenty one point nine millimetres, minimum twenty three."
-    out = TTS_CACHE / (hashlib.sha1(text.encode()).hexdigest()[:16] + ".wav")
-    if not out.exists():
-        import riva.client as rc
-        auth = rc.Auth(uri="grpc.nvcf.nvidia.com:443", use_ssl=True, metadata_args=[
-            ["function-id", "877104f7-e885-42b9-8de8-f6e4c6303969"],
-            ["authorization", "Bearer " + os.environ["NVIDIA_API_KEY"]]])
-        r = rc.SpeechSynthesisService(auth).synthesize(text, voice_name="Magpie-Multilingual.EN-US.Jason", language_code="en-US",
-                                                        sample_rate_hz=16000, encoding=rc.AudioEncoding.LINEAR_PCM)
-        TTS_CACHE.mkdir(parents=True, exist_ok=True)
-        with wave.open(str(out), "wb") as w:
-            w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000); w.writeframes(r.audio)
-    return out
-
-
-def live_counts(pw):
-    """Numbers the narration quotes, read from the box rather than written into the script."""
-    import urllib.request
-    req = urllib.request.Request("http://127.0.0.1:8080/ask", json.dumps({"question": "Which vehicles cannot be released on safety grounds?"}).encode(),
-                                 {"content-type": "application/json"})
-    ans = json.loads(urllib.request.urlopen(req, timeout=60).read())["answer"]
-    n_ask = int(re.search(r"(\d+) repair orders?", ans).group(1))
-    br = pw.chromium.launch(); pg = br.new_page(viewport={"width": W, "height": H})
-    pg.goto("http://127.0.0.1:7871", wait_until="load", timeout=90000)
-    pg.get_by_text("Safety - do not release").first.wait_for(timeout=90000)
-    tiles = pg.evaluate("""() => ['Safety - do not release', 'Open repair orders'].map(t => document.evaluate("//*[text()='" + t + "']", document, null, 9, null)
-        .singleNodeValue.closest('div[style*="border-radius:10px"]').innerText.split('\\n')[0])""")
-    br.close()
-    return int(tiles[0]), n_ask, int(tiles[1])
-
-
 # ------------------------------------------------------------------ recording
-def record(pw, name: str, url: str, texts, durs, plan, prep=None, tail=0.0, ready=None, holds=None) -> Path:
+def record(pw, name: str, url: str, texts, durs, plan, tail=0.0, holds=None) -> Path:
     """Record one scene. `plan[i]` is the choreography dict for beat i; it runs in real time,
     each beat starting at the running total of the voiced durations before it."""
     vdir = WORK / ("v_" + name)
@@ -557,12 +455,8 @@ def record(pw, name: str, url: str, texts, durs, plan, prep=None, tail=0.0, read
     page = ctx.new_page()
     t_ctx = time.time()
     page.goto(url, wait_until="load", timeout=90000)
-    if ready:
-        ready(page)
     page.wait_for_timeout(1500)
     inject(page)
-    if prep:
-        prep(page)
     segs, due = [], time.perf_counter()
     for i, (text, d, b) in enumerate(zip(texts, durs, plan)):
         lag = due - time.perf_counter()
@@ -606,11 +500,10 @@ def concat(parts, out: Path):
         "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", out)
 
 
-# ------------------------------------------------------------------ logo badges and re-timed footage
+# ------------------------------------------------------------------ logo badges and the transition between pieces
 BADGES = {"C2": (["nvidia"], "Riva · speech to text"), "C3": (["nvidia"], "Nemotron 8B · NIM"),
           "D6": (["nvidia"], "NIM · embed + rerank"), "G1": (["nvidia", "grafana"], "DCGM telemetry"),
           "G2": (["nvidia", "grafana"], "DCGM + Grafana")}
-FOOTAGE = ROOT / "docs" / "demo" / "footage"
 
 
 def badge_png(pw, key: str) -> Path:
@@ -627,39 +520,6 @@ def badge_png(pw, key: str) -> Path:
     return out
 
 
-def overlay_badges(video: Path, wins, out: Path):
-    """wins: [(png, start, end)] - show each badge top-right during its beat."""
-    if not wins:
-        shutil.copy(video, out); return
-    ins, chain, last = [], [], "[0:v]"
-    for k, (png, a, b) in enumerate(wins, 1):
-        ins += ["-i", png]
-        chain.append("%s[%d:v]overlay=x=W-w-48:y=44:enable='between(t,%.3f,%.3f)'[o%d]" % (last, k, a, b, k))
-        last = "[o%d]" % k
-    run(ffmpeg(), "-y", "-i", video, *ins, "-filter_complex", ";".join(chain), "-map", last, "-c:v", "libx264",
-        "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "veryfast", "-an", out)
-
-
-def retime(scene: str, ids, new_durs, holds, out: Path):
-    """Re-time recorded footage: stretch each beat's shot to its new length (a slower shot is stretched; a shorter line
-    is allowed to run up to a third faster), then freeze its last frame for the hold."""
-    old = json.loads((FOOTAGE / "beats.json").read_text())[scene]
-    offs, t = {}, 0.0
-    for bid, d in old:
-        offs[bid] = (t, d); t += d
-    parts, labels = [], []
-    for k, (bid, nd, h) in enumerate(zip(ids, new_durs, holds)):
-        start, dur = offs[bid]
-        dur -= 0.40                      # stop before the next beat's caption appears
-        f = (nd - h) / dur
-        assert f > 0.75, "beat %s would have to be sped up (x%.2f); re-record it" % (bid, 1 / f)
-        parts.append("[0:v]trim=start=%.3f:end=%.3f,setpts=(PTS-STARTPTS)*%.4f,fps=%d,tpad=stop_mode=clone:stop_duration=%.3f,scale=%d:%d[v%d]"
-                     % (start, start + dur, f, FPS, h, W, H, k))
-        labels.append("[v%d]" % k)
-    run(ffmpeg(), "-y", "-i", FOOTAGE / (scene + ".mp4"), "-filter_complex", ";".join(parts) + ";" + "".join(labels) + "concat=n=%d:v=1:a=0[v]" % len(labels),
-        "-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "veryfast", "-an", out)
-
-
 def bridge(prev: Path, nxt: Path, out: Path, d: float = 0.5):
     """A short silent dissolve from the last frame of one piece to the first frame of the next, so a change of
     screen eases in instead of cutting."""
@@ -674,58 +534,7 @@ def bridge(prev: Path, nxt: Path, out: Path, d: float = 0.5):
         "-map", "[v]", "-map", "2:a", "-c:v", "libx264", "-crf", "21", "-preset", "veryfast", "-c:a", "aac", "-b:a", "160k", "-t", "%.2f" % d, out)
 
 
-# ------------------------------------------------------------------ small page helpers
-def choose(page, nth: int, text: str | None = None, idx: int = 0):
-    """Pick an option of the nth dropdown, by text or by position (done before the take starts)."""
-    page.locator("input[role=listbox], .wrap input").nth(nth).click()
-    lis = page.locator("li[role=option], ul[role=listbox] li")
-    lis.first.wait_for(state="visible", timeout=20000)
-    if text:
-        idx = next(i for i, t in enumerate(lis.all_inner_texts()) if text in t)
-    lis.nth(idx).click()
-    page.wait_for_timeout(500)
-
-
-def tap(page, loc):
-    """Cursor glides to the control and ripples; the click itself is dispatched in the page, so it does not
-    wait for the camera (which is moving the control) to settle."""
-    bb = loc.first.bounding_box()
-    if bb:
-        x, y = bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2
-        page.mouse.move(x, y, steps=10)
-        page.evaluate("p => window.__ripple(p[0], p[1])", [x, y])
-    loc.first.evaluate("e => e.click()")
-
-
-def aim(page, cam, ms, ring=None, co=None, **o):
-    page.evaluate("a => { window.__cam(a.cam, Object.assign({ms: a.ms}, a.o)); window.__ring(a.ring, a.pad); if (a.co) window.__co(a.co); }",
-                  {"cam": cam, "ms": max(600, int(ms)), "o": o, "ring": ring, "pad": 8, "co": co})
-
-
-def wait_text(page, text: str, ms: float):
-    page.get_by_text(text).last.wait_for(timeout=max(500, ms))
-
-
-def glide_log(page, ms: float, to_end: bool):
-    """Scroll the chat's own scroller (role=log) smoothly to its top or bottom."""
-    page.evaluate("""([ms, end]) => { const e = document.querySelector('[role=log]'); if (!e) return;
-      const a = e.scrollTop, b = end ? e.scrollHeight : 0, t0 = performance.now();
-      const f = t => { const k = Math.min(1, (t - t0) / Math.max(ms, 1)), z = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-        e.scrollTop = a + (b - a) * z; if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }""", [ms, to_end])
-
-
 # ------------------------------------------------------------------ choreography, one scene each
-def scene_A(n_safety):
-    KPI = {"text": "Open repair orders", "up": 'div[style*="flex-wrap"]'}
-    ROW = {"text": "below minimum"}
-    TILE = {"text": "Safety - do not release", "up": 'div[style*="border-radius:10px"]'}
-    PROM = [{"text": "Promise missed", "up": 'div[style*="border-radius:10px"]'},
-            {"text": "Blocked", "up": 'div[style*="border-radius:10px"]'}]
-    return [dict(cam=KPI, camo=dict(max=1.25, pad=140)),
-            dict(cam=ROW, camo=dict(max=1.7, pad=70), ring=ROW, co="Safety findings"),
-            dict(cam=PROM, camo=dict(max=1.9, pad=120), ring=PROM, co="Missed promises"),
-            dict(cam=TILE, camo=dict(max=2.3, pad=200), ring=TILE, co="%d unsafe" % n_safety),
-            dict(cam=None, camo=dict(to=1.0), co="NVIDIA stack")]
 
 
 def scene_B():
@@ -741,80 +550,6 @@ def scene_B():
     out[4]["cam"] = None                       # pull back: the whole five-stage flow, with nothing else on the slide
     out[4]["camo"] = dict(to=1.0)
     return out
-
-
-def scene_C(wav: Path):
-    VOICE = [{"text": "Voice or free text"}, {"text": "Record or upload", "grow": [0, 0, 900, 150]}]
-    TRANS = [{"text": "Transcribe", "up": "button"}, {"text": "Transcript / free-text update", "grow": [0, 0, 1700, 110]}]
-    EXTR = [{"text": "Extract and apply", "up": "button"}, {"text": "Extracted 3 C's structure", "grow": [0, 0, 900, 230]}]
-    MEAS = {"text": "safety_related", "grow": [330, 240, 330, 24]}
-    CARD = "()=>[...document.querySelectorAll('textarea')].find(t=>t.value.includes('SAFETY_RELATED'))"
-
-    def c1(page, d):
-        page.wait_for_timeout(int(d * 250))
-        tap(page, page.get_by_label("Upload file"))
-        page.wait_for_timeout(500)
-        page.locator("input[type=file]").first.set_input_files(str(wav))
-
-    def c2(page, d):
-        page.wait_for_timeout(int(d * 150))
-        tap(page, page.get_by_role("button", name="Transcribe"))
-        page.wait_for_function("() => [...document.querySelectorAll('textarea')].some(t => t.value.toLowerCase().includes('rotor'))",
-                               timeout=25000)
-
-    def c3(page, d):
-        page.wait_for_function("() => [...document.querySelectorAll('textarea')].some(t => t.value.toLowerCase().includes('rotor'))", timeout=15000)
-        page.wait_for_timeout(int(d * 150))
-        tap(page, page.get_by_role("button", name="Extract and apply"))
-        page.wait_for_function("() => [...document.querySelectorAll('textarea')].some(t => t.value.includes('SAFETY_RELATED'))",
-                               timeout=25000)
-        page.wait_for_timeout(900)
-        aim(page, MEAS, d * 450, ring=MEAS, max=2.1, pad=60)
-        page.wait_for_timeout(int(d * 450))
-
-    return [dict(cam=VOICE, camo=dict(max=1.55, pad=100), co="Voice in", act=c1),
-            dict(cam=TRANS, camo=dict(max=1.6, pad=100), co="Riva ASR", act=c2),
-            dict(cam=EXTR, camo=dict(max=1.5, pad=100), co="Nemotron 8B", act=c3),
-            dict(cam={"fn": CARD, "top": 120}, camo=dict(max=2.2, pad=90), ring={"fn": CARD, "top": 120}, ringpad=6, co="Flagged unsafe"),
-            dict(cam={"fn": CARD, "top": 280}, camo=dict(max=1.45, pad=90))]
-
-
-def scene_D():
-    Q = {"fn": "()=>[...document.querySelectorAll('textarea')].find(t=>t.offsetParent)"}
-    ANS = {"text": "repair orders cannot be released"}
-    TOOLS = {"text": "computed from the records"}
-    LAST = {"fn": "()=>[...document.querySelectorAll('*')].filter(e=>e.children.length==0&&e.textContent.includes('whistling')).pop()", "grow": [30, 40, 900, 230]}
-    Q1, Q2 = "Which vehicles cannot be released on safety grounds?", "Has anyone seen a whistling noise on a Passat?"
-
-    def type_and_ask(page, d, q, share):
-        box = page.locator("textarea").first
-        box.evaluate("e => e.focus()")
-        page.keyboard.press("Meta+A"); page.keyboard.press("Delete")
-        page.keyboard.type(q, delay=int(d * 1000 * share / len(q)))
-        tap(page, page.get_by_role("button", name="Ask", exact=True))
-
-    def d3(page, d):
-        wait_text(page, "computed from the records", 25000)
-        glide_log(page, 1, False)
-        page.wait_for_timeout(250)
-        aim(page, ANS, d * 500, ring=None, co="Cited · no model call", max=1.45, pad=70)
-
-    def d4(page, d):
-        glide_log(page, d * 750, True)
-        page.wait_for_timeout(int(d * 780))
-        aim(page, TOOLS, d * 200, ring=TOOLS, co="", max=1.6, pad=60)
-
-    def d6(page, d):
-        wait_text(page, "whistling", 25000)
-        page.wait_for_timeout(200)
-        aim(page, LAST, d * 450, ring=None, co="Search + rerank", max=1.6, pad=60)
-
-    return [dict(cam=Q, camo=dict(max=1.5, pad=140), act=lambda page, d: page.locator("textarea").first.evaluate("e => e.focus()")),
-            dict(cam=Q, camo=dict(max=1.75, pad=140), ring=Q, act=lambda page, d: type_and_ask(page, d, Q1, 0.5)),
-            dict(cam=None, camo=dict(to=1.05), act=d3),
-            dict(cam={"sel": "[role=log]"}, camo=dict(max=1.3, pad=40), act=d4),
-            dict(cam=Q, camo=dict(max=1.75, pad=140), ring=Q, co="", act=lambda page, d: type_and_ask(page, d, Q2, 0.55)),
-            dict(cam=None, camo=dict(to=1.05), co="", act=d6)]
 
 
 def scene_O():
@@ -848,28 +583,6 @@ def scene_E():
             dict(cam={"sel": "#c0"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c0"}, ringpad=6,
                  act=lambda page, d: page.evaluate("() => window.__tag('c0')")),
             dict(cam={"sel": "#c2"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c2"}, ringpad=6, act=seq("c2"))]
-
-
-def scene_G():
-    P = lambda t: {"text": t, "up": ".react-grid-item"}
-    GPU, LAT, TOOLS = P("GPU utilisation and framebuffer"), P("Answer latency by compose path"), P("Tool usage")
-
-    def pct(page):
-        try:
-            return page.evaluate("""() => { const e = [...document.querySelectorAll('.react-grid-item')].find(x => x.innerText.includes('Answers composed in Python'));
-              const m = e && e.innerText.match(/[0-9.]+ ?%/g); return m ? m[m.length - 1].replace(' ', '') + ' composed in Python' : 'Measured live'; }""")
-        except Exception:
-            return "Measured live"
-
-    def g1(page, d):
-        page.wait_for_timeout(int(d * 1000 * 0.55))
-        aim(page, P("GPU power, temperature and clock"), d * 400, ring=P("GPU power, temperature and clock"), max=1.9, pad=70)
-
-    def g2(page, d):
-        page.wait_for_timeout(int(d * 1000 * 0.5))
-        aim(page, TOOLS, d * 420, ring=TOOLS, max=1.9, pad=70)
-    return [dict(cam=GPU, camo=dict(max=1.9, pad=70), ring=GPU, ringpad=4, co="L40S telemetry", act=g1),
-            dict(cam=LAT, camo=dict(max=1.9, pad=70), ring=LAT, ringpad=4, co=pct, act=g2)]
 
 
 def scene_V():
@@ -906,25 +619,268 @@ def scene_F():
             dict(cam=None, camo=dict(to=1.0), act=lambda page, d: page.evaluate("() => window.__big()"))]
 
 
-def live_scenes(wav: Path, n_safety: int):
-    """Choreography, URLs and page preparation for the scenes recorded from the running box."""
-    wait = lambda text: (lambda page: page.get_by_text(text).first.wait_for(timeout=120000))
-    ready_c = lambda page: page.get_by_label("Measurement").wait_for(timeout=120000)
-    graf = "http://127.0.0.1:3000/d/asoia/service-operations-agent?kiosk&from=now-30m&to=now&refresh=10s"
+# ------------------------------------------------------------------ live scenes: raw footage + camera, ring, callout, caption, cursor
+# For each beat of a live scene: the captured step it shows, and how the camera, ring and callout move through it.
+# `cam` and `ring` name an entry of demo_footage.TARGETS (cam None = ease about the centre of the page); `camo` is the
+# camera's limits; `co` the keyword callout; `freeze` shows one still of the step instead of playing it. `then` lists
+# later moves: `at` is a fraction of the beat, or "done+0.9" = 0.9 s after the step's result appeared on screen.
+LIVE_PLAN = {
+    "A2": dict(src="A", freeze=True, cam="ROW", camo=dict(max=1.7, pad=70), ring="ROW", co="Safety findings"),
+    "A4": dict(src="A", freeze=True, cam="TILE", camo=dict(max=2.3, pad=200), ring="TILE", co="{safety} unsafe"),
+    "A5": dict(src="A", freeze=True, cam=None, camo=dict(to=1.0), co="NVIDIA stack"),
+    "C1": dict(src="C1", cam="VOICE", camo=dict(max=1.55, pad=100), co="Voice in"),
+    "C2": dict(src="C2", cam="TRANS", camo=dict(max=1.6, pad=100), co="Riva ASR", badge="C2"),
+    "C3": dict(src="C3", cam="EXTR", camo=dict(max=1.5, pad=100), co="Nemotron 8B", badge="C3",
+               then=[dict(at="done+0.9", cam="MEAS", camo=dict(max=2.1, pad=60), ring="MEAS", dur=0.45)]),
+    "C4": dict(src="C4", freeze=True, cam="CARD120", camo=dict(max=2.2, pad=90), ring="CARD120", ringpad=6, co="Flagged unsafe"),
+    "D1": dict(src="D1", freeze=True, cam="Q", camo=dict(max=1.5, pad=140)),
+    "D2": dict(src="D2", cam="Q", camo=dict(max=1.75, pad=140), ring="Q"),
+    "D3": dict(src="D3", cam=None, camo=dict(to=1.05),
+               then=[dict(at=0.08, cam="ANS", camo=dict(max=1.45, pad=70), ring=None, co="Cited · no model call", dur=0.5)]),
+    "D5": dict(src="D5", cam="Q", camo=dict(max=1.75, pad=140), ring="Q"),
+    "D6": dict(src="D6", cam=None, camo=dict(to=1.05), badge="D6",
+               then=[dict(at="done+0.2", cam="LAST", camo=dict(max=1.6, pad=60), ring=None, co="Search + rerank", dur=0.45)]),
+    "G1": dict(src="G1", cam="GPU", camo=dict(max=1.9, pad=70), ring="GPU", ringpad=4, co="L40S telemetry", badge="G1",
+               then=[dict(at=0.55, cam="POWER", camo=dict(max=1.9, pad=70), ring="POWER", ringpad=4, dur=0.4)]),
+}
+RING_STATES = 4                  # the ring pulses through this many pre-drawn glows
+CUR_FROM = (190, 130)            # the cursor glides in from this far down and right of the control, only for a click
 
-    def prep_c(page):
-        choose(page, 0, text="08084")
-        choose(page, 1, idx=1)
-        page.get_by_text("Parts Hold").first.wait_for(timeout=15000)
 
-    def ready_g(page):
-        page.get_by_text("GPU utilisation and framebuffer").first.wait_for(timeout=120000)
-        page.wait_for_timeout(4500)
+class Pngs:
+    """Transparent overlay stills, drawn once by the browser: rings, callouts, captions, the cursor."""
 
-    return {"A": ("http://127.0.0.1:7871", scene_A(n_safety), None, wait("Open repair orders")),
-            "C": ("http://127.0.0.1:7872", scene_C(wav), prep_c, ready_c),
-            "D": ("http://127.0.0.1:7873", scene_D(), None, wait("Try these")),
-            "G": (graf, scene_G(), None, ready_g)}
+    def __init__(self, pw):
+        self.pw, self.br, self.pages, self.n = pw, pw.chromium.launch(), {}, 0
+
+    def shot(self, html: str, sel: str, scale: int = 1) -> Path:
+        if scale not in self.pages:
+            self.pages[scale] = self.br.new_page(viewport={"width": 1920, "height": 700}, device_scale_factor=scale)
+        self.n += 1
+        out = WORK / ("ov%03d.png" % self.n)
+        self.pages[scale].set_content(html)
+        self.pages[scale].locator(sel).screenshot(path=str(out), omit_background=True)
+        return out
+
+    def ring(self, w: float, h: float, state: int) -> Path:
+        s = state / (RING_STATES - 1)
+        return self.shot("<style>body{margin:0;background:transparent}#w{display:inline-block;padding:44px}#r{box-sizing:border-box;width:%.1fpx;height:%.1fpx;"
+                         "border:5px solid #76B900;border-radius:10px;box-shadow:0 0 0 %.1fpx rgba(118,185,0,%.2f),0 0 %.1fpx rgba(118,185,0,%.2f)}</style>"
+                         "<div id=w><div id=r></div></div>" % (w, h, 2 + 8 * s, .2 + .05 * s, 10 + 24 * s, .5 + .4 * s), "#w", K)
+
+    def callout(self, text: str) -> Path:
+        return self.shot("<style>body{margin:0;background:transparent}#w{display:inline-block;padding:40px}b{display:block;background:rgba(10,30,22,.92);color:#fff;"
+                         "font:700 50px/1.1 Arial,sans-serif;padding:14px 30px;border-left:12px solid #76B900;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35)}"
+                         "</style><div id=w><b>%s</b></div>" % html_escape(text), "#w")
+
+    def caption(self, text: str) -> Path:
+        return self.shot("<style>body{margin:0;background:transparent}span{display:inline-block;max-width:1560px;background:rgba(10,20,16,.80);color:#fff;"
+                         "font:600 30px/1.3 Arial,sans-serif;padding:8px 24px;border-radius:10px}</style><span id=c>%s</span>" % html_escape(text), "#c")
+
+    def cursor(self) -> Path:
+        return self.shot("<style>body{margin:0;background:transparent}svg{display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}</style>"
+                         '<svg id=s width=24 height=34 viewBox="0 0 36 52"><path d="M3 3 L3 40 L13 31 L20 48 L27 45 L20 28 L33 28 Z" fill="#fff" '
+                         'stroke="#111" stroke-width="3" stroke-linejoin="round"/></svg>', "#s", K)
+
+
+def html_escape(s: str) -> str:
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def png_size(p: Path) -> tuple[int, int]:
+    b = p.read_bytes()[16:24]
+    return int.from_bytes(b[:4], "big"), int.from_bytes(b[4:], "big")
+
+
+def cam_state(rect, o: dict, prev: tuple, page_h: int = H) -> tuple:
+    """The page transform (scale, translate x, translate y) that frames `rect`: the rule the old in-page camera used.
+    The page can be taller than the screen (the Technician Update tab is); the camera pans down it."""
+    s0, tx0, ty0 = prev
+    if rect:
+        px = o.get("pad", 80); py = px * 0.6
+        s = max(o.get("min", 1), min(o.get("max", 2.4), min((W - 2 * px) / rect["w"], (H - 2 * py) / rect["h"])))
+        tx, ty = W / 2 - s * (rect["x"] + rect["w"] / 2), H / 2 - s * (rect["y"] + rect["h"] / 2)
+    else:
+        s = o["to"] if "to" in o else min(s0 * 1.05, o.get("max", 2.4))
+        tx, ty = W / 2 - (W / 2 - tx0) * s / s0, H / 2 - (H / 2 - ty0) * s / s0
+    return s, min(0.0, max(W - s * W, tx)), min(0.0, max(H - s * page_h, ty))
+
+
+def _smooth(a: float, d: float, var: str = "t") -> str:
+    """Smoothstep from time a over d seconds, as an ffmpeg expression."""
+    u = "min(max((%s-%.3f)/%.3f,0),1)" % (var, a, max(d, 0.05))
+    return "(%s*%s*(3-2*%s))" % (u, u, u)
+
+
+def _path(v0: tuple, moves: list, i: int) -> str:
+    e, prev = "%.4f" % v0[i], v0[i]
+    for a, d, st in moves:
+        e += "+(%.4f)*%s" % (st[i] - prev, _smooth(a, d)); prev = st[i]
+    return e
+
+
+def time_map(st: dict, v: float, freeze: bool):
+    """Which stretches of the captured step to play, how fast, and how a time in the step maps into the beat. The wait for
+    a slow model is the only thing cut; everything else plays between 0.8x and 1.6x, then the last frame is held."""
+    t0, t1 = st["t0"], st["t1"]
+    if freeze:
+        return [], 1.0, 0.0, lambda t: 0.0
+    segs, done = [(t0, t1)], st["marks"].get("done")
+    if done is not None and (t1 - t0) / v > 1.6:
+        a = (max([c["t"] for c in st["clicks"]] or [t0])) + 0.6
+        b = done - 0.4
+        cut = min(b - a - 0.3, (t1 - t0) - 1.6 * v)
+        if cut > 0:
+            m = (a + b) / 2
+            segs = [(t0, m - cut / 2), (m + cut / 2, t1)]
+    total = sum(b - a for a, b in segs)
+    sp = min(max(total / v, 0.8), 1.6)
+    play = min(total / sp, v)
+    need, kept = play * sp, []
+    for a, b in segs:
+        take = min(b - a, need - sum(y - x for x, y in kept))
+        if take > 1e-3:
+            kept.append((a, a + take))
+
+    def out_t(t):
+        c = 0.0
+        for a, b in kept:
+            if t <= a:
+                return c / sp
+            if t <= b:
+                return (c + t - a) / sp
+            c += b - a
+        return play
+    return kept, sp, play, out_t
+
+
+def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int, nd: float, hold: float, caption: str, subs: dict, state: tuple, out: Path) -> tuple:
+    """One shot of a live scene, in a single ffmpeg pass: the captured footage re-timed to this beat's length, a ring and
+    (only for a click) a cursor drawn in page space, the camera, then callout, badge and caption in screen space."""
+    v = nd - hold
+    freeze = plan.get("freeze", False)
+    segs, sp, play, out_t = time_map(st, v, freeze)
+    rect = lambda name, late=True: (st["rects1"].get(name) or st["rects0"].get(name)) if late else (st["rects0"].get(name) or st["rects1"].get(name))
+    fill = lambda t: t.format(**{k.strip("{}"): x for k, x in subs.items()}) if t else t
+    ins, fc, i = [], [], 0
+
+    def add(path: Path, loop: float = 0.0) -> int:
+        nonlocal i
+        ins.extend((["-loop", "1", "-framerate", str(FPS), "-t", "%.3f" % loop] if loop else []) + ["-i", path]); i += 1
+        return i - 1
+
+    # base: the footage
+    if freeze:
+        still = WORK / ("still_%s.jpg" % bid)
+        run(ffmpeg(), "-y", "-ss", "%.3f" % max(0.0, st["t1"] - 0.15), "-i", raw, "-frames:v", "1", "-q:v", "2", still)
+        add(still, nd); fc.append("[0:v]format=yuv420p[base]")
+    else:
+        add(raw)
+        parts = ["[0:v]trim=start=%.3f:end=%.3f,setpts=(PTS-STARTPTS)/%.4f,fps=%d[s%d]" % (a, b, sp, FPS, k) for k, (a, b) in enumerate(segs)]
+        fc += parts
+        fc.append("%sconcat=n=%d:v=1:a=0,tpad=stop_mode=clone:stop_duration=%.3f,format=yuv420p[base]"
+                  % ("".join("[s%d]" % k for k in range(len(segs))), len(segs), max(0.0, nd - play)))
+    last = "[base]"
+
+    # camera path and the ring / callout segments
+    moves, rings, cos = [], [], []
+    cur = state
+    steps = [dict(at=0.0, cam=plan.get("cam"), camo=plan.get("camo", {}), dur=max(0.6, v - 0.04), ring=plan.get("ring"), ringpad=plan.get("ringpad", 10),
+                  co=plan.get("co"), has_ring=True, has_co=True)]
+    for m in plan.get("then", []):
+        steps.append(dict(m, has_ring="ring" in m, has_co="co" in m))
+    for m in steps:
+        at = m["at"]
+        if isinstance(at, str):
+            name, _, off = at.partition("+")
+            at = out_t(st["marks"][name] + float(off or 0)) if name in st["marks"] else 0.55 * v
+            at = min(at, max(0.0, v - 1.0))
+        else:
+            at = at * v
+        dur = m["dur"] if m is steps[0] else m["dur"] * v
+        target = m.get("cam")
+        r = rect(target) if target else None
+        if target and not r:
+            print("  %s: target %s not found on screen; the camera holds" % (bid, target))
+        cur = cam_state(r, m.get("camo", {}), cur, page_h) if (r or not target) else cur
+        moves.append((at, dur, cur))
+        if m["has_ring"]:
+            rings.append((at, m.get("ring"), m.get("ringpad", plan.get("ringpad", 10))))
+        if m["has_co"]:
+            cos.append((at, fill(m.get("co"))))
+    end_state = cur
+
+    # page-space overlays: rings (pulsing), then the cursor
+    for k, (ts, name, pad) in enumerate(rings):
+        if not name:
+            continue
+        te = rings[k + 1][0] if k + 1 < len(rings) else nd
+        r = rect(name)
+        if not r:
+            continue
+        w, h = r["w"] + 2 * pad, r["h"] + 2 * pad
+        x, y = (r["x"] - pad - 44) * K, (r["y"] - pad - 44) * K
+        idx = [add(pngs.ring(w, h, s)) for s in range(RING_STATES)]
+        cyc = [0, 1, 2, 3, 2, 1]
+        for s in range(RING_STATES):
+            on = "+".join("eq(floor(mod((t-%.3f)/0.27,6)),%d)" % (ts, j) for j, c in enumerate(cyc) if c == s)
+            fc.append("%s[%d:v]overlay=x=%.1f:y=%.1f:enable='between(t,%.3f,%.3f)*(%s)'[g%d_%d]" % (last, idx[s], x, y, ts, te, on, k, s))
+            last = "[g%d_%d]" % (k, s)
+    for n, c in enumerate(c for c in st["clicks"] if c.get("show") and not freeze):
+        tc = out_t(c["t"])
+        x1, y1 = c["x"] * K, c["y"] * K
+        x0, y0 = x1 + CUR_FROM[0] * K, y1 + CUR_FROM[1] * K
+        ts = max(0.0, tc - 0.6)
+        e = _smooth(ts, min(0.5, tc - ts), "t")
+        k = add(pngs.cursor())
+        fc.append("%s[%d:v]overlay=x='%.1f+(%.1f)*%s':y='%.1f+(%.1f)*%s':enable='between(t,%.3f,%.3f)'[cu%d]"
+                  % (last, k, x0, x1 - x0, e, y0, y1 - y0, e, ts, tc + 0.5, n))
+        last = "[cu%d]" % n
+
+    # camera: scale the whole captured page by the eased zoom and lay it on the screen at the eased offset
+    S, TX, TY = (_path(state, moves, i) for i in range(3))
+    fc.append("color=c=black:s=%dx%d:r=%d[bg]" % (W, H, FPS))
+    fc.append("%sscale=w='%d*(%s)':h='%d*(%s)':eval=frame:flags=bicubic[pg]" % (last, W, S, page_h, S))
+    fc.append("[bg][pg]overlay=x='%s':y='%s':eval=frame:shortest=1,format=yuv420p[cam]" % (TX, TY))
+    last = "[cam]"
+
+    # screen-space overlays: callouts, the product badge, the caption
+    for k, (ts, text) in enumerate(cos):
+        if not text:
+            continue
+        te = cos[k + 1][0] if k + 1 < len(cos) else nd
+        p = pngs.callout(text)
+        j = add(p, te - ts + 0.1)
+        fc.append("[%d:v]format=rgba,setpts=PTS+%.3f/TB,fade=t=in:st=%.3f:d=0.3:alpha=1[co%d]" % (j, ts, ts, k))
+        fc.append("%s[co%d]overlay=x='16-40*(1-%s)':y=10:enable='between(t,%.3f,%.3f)'[o%d]" % (last, k, _smooth(ts, 0.34, "t"), ts, te, k))
+        last = "[o%d]" % k
+    if plan.get("badge"):
+        b = badge_png(pngs.pw, plan["badge"]); bw, _ = png_size(b)
+        j = add(b)
+        fc.append("%s[%d:v]overlay=x=%d:y=44:enable='gte(t,0.15)'[bd]" % (last, j, W - bw - 48))
+        last = "[bd]"
+    cp = pngs.caption(caption); cw, ch = png_size(cp)
+    j = add(cp)
+    fc.append("%s[%d:v]overlay=x=%d:y=%d[fin]" % (last, j, (W - cw) // 2, H - 16 - ch))
+    run(ffmpeg(), "-y", *ins, "-filter_complex", ";".join(fc), "-map", "[fin]", "-t", "%.3f" % nd, "-r", str(FPS), "-an", "-c:v", "libx264",
+        "-pix_fmt", "yuv420p", "-crf", "18", "-preset", "veryfast", out)
+    return end_state
+
+
+def live_piece(pngs: Pngs, name: str, rows, durs, holds, texts, tl: dict, subs: dict, out: Path) -> Path:
+    """A piece of live scenes: one clip per beat, the camera carried from one to the next."""
+    clips, state = [], (1.0, 0.0, 0.0)
+    for (bid, _), nd, hold, cap in zip(rows, durs, holds, texts):
+        plan = LIVE_PLAN[bid]
+        sc = tl["scenes"][plan["src"][0]]
+        st = next(s for s in sc["steps"] if s["id"] == plan["src"])
+        clip = WORK / ("beat_%s.mp4" % bid)
+        state = beat_clip(pngs, bid, plan, st, FOOT / sc["file"], sc.get("page", [W, H])[1], nd, hold, cap, subs, state, clip)
+        clips.append(clip)
+    lst = WORK / ("list_%s.txt" % name)
+    lst.write_text("".join("file '%s'\n" % c for c in clips))
+    run(ffmpeg(), "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", out)
+    return out
 
 
 # ------------------------------------------------------------------ main
@@ -937,12 +893,9 @@ BRIDGE_BEFORE = "BCD"        # ease dashboard -> process slide -> Technician Upd
 
 def main():
     ap = argparse.ArgumentParser(description="Build the client demo video.")
-    ap.add_argument("--box", help="ssh alias of a running Brev instance: record the live scenes afresh "
-                                  "(otherwise they are re-timed from docs/demo/footage)")
     ap.add_argument("--slide-only", action="store_true", help="only the process-slide clip")
     ap.add_argument("--scene", help="build only these pieces, e.g. O or OE (for iteration)")
     ap.add_argument("--keep", help="copy each piece's mp4 into this directory")
-    ap.add_argument("--no-traffic", action="store_true", help="with --box: skip the warm-up traffic that fills Grafana")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     from playwright.sync_api import sync_playwright
@@ -967,87 +920,60 @@ def main():
                 return
 
         script = beats()
-        meta = json.loads((FOOTAGE / "beats.json").read_text())
-        subs = dict(meta["_subs"])
-        fwd, live_cfg = [], {}
-        try:
-            if args.box:
-                print("box: starting the recording UIs on a copy of the database")
-                ssh(args.box, BOX_UP)
-                fwd = forwards(args.box)
-                if not args.no_traffic:
-                    print("box: 100 s of mixed questions through /ask so Grafana has real data")
-                    ssh(args.box, TRAFFIC % 100)
-                n_safety, n_ask, n_open = live_counts(pw)
-                subs = {"{safety}": str(n_safety), "{ask_n}": str(n_ask), "{open}": str(n_open)}
-                live_cfg = live_scenes(dictation(), n_safety)
+        tl = load_timeline()
+        subs = dict(tl["subs"])
+        stale = check()
+        print("live footage: %s" % ("current, so no box is needed." if not stale else
+              "STALE for scene(s) %s - the app (or the Grafana dashboard, or what is typed into it) changed since it was captured.\n"
+              "  If the screen is unaffected: python scripts/demo_footage.py --restamp. Otherwise capture again on a box." % "".join(stale)))
 
-            def fill(t):
-                for k, v in subs.items():
-                    t = t.replace(k, v)
-                return t
-            slide_driven, _ = slide_html(pptx, driven=True)
-            (WORK / "slide_driven.html").write_text(slide_driven)
-            (WORK / "intro.html").write_text(intro_html())
-            (WORK / "value.html").write_text(value_html(subs))
-            (WORK / "comp.html").write_text(components_html())
-            (WORK / "end.html").write_text(end_html())
-            local = {"O": ((WORK / "intro.html").as_uri(), scene_O()),
-                     "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
-                     "V": ((WORK / "value.html").as_uri(), scene_V()),
-                     "E": ((WORK / "comp.html").as_uri(), scene_E()),
-                     "F": ((WORK / "end.html").as_uri(), scene_F())}
-            want = list(args.scene) if args.scene else [p[0] for p in PIECES]
-            parts, total = [], 0.0
-            for name, sc, ids in PIECES:
-                if name not in want:
-                    continue
-                rows = [r for r in script[sc] if ids is None or r[0] in ids]
-                files, vdur = zip(*[voice(fill(t)) for _, t in rows])
-                holds = [HOLD.get(i, 0.0) for i, _ in rows]
-                durs = [v + h for v, h in zip(vdur, holds)]
-                tail = 1.0 if name == "F" else 0.0
-                texts = [fill(t) for _, t in rows]
-                if name in LIVE and not args.box:
-                    vid = WORK / (name + "_v.mp4")
-                    retime(sc, [i for i, _ in rows], durs, holds, vid)
-                elif name in LIVE:
-                    url, plan, prep, ready = live_cfg[sc]
-                    vid = record(pw, name, url, texts, durs, [plan[int(i[1:]) - 1] for i, _ in rows], prep, tail, ready, holds)
-                else:
-                    url, plan = local[name]
-                    vid = record(pw, name, url, texts, durs, plan, None, tail, None, holds)
-                wins, t = [], 0.0
-                for (i, _), d in zip(rows, durs):
-                    if i in BADGES:
-                        wins.append((badge_png(pw, i), t + 0.15, t + d))
-                    t += d
-                shown = WORK / (name + "_b.mp4")
-                overlay_badges(vid, wins, shown)
-                wavf = WORK / (name + ".wav"); join_wavs(list(files), wavf, holds)
-                m = WORK / ("m_" + name + ".mp4"); mux(shown, wavf, sum(durs) + tail, m)
-                if name in BRIDGE_BEFORE and parts:
-                    br_clip = WORK / ("bridge_%s.mp4" % name)
-                    bridge(parts[-1], shown, br_clip)
-                    parts.append(br_clip); total += 0.5
-                parts.append(m)
-                total += sum(durs) + tail
-                print("piece %s: %d beats, %.1f s" % (name, len(rows), sum(durs) + tail))
-                if args.keep:
-                    Path(args.keep).mkdir(parents=True, exist_ok=True); shutil.copy(m, Path(args.keep) / ("piece_%s.mp4" % name))
-            if not args.scene:
-                final = OUT / "demo-preview.mp4"
-                concat(parts, final)
-                print("demo-preview.mp4: %.0f s total, %.1f MB" % (total, final.stat().st_size / 1e6))
-        finally:
-            for p in fwd:
-                p.terminate()
-            if args.box:
-                try:
-                    ssh(args.box, BOX_DOWN, timeout=60)
-                except Exception:
-                    pass
-
+        def fill(t):
+            for k, v in subs.items():
+                t = t.replace(k, v)
+            return t
+        slide_driven, _ = slide_html(pptx, driven=True)
+        (WORK / "slide_driven.html").write_text(slide_driven)
+        (WORK / "intro.html").write_text(intro_html())
+        (WORK / "value.html").write_text(value_html(subs))
+        (WORK / "comp.html").write_text(components_html())
+        (WORK / "end.html").write_text(end_html())
+        local = {"O": ((WORK / "intro.html").as_uri(), scene_O()),
+                 "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
+                 "V": ((WORK / "value.html").as_uri(), scene_V()),
+                 "E": ((WORK / "comp.html").as_uri(), scene_E()),
+                 "F": ((WORK / "end.html").as_uri(), scene_F())}
+        want = list(args.scene) if args.scene else [p[0] for p in PIECES]
+        pngs = Pngs(pw)
+        parts, total = [], 0.0
+        for name, sc, ids in PIECES:
+            if name not in want:
+                continue
+            rows = [r for r in script[sc] if ids is None or r[0] in ids]
+            files, vdur = zip(*[voice(fill(t)) for _, t in rows])
+            holds = [HOLD.get(i, 0.0) for i, _ in rows]
+            durs = [v + h for v, h in zip(vdur, holds)]
+            tail = 1.0 if name == "F" else 0.0
+            texts = [fill(t) for _, t in rows]
+            if name in LIVE:
+                shown = live_piece(pngs, name, rows, durs, holds, texts, tl, subs, WORK / (name + "_v.mp4"))
+            else:
+                url, plan = local[name]
+                shown = record(pw, name, url, texts, durs, plan, tail, holds)
+            wavf = WORK / (name + ".wav"); join_wavs(list(files), wavf, holds)
+            m = WORK / ("m_" + name + ".mp4"); mux(shown, wavf, sum(durs) + tail, m)
+            if name in BRIDGE_BEFORE and parts:
+                br_clip = WORK / ("bridge_%s.mp4" % name)
+                bridge(parts[-1], shown, br_clip)
+                parts.append(br_clip); total += 0.5
+            parts.append(m)
+            total += sum(durs) + tail
+            print("piece %s: %d beats, %.1f s" % (name, len(rows), sum(durs) + tail))
+            if args.keep:
+                Path(args.keep).mkdir(parents=True, exist_ok=True); shutil.copy(m, Path(args.keep) / ("piece_%s.mp4" % name))
+        if not args.scene:
+            final = OUT / "demo-preview.mp4"
+            concat(parts, final)
+            print("demo-preview.mp4: %.0f s total, %.1f MB" % (total, final.stat().st_size / 1e6))
 
 if __name__ == "__main__":
     try:

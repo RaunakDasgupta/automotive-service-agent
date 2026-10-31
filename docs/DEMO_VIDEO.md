@@ -70,6 +70,11 @@ EOF
 
 ## 3. Live-capture pre-flight (the part that makes or breaks it)
 
+**The capture is a one-off.** `scripts/demo_footage.py` records the app raw (4K, nothing drawn on it) and
+`scripts/make_demo_preview.py` does the rest offline, so rewording the script, changing the pacing, the zoom, the callouts or the
+cursor needs **no box**. Run `python scripts/demo_footage.py --check` first: it says whether what the app puts on screen has
+changed since the footage was recorded. Only if it has, use the checklist below on a fresh box and delete the box afterwards.
+
 - `bash scripts/stack.sh status` shows the three NIMs **routed** (not idle); `verify_answers.py --with-llm` passes.
 - **Warm the dashboards.** Prometheus counters are per-process: send ~10 minutes of questions through
   `POST /ask` on :8080, or Grafana reads *No data*. Record the Grafana clip afterwards.
