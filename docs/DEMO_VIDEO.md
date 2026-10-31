@@ -1,29 +1,65 @@
 # Client demo video — plan, script and tooling
 
-**Target length 2:00–2:15** (288 spoken words ≈ 1:55 at 150 wpm, plus ~15 s of silent live action; set the voice to ~160 wpm so each scene fits its window). **Audience:** a prospective client evaluating an
+**Target length 2:00–2:15.** **Audience:** a prospective client evaluating an
 AI assistant for a service department. **One idea:** *fast, grounded answers, running on your own GPU.*
 
-## 1. Script (narration for AI voice)
+## 1. Script — written to be cut, not read
 
-Bracketed `[N]` values are read off the live run, never invented. Every other number is already measured in the repo
-(source in §4).
+**Target 2:00–2:15.** 324 spoken words, voiced one beat at a time at ~190 wpm and timed so that **the picture
+changes on every beat (2–5 s) and something on screen is always moving**. Each beat is one short sentence; the
+generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
+length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
 
-| # | Time | Narration | On screen (live unless noted) |
-|---|---|---|---|
-| 1 | 0:00–0:18 | In a busy service department, the truth lives in shift updates nobody has time to read. Safety findings, parts holds and missed promises stay buried until a customer complains. This is the Automotive Service Operations Intelligence Agent: voice and text updates in, a live picture of every repair order out. | **Dashboard** with the KPI tiles (open ROs, safety, promise missed, blocked) and the "needs a decision" table |
-| 2 | 0:18–0:36 | A technician speaks or types an update. NVIDIA Riva Parakeet transcribes it. A Nemotron model extracts the facts. Python checks every one against the catalogue, folds it into an event log, and derives the state of the repair order. Nothing is guessed, and every answer cites its records. | **Deck slide 2, "From a shop-floor update to a decision"**: five stages build left to right in ~8 s on entry (no click), each with its NVIDIA/not-NVIDIA badge, then the three business figures |
-| 3 | 0:36–0:58 | Live: a technician dictates that the front pads measure one point eight millimetres against a three millimetre minimum. The system matches the repair order, flags it unsafe to release, and shows exactly what changed. | **Technician Update** tab: upload/play the dictation → transcript → "Extract and apply" → diff card with the safety flag |
-| 4 | 0:58–1:22 | Now the manager asks which vehicles cannot be released on safety grounds. [N] repair orders, each cited, in a tenth of a second, with no model call. A free-text question, like a whistling noise on a Passat, searches by meaning and is written up by the model in about three and a half seconds. | **Manager Assistant**: the safety question (answer + `Tools: … Sources: RO-…` footer), then the whistling question. Keep the 3.5 s wait **in real time** — it is the proof |
-| 5 | 1:22–1:46 | Three NVIDIA NIM microservices run on a single L40S: Nemotron for language, an embedding model and a reranker for search. NVIDIA-hosted Riva handles speech. NeMo Guardrails stops unsafe requests before any tool runs. NeMo Evaluator scores every release, and DCGM streams live GPU telemetry into Grafana. | Component strip lighting up in order, then **Grafana** (GPU util spiking on the semantic query) and **Attu** (`FloatVector(1024)`, 1,690 entities) |
-| 6 | 1:46–2:12 | Why it matters. The models run on your own GPU, so the answer path never depends on a hosted endpoint that can be retired. One card carries the whole stack. Answers are reproducible, every figure is checked against the records, and every call is measured. Fast, grounded, and yours to run. Let's talk about your shop. | Four proof cards (see §4), then end card: title, contact, "NVIDIA NIM · Riva · NeMo · DCGM" |
+What the reference video (Deloitte's 62-second FastForward EX preview) teaches, and this script copies:
+a cut about every 2.7 s (22 cuts in 62 s); a **keyword callout that lands on the word being spoken**
+("Cloud-based", "Quick to implement"); subtitles burned into every shot; camera drift on every shot; a persona
+or product shot at the open and the close; nothing held still. Narration there runs ~150 wpm *without gaps*.
+
+| beat | narration (read aloud) | on screen |
+|---|---|---|
+| A1 | In every service department, the risk hides between shifts. | Dashboard, slow push-in across the KPI tiles |
+| A2 | A safety finding sits in a technician's note that nobody has time to read. | Camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
+| A3 | A part is on hold. A promised time has slipped. Customers wait while managers chase. | Pan across the *Promise missed* and *Blocked* tiles; callout **Missed promises** |
+| A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe** |
+| A5 | This is the Automotive Service Operations Intelligence Agent. | Pull back to the full dashboard; callout **NVIDIA-powered** |
+| A6 | Voice and text updates in. Decisions out. | Slide to the process scene |
+| B1 | A technician speaks or types an update at the bay. | Process slide: stage 1 builds, camera on it; callout **Capture** |
+| B2 | NVIDIA Riva transcribes it, and a Nemotron model extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
+| B3 | Code then checks every fact against the catalogue. Nothing is guessed. | Stage 3; callout **Verify** |
+| B4 | Each update joins an audit trail, and every order's state is derived from it. | Stage 4; callout **Record** |
+| B5 | So a manager simply asks, and gets a cited answer. | Stage 5, then the three business figures count up; callout **Decide** |
+| C1 | Watch. A technician logs a measurement: the front pads are one point eight millimetres thick. | Technician Update, fields fill, camera on the measurement fields; callout **1.8 mm** |
+| C2 | The minimum is three. | Spec minimum fills; callout **min 3.0 mm** |
+| C3 | One click. | Cursor to the button, ring and ripple |
+| C4 | The system matches the repair order and flags it unsafe to release, instantly. | Zoom on the `SAFETY_RELATED` line, highlight; callout **Flagged unsafe** |
+| C5 | Every change is shown, so nothing is logged twice, or missed. | Camera pans down the diff card |
+| D1 | Now the manager asks the question that matters. | Manager Assistant, camera on the question box |
+| D2 | Which vehicles cannot be released on safety grounds? | The question types out at speaking pace |
+| D3 | {ask_n} vehicles. Every one cited. Answered in a tenth of a second, with no model call. | Zoom on the answer and the `Tools: … Sources:` line; callout **0.1 s · no model call** |
+| D4 | Not a guess. A calculation, with the records it came from. | Slow pan along the sources |
+| E1 | Three NVIDIA NIM microservices run on a single L40S GPU. | Component page: three chips pop in; callout **1 GPU** |
+| E2 | Nemotron for language. An embedding model and a reranker for search. | The three chips highlight in turn |
+| E3 | Riva handles speech. NeMo Guardrails stops unsafe requests before any tool runs. | Riva and Guardrails chips land |
+| E4 | NeMo Evaluator scores every release. | Evaluator chip |
+| E5 | And DCGM streams live GPU telemetry into Grafana. | Grafana still, zoom to the 90.9 % tile, then the GPU panel |
+| E6 | Search vectors live in Milvus, fully inspectable. | Attu still, zoom on `vector FloatVector(1024)` |
+| E7 | Only speech recognition uses NVIDIA's hosted service. | Riva chip tagged *hosted* |
+| F1 | Why it matters. | Title |
+| F2 | Your models run on your own GPU, so there is no hosted endpoint to retire underneath you. | Card 1 flies in |
+| F3 | The whole stack runs in about thirty gigabytes of a forty-six gigabyte card. | Card 2 |
+| F4 | Every answer is reproducible, every figure is checked, and every call is measured. | Cards 3 and 4 |
+| F5 | Fast. Grounded. Yours to run. | Large type |
+| F6 | Let's talk about your shop. | End card |
 
 ```bash
-# word count of the narration column (currently 288)
+# beats, words, and the speaking time they imply at 190 wpm
 python3 - <<'EOF'
 import re
+t = 0
 for l in open("docs/DEMO_VIDEO.md"):
-    m = re.match(r"\| (\d) \| [\d:–]+ \| (.+?) \| ", l)
-    if m: print(m.group(1), len(m.group(2).split()))
+    m = re.match(r"\| ([A-F]\d) \| (.+?) \| ", l)
+    if m: t += len(m.group(2).split())
+print(t, "words =", round(t / 190 * 60), "s of speech at 190 wpm")
 EOF
 ```
 
