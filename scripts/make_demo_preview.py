@@ -38,8 +38,11 @@ sys.path[:0] = [str(ROOT / "scripts"), str(ROOT)]
 OUT = ROOT / "docs" / "demo"
 WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
 W, H, FPS = 1920, 1080, 30
-GAP = 0.12                       # silence after each beat's voice
-TEMPO = 1.10                     # speech speed-up (pitch preserved)
+GAP = 0.30                       # silence after each beat's voice
+TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
+# seconds a key visual is held, still, after its line has been spoken, so it can be read
+HOLD = {"A4": 0.8, "B5": 1.0, "C3": 0.6, "C4": 1.2, "D3": 1.0, "D4": 0.6, "D6": 1.2,
+        "E1": 0.7, "E5": 0.8, "G1": 0.9, "G2": 0.9, "H1": 1.3}
 TTS_CACHE = Path.home() / ".cache" / "asoia-demo-tts"
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
@@ -72,13 +75,15 @@ def beats():
 
 
 # ------------------------------------------------------------------ voice
-_voice_cache: dict[str, tuple[Path, float]] = {}
+_voice_cache: dict[tuple, tuple[Path, float]] = {}
 
 
-def voice(text: str) -> tuple[Path, float]:
-    """Voice one beat, speed it up, and pad it with GAP. Returns (wav, seconds)."""
-    if text in _voice_cache:
-        return _voice_cache[text]
+def voice(text: str, tempo: float | None = None, gap: float | None = None) -> tuple[Path, float]:
+    """Voice one beat at `tempo`, padded with `gap`. Returns (wav, seconds)."""
+    tempo, gap = tempo or TEMPO, GAP if gap is None else gap
+    key = (text, tempo, gap)
+    if key in _voice_cache:
+        return _voice_cache[key]
     import _env  # noqa: F401  - .env like stack.sh; the key is never printed
     import hashlib
     cached = TTS_CACHE / (hashlib.sha1((VOICE + text).encode()).hexdigest()[:16] + ".pcm")
@@ -103,19 +108,21 @@ def voice(text: str) -> tuple[Path, float]:
     raw, fast = WORK / ("raw%d.wav" % n), WORK / ("beat%d.wav" % n)
     with wave.open(str(raw), "wb") as w:
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(cached.read_bytes())
-    run(ffmpeg(), "-y", "-i", raw, "-filter:a", "atempo=%.3f,apad=pad_dur=%.3f" % (TEMPO, GAP), "-ar", RATE, "-ac", 1, fast)
+    run(ffmpeg(), "-y", "-i", raw, "-filter:a", "atempo=%.3f,apad=pad_dur=%.3f" % (tempo, gap), "-ar", RATE, "-ac", 1, fast)
     with wave.open(str(fast)) as w:
         dur = w.getnframes() / w.getframerate()
-    _voice_cache[text] = (fast, dur)
+    _voice_cache[key] = (fast, dur)
     return fast, dur
 
 
-def join_wavs(paths, out: Path):
+def join_wavs(paths, out: Path, holds=None):
     with wave.open(str(out), "wb") as o:
         o.setnchannels(1); o.setsampwidth(2); o.setframerate(RATE)
-        for p in paths:
+        for i, p in enumerate(paths):
             with wave.open(str(p)) as w:
                 o.writeframes(w.readframes(w.getnframes()))
+            if holds and holds[i]:
+                o.writeframes(b"\0\0" * int(RATE * holds[i]))
 
 
 # ------------------------------------------------------------------ the slide, from its own XML
@@ -304,28 +311,104 @@ def inject(page):
 
 
 # ------------------------------------------------------------------ html scenes
+# ------------------------------------------------------------------ logos
+LOGO_URLS = {"nvidia": "https://upload.wikimedia.org/wikipedia/sco/2/21/Nvidia_logo.svg",
+             "grafana": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Grafana_logo.svg",
+             "milvus": "https://cdn.simpleicons.org/milvus"}
+LOGO_CACHE = Path.home() / ".cache" / "asoia-demo-logos"
+
+
+def logo(name: str) -> str:
+    """A product logo as a data URI. Fetched once from the project's public brand assets into
+    ~/.cache/asoia-demo-logos (third-party marks are not committed to this repository)."""
+    f = LOGO_CACHE / (name + ".svg")
+    if not f.exists():
+        import urllib.request
+        LOGO_CACHE.mkdir(parents=True, exist_ok=True)
+        req = urllib.request.Request(LOGO_URLS[name], headers={"User-Agent": "Mozilla/5.0 (demo-video build)"})
+        f.write_bytes(urllib.request.urlopen(req, timeout=30).read())
+    import base64
+    return "data:image/svg+xml;base64," + base64.b64encode(f.read_bytes()).decode()
+
+
+# pictograms, drawn here: simple line icons in NVIDIA green
+IC = {
+    "chat": '<svg viewBox="0 0 64 64"><path d="M8 10h48a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H30L16 58V46H8a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z" fill="none" stroke="#76B900" stroke-width="4" stroke-linejoin="round"/><circle cx="22" cy="28" r="3.5" fill="#76B900"/><circle cx="34" cy="28" r="3.5" fill="#76B900"/><circle cx="46" cy="28" r="3.5" fill="#76B900"/></svg>',
+    "search": '<svg viewBox="0 0 64 64"><circle cx="26" cy="26" r="16" fill="none" stroke="#76B900" stroke-width="4"/><path d="M38 38l18 18" stroke="#76B900" stroke-width="5" stroke-linecap="round"/><circle cx="20" cy="24" r="2.6" fill="#76B900"/><circle cx="30" cy="20" r="2.6" fill="#76B900"/><circle cx="27" cy="31" r="2.6" fill="#76B900"/></svg>',
+    "rank": '<svg viewBox="0 0 64 64"><path d="M8 14h40M8 30h30M8 46h20" stroke="#76B900" stroke-width="6" stroke-linecap="round"/><path d="M52 52V22m-8 8l8-10 8 10" fill="none" stroke="#76B900" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    "wave": '<svg viewBox="0 0 64 64"><path d="M8 32v0M16 22v20M24 12v40M32 24v16M40 16v32M48 26v12M56 32v0" stroke="#76B900" stroke-width="5" stroke-linecap="round"/></svg>',
+    "shield": '<svg viewBox="0 0 64 64"><path d="M32 5l22 8v17c0 14-9 24-22 29C19 54 10 44 10 30V13z" fill="none" stroke="#76B900" stroke-width="4" stroke-linejoin="round"/><path d="M22 32l7 7 14-15" fill="none" stroke="#76B900" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    "gauge": '<svg viewBox="0 0 64 64"><path d="M10 46a24 24 0 1 1 44 0" fill="none" stroke="#76B900" stroke-width="5" stroke-linecap="round"/><path d="M32 42l12-16" stroke="#76B900" stroke-width="5" stroke-linecap="round"/><circle cx="32" cy="42" r="4" fill="#76B900"/><path d="M14 56h36" stroke="#76B900" stroke-width="4" stroke-linecap="round"/></svg>',
+}
+
+
+def intro_html() -> str:
+    notes = [("C/S grinding from the front under braking", 150, 200, -4, "0"),
+             ("Front pads 1.8 mm. Spec min 3.0.", 760, 150, 3, "1"),
+             ("Waiting on parts: 45022-K4A-B80", 1290, 240, -2, "2"),
+             ("Promised 17:00. Customer ringing again.", 330, 520, 2, "3"),
+             ("Handover: see notes on the bench", 980, 570, -3, "4")]
+    cards = "".join('<div class=note id=n%s style="left:%dpx;top:%dpx;--r:%ddeg">%s</div>' % (i, x, y, r, t) for t, x, y, r, i in notes)
+    return """<!doctype html><meta charset=utf-8><style>
+body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;
+ background:radial-gradient(circle at 30% 20%,#1d4d3f 0%,#0d201b 70%)}
+.grid{position:absolute;inset:-120px;background-image:linear-gradient(rgba(118,185,0,.10) 2px,transparent 2px),linear-gradient(90deg,rgba(118,185,0,.10) 2px,transparent 2px);background-size:120px 120px;animation:drift 6s linear infinite}
+@keyframes drift{to{transform:translate(120px,120px)}}
+.note{position:absolute;width:520px;padding:26px 30px;box-sizing:border-box;background:#F4F1E4;color:#262626;font:600 32px/1.3 'Courier New',monospace;border-radius:6px;box-shadow:0 20px 44px rgba(0,0,0,.5);opacity:0;transform:rotate(var(--r))}
+#stamp{position:absolute;left:1010px;top:110px;width:210px;height:210px;border:12px solid #E5352B;border-radius:50%;color:#E5352B;font:900 38px/186px Arial;text-align:center;transform:rotate(-14deg);opacity:0;letter-spacing:2px;background:rgba(244,241,228,.0)}
+#head{position:absolute;left:0;right:0;top:845px;text-align:center;font:700 86px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}
+#head u{text-decoration:none;color:#76B900}
+#logo{position:absolute;left:70px;top:44px;height:64px;background:#fff;padding:12px 26px;border-radius:14px;box-sizing:content-box}
+</style><div class=grid></div><img id=logo src="@NV@">@CARDS@<div id=stamp>SAFETY</div>
+<div id=head>The risk hides <u>between shifts.</u></div>
+<script>const $=id=>document.getElementById(id);
+const fly=(e,from,d,dur)=>e.animate([{opacity:0,transform:'translate('+from[0]+'px,'+from[1]+'px) rotate(var(--r)) scale(.9)'},{opacity:1,transform:'rotate(var(--r))'}],{duration:dur||520,delay:d,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});
+window.__go=ms=>{const F=[[-700,-200],[0,-600],[700,-300],[-600,500],[700,600]];
+ for(let i=0;i<5;i++) fly($('n'+i),F[i],i*ms*0.08);
+ $('head').animate([{opacity:0,transform:'translateY(60px)'},{opacity:1,transform:'none'}],{duration:620,delay:ms*0.30,fill:'forwards',easing:'cubic-bezier(.2,.8,.2,1)'});
+ $('stamp').animate([{opacity:0,transform:'rotate(-14deg) scale(2.4)'},{opacity:1,transform:'rotate(-14deg) scale(1)'}],{duration:300,delay:ms*0.58,fill:'forwards',easing:'cubic-bezier(.3,1.4,.5,1)'});
+ $('n1').animate([{boxShadow:'0 20px 44px rgba(0,0,0,.5)'},{boxShadow:'0 0 0 10px rgba(229,53,43,.8),0 0 60px rgba(229,53,43,.9)'}],{duration:500,delay:ms*0.58,fill:'forwards'});};
+</script>""".replace("@NV@", logo("nvidia")).replace("@CARDS@", cards)
+
+
 def components_html() -> str:
-    left = [("NIM · Nemotron 8B", "language"), ("NIM · Embedding", "search"), ("NIM · Reranking", "search")]
-    right = [("Riva · Parakeet ASR", "speech"), ("NeMo Guardrails", "safety rails"), ("NeMo Evaluator", "release scoring")]
-    chips = "".join('<div class=chip id=chip%d style="left:%dpx;top:%dpx"><b>%s</b><i>%s</i></div>'
-                    % (i, 120 if i < 3 else 1000, 340 + (i % 3) * 170, a, b) for i, (a, b) in enumerate(left + right))
+    tiles = [("t0", "chat", "Nemotron 8B", "language"), ("t1", "search", "Embedding", "search"), ("t2", "rank", "Reranking", "search")]
+    t_html = "".join('<div class=tile id=%s><div class=ic>%s</div><b>%s</b><i>%s</i><span>NIM</span></div>' % (i, IC[ic], a, b) for i, ic, a, b in tiles)
+    cards = [("c0", "wave", "Riva", "Speech to text, for spoken updates"), ("c1", "shield", "NeMo Guardrails", "Stops unsafe requests before any tool runs"),
+             ("c2", "gauge", "NeMo Evaluator", "Scores every release against the baseline")]
+    c_html = "".join('<div class=card id=%s><div class=ic2>%s</div><div class=tx><img src="@NV@"><b>%s</b><i>%s</i></div></div>' % (i, IC[ic], a, b) for i, ic, a, b in cards)
     return """<!doctype html><meta charset=utf-8><style>
 :root{--co-x:1430px;--co-y:50px}
-body{margin:0;width:1920px;height:1080px;background:#14302A;font-family:Arial,sans-serif;color:#fff;overflow:hidden;position:relative}
-h1{position:absolute;left:120px;top:70px;margin:0;font-size:58px}p.sub{position:absolute;left:120px;top:150px;margin:0;font-size:28px;color:#C8D6BE}
-.chip{position:absolute;width:760px;height:128px;border-radius:14px;background:#5B8C3A;border:2px solid #446B29;opacity:0;padding:22px 30px;box-sizing:border-box}
-.chip b{font-size:42px;display:block}.chip i{font-size:26px;color:#DCE8CF;font-style:normal}
-.chip em{position:absolute;right:20px;top:20px;background:#C1562A;font-size:24px;font-style:normal;padding:4px 16px;border-radius:14px}
-.col{position:absolute;top:262px;font-size:24px;letter-spacing:3px;color:#8FC24A}
-</style><h1>NVIDIA at every step that needs a model</h1><p class=sub>One L40S carries the whole stack</p>
-<div class=col style="left:120px">LANGUAGE AND SEARCH</div><div class=col style="left:1000px">SPEECH, SAFETY AND RELEASE</div>
-%s
+body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;background:radial-gradient(circle at 25% 15%,#1d4d3f 0%,#0d201b 75%)}
+#logo{position:absolute;left:80px;top:44px;height:64px;background:#fff;padding:12px 26px;border-radius:14px;box-sizing:content-box}
+h1{position:absolute;left:520px;top:62px;margin:0;font-size:52px}
+#gpu{position:absolute;left:90px;top:200px;width:860px;height:600px;opacity:0}
+.chip{position:absolute;left:40px;top:30px;width:780px;height:420px;border:6px solid #76B900;border-radius:26px;background:#10261f;box-shadow:0 0 60px rgba(118,185,0,.25)}
+.pins{position:absolute;left:70px;top:14px;width:720px;height:20px;background:repeating-linear-gradient(90deg,#76B900 0 10px,transparent 10px 40px)}
+.pins.b{top:446px}
+.lab{position:absolute;left:70px;top:60px;font:700 30px Arial;color:#76B900;letter-spacing:4px}
+.tile{position:absolute;top:120px;width:220px;height:260px;border-radius:16px;background:#1b3a30;border:2px solid #2f6a4a;text-align:center;opacity:0}
+.tile .ic{width:84px;height:84px;margin:26px auto 8px}.tile b{display:block;font-size:30px}.tile i{display:block;font:22px Arial;color:#BFD6B0;font-style:normal}
+.tile span{position:absolute;right:12px;top:10px;background:#76B900;color:#0d201b;font:700 16px Arial;padding:2px 9px;border-radius:9px}
+#t0{left:80px}#t1{left:340px}#t2{left:600px}
+#vr{position:absolute;left:40px;top:535px;width:780px;opacity:0}
+#vr .l{font:600 26px Arial;color:#C8D6BE;margin-bottom:10px;display:flex;justify-content:space-between}
+#vr .tr{height:34px;border-radius:17px;background:#1b3a30;overflow:hidden;border:2px solid #2f6a4a}#vf{height:100%;width:0;background:linear-gradient(90deg,#4d8a00,#76B900)}
+.card{position:absolute;left:1010px;width:820px;height:200px;border-radius:20px;background:#fff;color:#142019;opacity:0;box-shadow:0 18px 40px rgba(0,0,0,.4);border-left:16px solid #76B900}
+#c0{top:200px}#c1{top:430px}#c2{top:660px}
+.ic2{position:absolute;left:36px;top:46px;width:108px;height:108px;background:#EEF6DF;border-radius:22px;padding:18px;box-sizing:border-box}
+.tx{position:absolute;left:176px;top:26px;right:30px}.tx img{height:54px;display:block;margin:-8px 0 6px -4px}.tx b{display:block;font-size:42px}.tx i{display:block;font:28px/1.25 Arial;color:#4b5b50;font-style:normal;margin-top:6px}
+.tag{position:absolute;right:24px;top:24px;background:#C1562A;color:#fff;font:700 24px Arial;padding:5px 18px;border-radius:16px}
+</style><img id=logo src="@NV@"><h1>at every step that needs a model</h1>
+<div id=gpu><div class=chip><div class=pins></div><div class="pins b"></div><div class=lab>NVIDIA L40S</div>@TILES@</div>
+ <div id=vr><div class=l><span>GPU memory in use</span><span>about 30 GB of 46 GB</span></div><div class=tr><div id=vf></div></div></div></div>
+@CARDS@
 <script>const $=id=>document.getElementById(id);
-const pop=e=>e.animate([{opacity:0,transform:'translateX(-50px) scale(.94)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
-window.__chip=i=>pop($('chip'+i));
-window.__pulse=i=>$('chip'+i).animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.06)',filter:'brightness(1.25)'},{transform:'scale(1)',filter:'brightness(1)'}],{duration:520});
-window.__tag=i=>{const t=document.createElement('em');t.textContent='hosted';$('chip'+i).appendChild(t);};
-</script>""" % chips
+const show=(e,d)=>e.animate([{opacity:0,transform:'translateY(46px) scale(.94)'},{opacity:1,transform:'none'}],{duration:d||480,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
+window.__show=id=>show($(id));window.__vram=()=>{show($('vr'));$('vf').animate([{width:'0%'},{width:'65%'}],{duration:1200,fill:'forwards',easing:'ease-out'});};
+window.__pulse=id=>$(id).animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.09)',filter:'brightness(1.35)'},{transform:'scale(1)',filter:'brightness(1)'}],{duration:640});
+window.__tag=id=>{const t=document.createElement('div');t.className='tag';t.textContent='hosted';$(id).appendChild(t);t.animate([{opacity:0,transform:'scale(.4)'},{opacity:1,transform:'none'}],{duration:320});};
+</script>""".replace("@NV@", logo("nvidia")).replace("@TILES@", t_html).replace("@CARDS@", c_html.replace("@NV@", logo("nvidia")))
 
 
 def end_html() -> str:
@@ -433,7 +516,7 @@ def live_counts(pw):
 
 
 # ------------------------------------------------------------------ recording
-def record(pw, name: str, url: str, texts, durs, plan, prep=None, tail=0.0, ready=None) -> Path:
+def record(pw, name: str, url: str, texts, durs, plan, prep=None, tail=0.0, ready=None, holds=None) -> Path:
     """Record one scene. `plan[i]` is the choreography dict for beat i; it runs in real time,
     each beat starting at the running total of the voiced durations before it."""
     vdir = WORK / ("v_" + name)
@@ -457,7 +540,7 @@ def record(pw, name: str, url: str, texts, durs, plan, prep=None, tail=0.0, read
         began = time.perf_counter()
         segs.append((time.time() - t_ctx, d + (tail if i == len(plan) - 1 else 0.0)))
         co = b["co"](page) if callable(b.get("co")) else b.get("co")
-        page.evaluate("b => window.__beat(b)", {"cap": text, "ms": int(d * 1000) - 40, "cam": b.get("cam"),
+        page.evaluate("b => window.__beat(b)", {"cap": text, "ms": int((d - (holds[i] if holds else 0.0)) * 1000) - 40, "cam": b.get("cam"),
                                                  "camo": b.get("camo"), "ring": b.get("ring"),
                                                  "ringpad": b.get("ringpad"), "co": co})
         if b.get("act"):
@@ -490,6 +573,56 @@ def concat(parts, out: Path):
     lst.write_text("".join("file '%s'\n" % p for p in parts))
     run(ffmpeg(), "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c:v", "libx264", "-crf", "27", "-preset", "slow",
         "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", out)
+
+
+# ------------------------------------------------------------------ logo badges and re-timed footage
+BADGES = {"C2": (["nvidia"], "Riva · speech to text"), "C3": (["nvidia"], "Nemotron 8B · NIM"),
+          "D6": (["nvidia"], "NIM · embed + rerank"), "G1": (["nvidia", "grafana"], "DCGM telemetry"),
+          "G2": (["nvidia", "grafana"], "DCGM + Grafana"), "H1": (["milvus"], "Milvus vector store")}
+FOOTAGE = ROOT / "docs" / "demo" / "footage"
+
+
+def badge_png(pw, key: str) -> Path:
+    """A white pill with the product logo(s) and a label, on a transparent background."""
+    logos, label = BADGES[key]
+    imgs = '<span class=p>+</span>'.join('<img src="%s">' % logo(n) for n in logos)
+    out = WORK / ("badge_%s.png" % key)
+    br = pw.chromium.launch(); pg = br.new_page(viewport={"width": 900, "height": 200})
+    pg.set_content("""<style>body{margin:0;background:transparent}#b{display:inline-flex;align-items:center;gap:18px;background:#fff;padding:14px 26px;border-radius:16px;
+      font:700 30px Arial;color:#142019;box-shadow:0 8px 26px rgba(0,0,0,.35)}#b img{height:42px}.p{font:700 30px Arial;color:#888}</style>
+      <div id=b>%s<span>%s</span></div>""" % (imgs, label))
+    pg.locator("#b").screenshot(path=str(out), omit_background=True)
+    br.close()
+    return out
+
+
+def overlay_badges(video: Path, wins, out: Path):
+    """wins: [(png, start, end)] - show each badge top-right during its beat."""
+    if not wins:
+        shutil.copy(video, out); return
+    ins, chain, last = [], [], "[0:v]"
+    for k, (png, a, b) in enumerate(wins, 1):
+        ins += ["-i", png]
+        chain.append("%s[%d:v]overlay=x=W-w-48:y=44:enable='between(t,%.3f,%.3f)'[o%d]" % (last, k, a, b, k))
+        last = "[o%d]" % k
+    run(ffmpeg(), "-y", "-i", video, *ins, "-filter_complex", ";".join(chain), "-map", last, "-c:v", "libx264",
+        "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "veryfast", "-an", out)
+
+
+def retime(scene: str, first: int, new_durs, holds, out: Path):
+    """Re-time recorded footage: stretch each beat's shot to its new (slower) length, then freeze its last frame for the hold."""
+    old = json.loads((FOOTAGE / "beats.json").read_text())[scene]
+    offs = [sum(old[:i]) for i in range(len(old))]
+    parts, labels = [], []
+    for k, (nd, h) in enumerate(zip(new_durs, holds)):
+        i = first + k
+        f = (nd - h) / old[i]
+        assert f > 0.9, "beat %s%d would have to be sped up (x%.2f); re-record it" % (scene, i + 1, 1 / f)
+        parts.append("[0:v]trim=start=%.3f:end=%.3f,setpts=(PTS-STARTPTS)*%.4f,fps=%d,tpad=stop_mode=clone:stop_duration=%.3f,scale=%d:%d[v%d]"
+                     % (offs[i], offs[i] + old[i], f, FPS, h, W, H, k))
+        labels.append("[v%d]" % k)
+    run(ffmpeg(), "-y", "-i", FOOTAGE / (scene + ".mp4"), "-filter_complex", ";".join(parts) + ";" + "".join(labels) + "concat=n=%d:v=1:a=0[v]" % len(labels),
+        "-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "veryfast", "-an", out)
 
 
 # ------------------------------------------------------------------ small page helpers
@@ -638,30 +771,39 @@ def scene_D():
             dict(cam=None, camo=dict(to=1.05), co="", act=d6)]
 
 
+def scene_O():
+    return [dict(cam=None, camo=dict(to=1.07), act=lambda page, d: page.evaluate("ms => window.__go(ms)", int(d * 1000)))]
+
+
 def scene_E():
-    def pop(*idx):
+    def seq(*ids, share=0.2):
         def f(page, d):
-            for k, i in enumerate(idx):
-                page.evaluate("i => window.__chip(i)", i)
-                if k < len(idx) - 1:
-                    page.wait_for_timeout(int(d * 1000 * 0.22))
+            for k, i in enumerate(ids):
+                page.evaluate("i => window.__show(i)", i)
+                if k < len(ids) - 1:
+                    page.wait_for_timeout(int(d * 1000 * share))
         return f
 
-    def pulse(*idx):
-        def f(page, d):
-            for i in idx:
-                page.evaluate("i => window.__pulse(i)", i)
-                page.wait_for_timeout(int(d * 1000 / len(idx)))
-        return f
+    def e1(page, d):
+        page.evaluate("() => window.__show('gpu')")
+        for k, i in enumerate(("t0", "t1", "t2")):
+            page.wait_for_timeout(int(d * 1000 * 0.16))
+            page.evaluate("i => window.__show(i)", i)
+        page.wait_for_timeout(int(d * 1000 * 0.12))
+        page.evaluate("() => window.__vram()")
 
-    def hosted(page, d):
-        page.evaluate("() => window.__tag(3)")
-    L = [{"sel": "#chip%d" % i} for i in range(3)]
-    return [dict(cam=L, camo=dict(max=1.4, pad=120), co="1 GPU", act=pop(0, 1, 2)),
-            dict(cam=L, camo=dict(max=1.25, pad=140), act=pulse(0, 1, 2)),
-            dict(cam=[{"sel": "#chip3"}, {"sel": "#chip4"}], camo=dict(max=1.5, pad=120), act=pop(3, 4)),
-            dict(cam={"sel": "#chip3"}, camo=dict(max=2.0, pad=300), ring={"sel": "#chip3"}, ringpad=6, act=hosted),
-            dict(cam={"sel": "#chip5"}, camo=dict(max=2.0, pad=300), ring={"sel": "#chip5"}, ringpad=6, act=pop(5))]
+    def e2(page, d):
+        for i in ("t0", "t1", "t2"):
+            page.evaluate("i => window.__pulse(i)", i)
+            page.wait_for_timeout(int(d * 1000 / 3))
+
+    GPU = {"sel": "#gpu"}
+    return [dict(cam=GPU, camo=dict(max=1.25, pad=90), co="1 GPU", act=e1),
+            dict(cam={"sel": ".chip"}, camo=dict(max=1.45, pad=90), act=e2),
+            dict(cam=[{"sel": "#c0"}, {"sel": "#c1"}], camo=dict(max=1.4, pad=90), act=seq("c0", "c1", share=0.42)),
+            dict(cam={"sel": "#c0"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c0"}, ringpad=6,
+                 act=lambda page, d: page.evaluate("() => window.__tag('c0')")),
+            dict(cam={"sel": "#c2"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c2"}, ringpad=6, act=seq("c2"))]
 
 
 def scene_G():
@@ -716,14 +858,50 @@ def scene_F():
             dict(cam=None, camo=dict(to=1.0), act=lambda page, d: page.evaluate("() => window.__end()"))]
 
 
+def live_scenes(wav: Path, n_safety: int):
+    """Choreography, URLs and page preparation for the scenes recorded from the running box."""
+    wait = lambda text: (lambda page: page.get_by_text(text).first.wait_for(timeout=120000))
+    ready_c = lambda page: page.get_by_label("Measurement").wait_for(timeout=120000)
+    graf = "http://127.0.0.1:3000/d/asoia/service-operations-agent?kiosk&from=now-30m&to=now&refresh=10s"
+
+    def prep_c(page):
+        choose(page, 0, text="08084")
+        choose(page, 1, idx=1)
+        page.get_by_text("Parts Hold").first.wait_for(timeout=15000)
+
+    def prep_h(page):
+        page.get_by_role("button", name="Connect").click()
+        page.get_by_text("default", exact=True).first.click()
+        page.get_by_text("updates").first.click()
+        page.get_by_text("FloatVector(1024)").first.wait_for(timeout=30000)
+
+    def ready_g(page):
+        page.get_by_text("GPU utilisation and framebuffer").first.wait_for(timeout=120000)
+        page.wait_for_timeout(4500)
+
+    return {"A": ("http://127.0.0.1:7871", scene_A(n_safety), None, wait("Open repair orders")),
+            "C": ("http://127.0.0.1:7872", scene_C(wav), prep_c, ready_c),
+            "D": ("http://127.0.0.1:7873", scene_D(), None, wait("Try these")),
+            "G": (graf, scene_G(), None, ready_g),
+            "H": ("http://127.0.0.1:8101/#/connect", scene_H(), prep_h,
+                  lambda page: page.get_by_role("button", name="Connect").wait_for(timeout=60000))}
+
+
 # ------------------------------------------------------------------ main
+# (output piece, script scene, first beat, end beat): the opening visual replaces the first dashboard shot
+PIECES = [("O", "A", 0, 1), ("A", "A", 1, 5), ("B", "B", 0, 5), ("C", "C", 0, 5), ("D", "D", 0, 6),
+          ("E", "E", 0, 5), ("G", "G", 0, 2), ("H", "H", 0, 1), ("F", "F", 0, 5)]
+LIVE = "ACDGH"
+
+
 def main():
-    ap = argparse.ArgumentParser(description="Record the client demo against a live GPU box.")
-    ap.add_argument("--box", required=True, help="ssh alias of the running Brev instance (the stack must be up)")
-    ap.add_argument("--slide-only", action="store_true", help="only the process-slide clip (no box needed)")
-    ap.add_argument("--scene", help="record one scene (A-H) for iteration")
-    ap.add_argument("--keep", help="copy each scene's mp4 into this directory")
-    ap.add_argument("--no-traffic", action="store_true", help="skip the warm-up traffic that fills the Grafana panels")
+    ap = argparse.ArgumentParser(description="Build the client demo video.")
+    ap.add_argument("--box", help="ssh alias of a running Brev instance: record the live scenes afresh "
+                                  "(otherwise they are re-timed from docs/demo/footage)")
+    ap.add_argument("--slide-only", action="store_true", help="only the process-slide clip")
+    ap.add_argument("--scene", help="build only these pieces, e.g. O or OE (for iteration)")
+    ap.add_argument("--keep", help="copy each piece's mp4 into this directory")
+    ap.add_argument("--no-traffic", action="store_true", help="with --box: skip the warm-up traffic that fills Grafana")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     from playwright.sync_api import sync_playwright
@@ -748,17 +926,20 @@ def main():
                 return
 
         script = beats()
-        fwd = []
+        meta = json.loads((FOOTAGE / "beats.json").read_text())
+        subs = dict(meta["_subs"])
+        fwd, live_cfg = [], {}
         try:
-            print("box: starting the recording UIs on a copy of the database")
-            ssh(args.box, BOX_UP)
-            fwd = forwards(args.box)
-            if not args.no_traffic:
-                print("box: 100 s of mixed questions through /ask so Grafana has real data")
-                ssh(args.box, TRAFFIC % 100)
-            n_safety, n_ask = live_counts(pw)
-            subs = {"{safety}": str(n_safety), "{ask_n}": str(n_ask)}
-            print("live numbers: %d unsafe on the floor, %d in the answer" % (n_safety, n_ask))
+            if args.box:
+                print("box: starting the recording UIs on a copy of the database")
+                ssh(args.box, BOX_UP)
+                fwd = forwards(args.box)
+                if not args.no_traffic:
+                    print("box: 100 s of mixed questions through /ask so Grafana has real data")
+                    ssh(args.box, TRAFFIC % 100)
+                n_safety, n_ask = live_counts(pw)
+                subs = {"{safety}": str(n_safety), "{ask_n}": str(n_ask)}
+                live_cfg = live_scenes(dictation(), n_safety)
 
             def fill(t):
                 for k, v in subs.items():
@@ -766,52 +947,45 @@ def main():
                 return t
             slide_driven, _ = slide_html(pptx, driven=True)
             (WORK / "slide_driven.html").write_text(slide_driven)
+            (WORK / "intro.html").write_text(intro_html())
             (WORK / "comp.html").write_text(components_html())
             (WORK / "end.html").write_text(end_html())
-            wav = dictation()
-
-            wait = lambda text: (lambda page: page.get_by_text(text).first.wait_for(timeout=120000))
-            ready_c = lambda page: page.get_by_label("Measurement").wait_for(timeout=120000)
-            graf = "http://127.0.0.1:3000/d/asoia/service-operations-agent?kiosk&from=now-30m&to=now&refresh=10s"
-
-            def prep_c(page):
-                choose(page, 0, text="08084")
-                choose(page, 1, idx=1)
-                page.get_by_text("Parts Hold").first.wait_for(timeout=15000)
-
-            def prep_h(page):
-                page.get_by_role("button", name="Connect").click()
-                page.get_by_text("default", exact=True).first.click()
-                page.get_by_text("updates").first.click()
-                page.get_by_text("FloatVector(1024)").first.wait_for(timeout=30000)
-
-            def ready_g(page):
-                page.get_by_text("GPU utilisation and framebuffer").first.wait_for(timeout=120000)
-                page.wait_for_timeout(4500)
-
-            cfg = {"A": ("http://127.0.0.1:7871", scene_A(n_safety), None, wait("Open repair orders")),
-                   "B": ((WORK / "slide_driven.html").as_uri(), scene_B(), None, None),
-                   "C": ("http://127.0.0.1:7872", scene_C(wav), prep_c, ready_c),
-                   "D": ("http://127.0.0.1:7873", scene_D(), None, wait("Try these")),
-                   "E": ((WORK / "comp.html").as_uri(), scene_E(), None, None),
-                   "G": (graf, scene_G(), None, ready_g),
-                   "H": ("http://127.0.0.1:8101/#/connect", scene_H(), prep_h, lambda page: page.get_by_role("button", name="Connect").wait_for(timeout=60000)),
-                   "F": ((WORK / "end.html").as_uri(), scene_F(), None, None)}
-            want = [args.scene] if args.scene else list("ABCDEGHF")
+            local = {"O": ((WORK / "intro.html").as_uri(), scene_O()),
+                     "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
+                     "E": ((WORK / "comp.html").as_uri(), scene_E()),
+                     "F": ((WORK / "end.html").as_uri(), scene_F())}
+            want = list(args.scene) if args.scene else [p[0] for p in PIECES]
             parts, total = [], 0.0
-            for k in want:
-                texts = [fill(t) for _, t in script[k]]
-                files, durs = zip(*[voice(t) for t in texts])
-                url, plan, prep, ready = cfg[k]
-                assert len(plan) == len(texts), "scene %s: %d beats scripted, %d choreographed" % (k, len(texts), len(plan))
-                tail = 2.2 if k == "F" else 0.0
-                v = record(pw, k, url, texts, list(durs), plan, prep, tail, ready)
-                wavf = WORK / (k + ".wav"); join_wavs(list(files), wavf)
-                m = WORK / ("m_" + k + ".mp4"); mux(v, wavf, sum(durs) + tail, m); parts.append(m)
+            for name, sc, a, b in PIECES:
+                if name not in want:
+                    continue
+                rows = script[sc][a:b]
+                files, vdur = zip(*[voice(fill(t)) for _, t in rows])
+                holds = [HOLD.get(i, 0.0) for i, _ in rows]
+                durs = [v + h for v, h in zip(vdur, holds)]
+                tail = 2.2 if name == "F" else 0.0
+                vid = WORK / (name + "_v.mp4")
+                if name in LIVE and not args.box:
+                    retime(sc, a, durs, holds, vid)
+                elif name in LIVE:
+                    url, plan, prep, ready = live_cfg[sc]
+                    vid = record(pw, name, url, [fill(t) for _, t in rows], durs, plan[a:b], prep, tail, ready, holds)
+                else:
+                    url, plan = local[name]
+                    vid = record(pw, name, url, [fill(t) for _, t in rows], durs, plan, None, tail, None, holds)
+                wins, t = [], 0.0
+                for (i, _), d in zip(rows, durs):
+                    if i in BADGES:
+                        wins.append((badge_png(pw, i), t + 0.15, t + d))
+                    t += d
+                shown = WORK / (name + "_b.mp4")
+                overlay_badges(vid, wins, shown)
+                wavf = WORK / (name + ".wav"); join_wavs(list(files), wavf, holds)
+                m = WORK / ("m_" + name + ".mp4"); mux(shown, wavf, sum(durs) + tail, m); parts.append(m)
                 total += sum(durs) + tail
-                print("scene %s: %d beats, %.1f s" % (k, len(texts), sum(durs) + tail))
+                print("piece %s: %d beats, %.1f s" % (name, len(rows), sum(durs) + tail))
                 if args.keep:
-                    Path(args.keep).mkdir(parents=True, exist_ok=True); shutil.copy(m, Path(args.keep) / ("scene_%s.mp4" % k))
+                    Path(args.keep).mkdir(parents=True, exist_ok=True); shutil.copy(m, Path(args.keep) / ("piece_%s.mp4" % name))
             if not args.scene:
                 final = OUT / "demo-preview.mp4"
                 concat(parts, final)
@@ -819,10 +993,11 @@ def main():
         finally:
             for p in fwd:
                 p.terminate()
-            try:
-                ssh(args.box, BOX_DOWN, timeout=60)
-            except Exception:
-                pass
+            if args.box:
+                try:
+                    ssh(args.box, BOX_DOWN, timeout=60)
+                except Exception:
+                    pass
 
 
 if __name__ == "__main__":

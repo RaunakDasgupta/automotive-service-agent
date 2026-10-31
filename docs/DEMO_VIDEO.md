@@ -5,8 +5,8 @@ AI assistant for a service department. **One idea:** *fast, grounded answers, ru
 
 ## 1. Script — written to be cut, not read
 
-**Target 2:00–2:15.** 352 spoken words, voiced one beat at a time at ~190 wpm and timed so that **the picture
-changes on every beat (2–5 s) and something on screen is always moving**. Each beat is one short sentence; the
+**Target about 2:30.** ~345 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
+changes on every beat and something on screen is always moving**, except during those holds. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
 
@@ -17,7 +17,7 @@ or product shot at the open and the close; nothing held still. Narration there r
 
 | beat | narration (read aloud) | on screen |
 |---|---|---|
-| A1 | In every service department, the risk hides between shifts. | Dashboard, slow push-in across the KPI tiles |
+| A1 | In every service department, the risk hides between shifts. | **Opening visual, in motion from the first frame:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY; headline *The risk hides between shifts* |
 | A2 | A safety finding sits in a technician's note that nobody has time to read. | Camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
 | A3 | A part is on hold. A promised time has slipped. Customers wait while managers chase. | Pan across the *Promise missed* and *Blocked* tiles; callout **Missed promises** |
 | A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe** |
@@ -38,17 +38,17 @@ or product shot at the open and the close; nothing held still. Narration there r
 | D4 | Not a guess. A calculation, with sources. | Scrolls to the `Tools: … Sources:` line, ring |
 | D5 | Now an open question: has anyone seen a whistling noise on a Passat? | The second question types out and is asked |
 | D6 | Search, rerank and a cited answer, in seconds, on the same GPU. | Camera on the answer and its update citations; callout **Search + rerank** |
-| E1 | Three NVIDIA NIM microservices run on a single L40S GPU. | Component page: three chips pop in; callout **1 GPU** |
-| E2 | Nemotron for language. An embedding model and a reranker for search. | The three chips highlight in turn |
-| E3 | Riva handles speech. NeMo Guardrails stops unsafe requests before any tool runs. | Riva and Guardrails chips land |
-| E4 | Only speech recognition uses NVIDIA's hosted service. | Riva chip tagged *hosted* |
-| E5 | NeMo Evaluator scores every release. | Evaluator chip |
+| E1 | Three NVIDIA NIM microservices run on a single L40S GPU. | Infographic: an L40S chip with three tiles (chat, search, rank icons), then a memory bar fills to about 30 of 46 GB; callout **1 GPU**; held a moment |
+| E2 | Nemotron for language. An embedding model and a reranker for search. | The three tiles pulse in turn |
+| E3 | Riva handles speech. NeMo Guardrails stops unsafe requests before any tool runs. | Two white cards with the NVIDIA logo and pictograms (waveform, shield) fly in |
+| E4 | Only speech recognition uses NVIDIA's hosted service. | Ring on the Riva card, tagged *hosted* |
+| E5 | NeMo Evaluator scores every release. | Evaluator card (gauge pictogram), ring |
 | G1 | And DCGM streams live GPU telemetry into Grafana. | **Live Grafana** on the L40S: camera to the GPU utilisation and framebuffer panels, ring |
 | G2 | Latency, tool use and guardrail blocks are all measured. | Camera pans up across the answer, latency and tool panels |
 | H1 | Search vectors live in Milvus, fully inspectable. | **Live Attu**: collection `updates`, zoom on `vector FloatVector(1024)` |
-| F1 | Your models run on your own GPU, so there is no hosted endpoint to retire underneath you. | Title and card 1 fly in |
+| F1 | Your models run on your own GPU. No hosted endpoint to retire. | Title and card 1 fly in |
 | F2 | The whole stack runs in about thirty gigabytes of a forty-six gigabyte card. | Card 2 |
-| F3 | Every answer is reproducible, every figure is checked, and every call is measured. | Cards 3 and 4 |
+| F3 | Every answer reproducible, every figure checked, every call measured. | Cards 3 and 4 |
 | F4 | Fast. Grounded. Yours to run. | Large type |
 | F5 | Let's talk about your shop. | End card |
 
