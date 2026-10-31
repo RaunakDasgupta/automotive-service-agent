@@ -21,12 +21,12 @@ or product shot at the open and the close; nothing held still. Narration there r
 | A2 | A safety finding sits in a technician's note that nobody has time to read. | Live dashboard: camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
 | A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe**; held a moment |
 | A5 | This is the Automotive Service Operations Intelligence Agent. | Pull back to the full dashboard; callout **NVIDIA stack** |
-| B1 | A technician speaks or types an update. | Process slide: stage 1 builds, camera on it; callout **Capture** |
+| B1 | Here is how it works. A technician speaks or types an update. | Dissolve from the dashboard to the process slide: stage 1 builds, camera on it; callout **Capture** |
 | B2 | NVIDIA Riva transcribes it, and Nemotron extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
 | B3 | Code checks every fact. Nothing is guessed. | Stage 3; callout **Verify** |
 | B4 | Each update joins an audit trail. | Stage 4; callout **Record** |
-| B5 | So a manager simply asks, and gets a cited answer. | Stage 5, then the camera pulls back to the whole five-stage flow; callout **Decide** |
-| C1 | Watch. A technician dictates an update from the bay. | Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
+| B5 | So a manager simply asks, and gets a cited answer. Now, the real thing. | Stage 5, then the camera pulls back to the whole five-stage flow; callout **Decide** |
+| C1 | Watch. A technician dictates an update from the bay. | Dissolve from the process slide to Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
 | C2 | NVIDIA Riva turns the speech into text. | Transcribe is clicked; the transcript fills; callout **Riva ASR** |
 | C3 | Nemotron pulls out the facts: the measurement, and the spec. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |
 | C4 | Code checks it, and flags the repair order unsafe to release, instantly. | Zoom on the *What changed* card and the out-of-spec line, ring; callout **Flagged unsafe**; held |

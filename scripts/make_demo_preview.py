@@ -42,7 +42,7 @@ GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.8, "B5": 0.5, "C3": 0.6, "C4": 1.0, "D3": 1.0, "D4": 0.6, "D6": 1.0,
-        "E1": 0.7, "E5": 0.8, "G1": 1.6, "V4": 0.9, "F4": 0.0}
+        "E1": 0.7, "E5": 0.6, "G1": 1.1, "V4": 0.9, "F4": 0.0}
 TTS_CACHE = Path.home() / ".cache" / "asoia-demo-tts"
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
@@ -660,7 +660,7 @@ def retime(scene: str, ids, new_durs, holds, out: Path):
         "-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "veryfast", "-an", out)
 
 
-def bridge(prev: Path, nxt: Path, out: Path, d: float = 0.8):
+def bridge(prev: Path, nxt: Path, out: Path, d: float = 0.5):
     """A short silent dissolve from the last frame of one piece to the first frame of the next, so a change of
     screen eases in instead of cutting."""
     fa, fb = WORK / "bridge_a.png", WORK / "bridge_b.png"
@@ -932,7 +932,7 @@ def live_scenes(wav: Path, n_safety: int):
 PIECES = [("O", "A", ["A1"]), ("A", "A", ["A2", "A4", "A5"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
           ("V", "V", None), ("E", "E", None), ("G", "G", None), ("F", "F", None)]
 LIVE = "ACDG"
-BRIDGE_BEFORE = "D"          # ease from the Technician Update form into the Manager Assistant
+BRIDGE_BEFORE = "BCD"        # ease dashboard -> process slide -> Technician Update -> Manager Assistant instead of cutting
 
 
 def main():
@@ -1026,10 +1026,10 @@ def main():
                 overlay_badges(vid, wins, shown)
                 wavf = WORK / (name + ".wav"); join_wavs(list(files), wavf, holds)
                 m = WORK / ("m_" + name + ".mp4"); mux(shown, wavf, sum(durs) + tail, m)
-                if name == BRIDGE_BEFORE and parts:
-                    br_clip = WORK / "bridge.mp4"
+                if name in BRIDGE_BEFORE and parts:
+                    br_clip = WORK / ("bridge_%s.mp4" % name)
                     bridge(parts[-1], shown, br_clip)
-                    parts.append(br_clip); total += 0.8
+                    parts.append(br_clip); total += 0.5
                 parts.append(m)
                 total += sum(durs) + tail
                 print("piece %s: %d beats, %.1f s" % (name, len(rows), sum(durs) + tail))

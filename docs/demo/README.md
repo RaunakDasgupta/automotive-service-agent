@@ -14,8 +14,8 @@ Two files, both recorded from the real application:
 |---|---|
 | Opening | an animated visual from the first frame: shift notes fly onto a moving grid and one is stamped SAFETY |
 | A Hook | the **live** Dashboard on the L40S box |
-| B Process | the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken, ending on the whole five-stage flow (not PowerPoint, so fonts differ slightly). The deck slide itself is process only now (no business figures); they have their own segment |
-| C Ingest | **live**: a spoken update is uploaded, Riva transcribes it, Nemotron extracts the measurement, the rules flag the repair order `SAFETY_RELATED` |
+| B Process | a soft dissolve from the dashboard, then the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken, ending on the whole five-stage flow (not PowerPoint, so fonts differ slightly). The deck slide itself is process only now (no business figures); they have their own segment |
+| C Ingest | **live**, entered by a soft dissolve from the process slide: a spoken update is uploaded, Riva transcribes it, Nemotron extracts the measurement, the rules flag the repair order `SAFETY_RELATED` |
 | D Ask | **live**: a soft dissolve from the form, then a structured question answered with no model call and a free-text question answered by search + rerank + narration on the local NIMs |
 | V Business value | four cards: unsafe vehicles surfaced (`13 of 50`, read from the live dashboard), `0.1 s` answers, `905 / 905` traced answers, one update feeding the whole shop. No cost or speed-up claim is made |
 | E Components | an infographic: an L40S chip holding the three NIM tiles with a memory bar (about 30 of 46 GB), then NVIDIA-logo cards with pictograms for Riva, Guardrails and Evaluator |
