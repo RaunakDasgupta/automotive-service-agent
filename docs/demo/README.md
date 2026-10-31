@@ -4,7 +4,7 @@ Two files, both recorded from the real application:
 
 | file | what it is |
 |---|---|
-| `process-slide-preview.mp4` | The animated process slide on its own (~10 s), as the deck builds it |
+| `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
 | `demo-preview.mp4` | The whole demo (2:12): 33 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The raw live-app shots (`A C D G`, video only, with their captions burned in) and their original beat timings (`beats.json`), recorded on the L40S box |
 

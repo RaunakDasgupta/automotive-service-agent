@@ -138,8 +138,9 @@ def join_wavs(paths, out: Path, holds=None):
 
 
 # ------------------------------------------------------------------ the slide, from its own XML
-def slide_html(pptx: Path, marker: str = "anim-s0-card", driven: bool = False) -> tuple[str, float]:
-    """Render the deck slide that holds `marker` as HTML with its animation timing."""
+def slide_html(pptx: Path, marker: str = "anim-s0-card", driven: bool = False, process_only: bool = True) -> tuple[str, float]:
+    """Render the deck slide that holds `marker` as HTML with its animation timing. `process_only` leaves out the
+    business layer (the outcome figures and the 'what you get' lines), which the video presents in its own segment."""
     z = zipfile.ZipFile(pptx)
     name = next(n for n in z.namelist() if re.match(r"ppt/slides/slide\d+\.xml$", n)
                 and marker.encode() in z.read(n))
@@ -151,9 +152,9 @@ def slide_html(pptx: Path, marker: str = "anim-s0-card", driven: bool = False) -
         xf = sp.find("p:spPr/a:xfrm", NS)
         if xf is None:
             continue
-        if driven and not c.get("name", "").startswith("anim-s") and 745 <= int(xf.find("a:off", NS).get("y")) * k < 1000:
+        if process_only and not c.get("name", "").startswith("anim-s") and 745 <= int(xf.find("a:off", NS).get("y")) * k < 1000:
             continue                      # the band that carried the business figures
-        if driven and (c.get("name", "").startswith("anim-o") or "WHAT THAT MEANS FOR THE BUSINESS" in "".join(sp.itertext())):
+        if process_only and (c.get("name", "").startswith("anim-o") or "WHAT THAT MEANS FOR THE BUSINESS" in "".join(sp.itertext())):
             continue
         off, ext = xf.find("a:off", NS), xf.find("a:ext", NS)
         x, y, w, h = (int(off.get("x")) * k, int(off.get("y")) * k,
@@ -183,7 +184,7 @@ def slide_html(pptx: Path, marker: str = "anim-s0-card", driven: bool = False) -
             pad = [int(bp.get(i, d)) * k for i, d in (("tIns", 45720), ("rIns", 91440), ("bIns", 45720), ("lIns", 91440))]
             paras = []
             for p in body.findall("a:p", NS):
-                if driven and "".join(p.itertext()).strip() == "WHAT YOU GET":
+                if process_only and "".join(p.itertext()).strip() == "WHAT YOU GET":
                     break                 # the video shows the process; the business value has its own segment
                 ppr = p.find("a:pPr", NS)
                 algn = {"l": "left", "ctr": "center", "r": "right"}.get(ppr.get("algn", "l") if ppr is not None else "l", "left")
@@ -220,6 +221,7 @@ def slide_html(pptx: Path, marker: str = "anim-s0-card", driven: bool = False) -
         flt = ct.find(".//p:animEffect", NS)
         anims.append([spid, int(ct.find("p:stCondLst/p:cond", NS).get("delay")),
                       flt.get("filter"), int(flt.find("p:cBhvr/p:cTn", NS).get("dur"))])
+    anims = [a for a in anims if a[0] in ids]
     total = max(d + dur for _, d, _, dur in anims) / 1000
     if driven:
         return DRIVEN_HTML.replace("@W@", str(W)).replace("@H@", str(H)).replace("@SHAPES@", "".join(h for _, h in shapes)), 0.0
