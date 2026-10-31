@@ -43,7 +43,7 @@ GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.8, "B5": 0.5, "C3": 0.6, "C4": 1.0, "D3": 1.0, "D4": 0.6, "D6": 1.0,
-        "E1": 0.7, "E5": 0.6, "G1": 1.1, "V4": 0.9, "F4": 0.0}
+        "E1": 0.7, "E5": 0.6, "G1": 1.1, "V4": 0.9, "F4": 0.4}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -387,7 +387,6 @@ h1{position:absolute;left:520px;top:62px;margin:0;font-size:52px}
 #c0{top:200px}#c1{top:430px}#c2{top:660px}
 .ic2{position:absolute;left:36px;top:46px;width:108px;height:108px;background:#EEF6DF;border-radius:22px;padding:18px;box-sizing:border-box}
 .tx{position:absolute;left:176px;top:26px;right:30px}.tx img{height:54px;display:block;margin:-8px 0 6px -4px}.tx b{display:block;font-size:42px}.tx i{display:block;font:28px/1.25 Arial;color:#4b5b50;font-style:normal;margin-top:6px}
-.tag{position:absolute;right:24px;top:24px;background:#C1562A;color:#fff;font:700 24px Arial;padding:5px 18px;border-radius:16px}
 </style><img id=logo src="@NV@"><h1>at every step that needs a model</h1>
 <div id=gpu><div class=chip><div class=pins></div><div class="pins b"></div><div class=lab>NVIDIA L40S</div>@TILES@</div>
  <div id=vr><div class=l><span>GPU memory in use</span><span>about 30 GB of 46 GB</span></div><div class=tr><div id=vf></div></div></div></div>
@@ -396,25 +395,26 @@ h1{position:absolute;left:520px;top:62px;margin:0;font-size:52px}
 const show=(e,d)=>e.animate([{opacity:0,transform:'translateY(46px) scale(.94)'},{opacity:1,transform:'none'}],{duration:d||480,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
 window.__show=id=>show($(id));window.__vram=()=>{show($('vr'));$('vf').animate([{width:'0%'},{width:'65%'}],{duration:1200,fill:'forwards',easing:'ease-out'});};
 window.__pulse=id=>$(id).animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.09)',filter:'brightness(1.35)'},{transform:'scale(1)',filter:'brightness(1)'}],{duration:640});
-window.__tag=id=>{const t=document.createElement('div');t.className='tag';t.textContent='hosted';$(id).appendChild(t);t.animate([{opacity:0,transform:'scale(.4)'},{opacity:1,transform:'none'}],{duration:320});};
 </script>""".replace("@NV@", logo("nvidia")).replace("@TILES@", t_html).replace("@CARDS@", c_html.replace("@NV@", logo("nvidia")))
 
 
 def end_html() -> str:
-    cards = [("Own your models", "No hosted endpoint to retire underneath you"),
-             ("One card", "About 30 GB of a 46 GB L40S"),
-             ("Reproducible", "A pinned container at temperature 0"),
-             ("Checked", "Every figure verified, every call measured")]
+    cards = [("Safer", "Unsafe vehicles surface the moment an update is logged"),
+             ("Faster", "Answers in a tenth of a second, with no model call"),
+             ("Grounded", "Every figure cited and checked against a record"),
+             ("Yours", "Runs on one L40S that you own")]
     return """<!doctype html><meta charset=utf-8><style>
 body{margin:0;width:1920px;height:1080px;background:#14302A;font-family:Arial,sans-serif;color:#fff;overflow:hidden;position:relative}
 h1{position:absolute;left:0;right:0;top:110px;text-align:center;margin:0;font-size:84px;opacity:0}
 .c{position:absolute;top:290px;width:400px;height:280px;background:#1E4035;border:2px solid #2E5245;border-radius:14px;padding:30px;box-sizing:border-box;opacity:0}
 .c b{display:block;color:#76B900;font-size:42px;margin-bottom:16px}.c span{font-size:27px;color:#DCE8CF;line-height:1.35}
 #big{position:absolute;left:0;right:0;top:650px;text-align:center;font-size:92px;font-weight:700;opacity:0}#big u{text-decoration:none;color:#76B900}
-</style><h1 id=t>Why it matters</h1>%s<div id=big>Fast. <u>Grounded.</u> Yours to run.</div>
+#nm{position:absolute;left:0;right:0;top:800px;text-align:center;font-size:40px;color:#C8D6BE;opacity:0}
+</style><h1 id=t>In short</h1>%s<div id=big>Fast. <u>Grounded.</u> Yours to run.</div><div id=nm>Automotive Service Operations Intelligence Agent</div>
 <script>const $=id=>document.getElementById(id);
 const up=(e,d)=>e.animate([{opacity:0,transform:'translateY(60px) scale(.96)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
-window.__title=()=>up($('t'));window.__card=i=>up(document.querySelectorAll('.c')[i]);window.__big=()=>up($('big'),600);
+window.__title=()=>up($('t'));window.__card=i=>up(document.querySelectorAll('.c')[i]);
+window.__big=()=>{up($('big'),600);setTimeout(()=>up($('nm'),600),900);};
 </script>""" % "".join('<div class=c style="left:%dpx"><b>%s</b><span>%s</span></div>' % (80 + i * 440, a, b) for i, (a, b) in enumerate(cards))
 
 
@@ -580,8 +580,6 @@ def scene_E():
     GPU = {"sel": "#gpu"}
     return [dict(cam=[{"sel": "#logo"}, {"sel": "h1"}, GPU], camo=dict(max=1.25, pad=90), co="1 GPU", act=e1),
             dict(cam=[{"sel": "#c0"}, {"sel": "#c1"}], camo=dict(max=1.4, pad=90), act=seq("c0", "c1", share=0.42)),
-            dict(cam={"sel": "#c0"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c0"}, ringpad=6,
-                 act=lambda page, d: page.evaluate("() => window.__tag('c0')")),
             dict(cam={"sel": "#c2"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c2"}, ringpad=6, act=seq("c2"))]
 
 
@@ -627,7 +625,7 @@ def scene_F():
 LIVE_PLAN = {
     "A2": dict(src="A", freeze=True, cam="ROW", camo=dict(max=1.7, pad=70), ring="ROW", co="Safety findings"),
     "A4": dict(src="A", freeze=True, cam="TILE", camo=dict(max=2.3, pad=200), ring="TILE", co="{safety} unsafe"),
-    "A5": dict(src="A", freeze=True, cam=None, camo=dict(to=1.0), co="NVIDIA stack"),
+    "A5": dict(src="A", freeze=True, cam=None, camo=dict(to=1.0), co="Service Operations Agent"),
     "C1": dict(src="C1", cam="VOICE", camo=dict(max=1.55, pad=100), co="Voice in"),
     "C2": dict(src="C2", cam="TRANS", camo=dict(max=1.6, pad=100), co="Riva ASR", badge="C2"),
     "C3": dict(src="C3", cam="EXTR", camo=dict(max=1.5, pad=100), co="Nemotron 8B", badge="C3",
@@ -643,7 +641,8 @@ LIVE_PLAN = {
     "G1": dict(src="G1", cam="GPU", camo=dict(max=1.9, pad=70), ring="GPU", ringpad=4, co="L40S telemetry", badge="G1",
                then=[dict(at=0.55, cam="POWER", camo=dict(max=1.9, pad=70), ring="POWER", ringpad=4, dur=0.4)]),
 }
-RING_STATES = 4                  # the ring pulses through this many pre-drawn glows
+RING_STATES = 2                  # the ring pulses by blending these two stills: a plain ring and a full glow
+PULSE = 1.4                      # seconds for one pulse
 CUR_FROM = (190, 130)            # the cursor glides in from this far down and right of the control, only for a click
 
 
@@ -712,10 +711,10 @@ def _smooth(a: float, d: float, var: str = "t") -> str:
     return "(%s*%s*(3-2*%s))" % (u, u, u)
 
 
-def _path(v0: tuple, moves: list, i: int) -> str:
+def _path(v0: tuple, moves: list, i: int, var: str = "t") -> str:
     e, prev = "%.4f" % v0[i], v0[i]
     for a, d, st in moves:
-        e += "+(%.4f)*%s" % (st[i] - prev, _smooth(a, d)); prev = st[i]
+        e += "+(%.4f)*%s" % (st[i] - prev, _smooth(a, d, var)); prev = st[i]
     return e
 
 
@@ -773,12 +772,12 @@ def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int
     if freeze:
         still = WORK / ("still_%s.jpg" % bid)
         run(ffmpeg(), "-y", "-ss", "%.3f" % max(0.0, st["t1"] - 0.15), "-i", raw, "-frames:v", "1", "-q:v", "2", still)
-        add(still, nd); fc.append("[0:v]format=yuv420p[base]")
+        add(still, nd); fc.append("[0:v]format=yuv444p[base]")
     else:
         add(raw)
         parts = ["[0:v]trim=start=%.3f:end=%.3f,setpts=(PTS-STARTPTS)/%.4f,fps=%d[s%d]" % (a, b, sp, FPS, k) for k, (a, b) in enumerate(segs)]
         fc += parts
-        fc.append("%sconcat=n=%d:v=1:a=0,tpad=stop_mode=clone:stop_duration=%.3f,format=yuv420p[base]"
+        fc.append("%sconcat=n=%d:v=1:a=0,tpad=stop_mode=clone:stop_duration=%.3f,format=yuv444p[base]"
                   % ("".join("[s%d]" % k for k in range(len(segs))), len(segs), max(0.0, nd - play)))
     last = "[base]"
 
@@ -820,12 +819,13 @@ def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int
             continue
         w, h = r["w"] + 2 * pad, r["h"] + 2 * pad
         x, y = (r["x"] - pad - 44) * K, (r["y"] - pad - 44) * K
-        idx = [add(pngs.ring(w, h, s)) for s in range(RING_STATES)]
-        cyc = [0, 1, 2, 3, 2, 1]
-        for s in range(RING_STATES):
-            on = "+".join("eq(floor(mod((t-%.3f)/0.27,6)),%d)" % (ts, j) for j, c in enumerate(cyc) if c == s)
-            fc.append("%s[%d:v]overlay=x=%.1f:y=%.1f:enable='between(t,%.3f,%.3f)*(%s)'[g%d_%d]" % (last, idx[s], x, y, ts, te, on, k, s))
-            last = "[g%d_%d]" % (k, s)
+        lo, hi = add(pngs.ring(w, h, 0), nd), add(pngs.ring(w, h, RING_STATES - 1), nd)
+        pm = "format=gbrap,premultiply=inplace=1,setpts=PTS+%.3f/TB" % ts          # blend in premultiplied alpha, so the glow has no dark fringe
+        fc.append("[%d:v]%s[ra%d];[%d:v]%s[rb%d]" % (lo, pm, k, hi, pm, k))
+        fc.append("[ra%d][rb%d]blend=all_expr='A+(B-A)*(0.5-0.5*cos(2*PI*(T-%.3f)/%.2f))',unpremultiply=inplace=1,format=rgba,"
+                  "fade=t=in:st=%.3f:d=0.25:alpha=1[rg%d]" % (k, k, ts, PULSE, ts, k))
+        fc.append("%s[rg%d]overlay=x=%.1f:y=%.1f:format=yuv444:enable='between(t,%.3f,%.3f)'[g%d]" % (last, k, x, y, ts, te, k))
+        last = "[g%d]" % k
     for n, c in enumerate(c for c in st["clicks"] if c.get("show") and not freeze):
         tc = out_t(c["t"])
         x1, y1 = c["x"] * K, c["y"] * K
@@ -833,15 +833,19 @@ def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int
         ts = max(0.0, tc - 0.6)
         e = _smooth(ts, min(0.5, tc - ts), "t")
         k = add(pngs.cursor())
-        fc.append("%s[%d:v]overlay=x='%.1f+(%.1f)*%s':y='%.1f+(%.1f)*%s':enable='between(t,%.3f,%.3f)'[cu%d]"
+        fc.append("%s[%d:v]overlay=x='%.1f+(%.1f)*%s':y='%.1f+(%.1f)*%s':format=yuv444:enable='between(t,%.3f,%.3f)'[cu%d]"
                   % (last, k, x0, x1 - x0, e, y0, y1 - y0, e, ts, tc + 0.5, n))
         last = "[cu%d]" % n
 
-    # camera: scale the whole captured page by the eased zoom and lay it on the screen at the eased offset
-    S, TX, TY = (_path(state, moves, i) for i in range(3))
-    fc.append("color=c=black:s=%dx%d:r=%d[bg]" % (W, H, FPS))
-    fc.append("%sscale=w='%d*(%s)':h='%d*(%s)':eval=frame:flags=bicubic[pg]" % (last, W, S, page_h, S))
-    fc.append("[bg][pg]overlay=x='%s':y='%s':eval=frame:shortest=1,format=yuv420p[cam]" % (TX, TY))
+    # camera: a sub-pixel zoom and pan. `perspective` maps a window of the page, of the frame's own shape, onto the whole
+    # frame (scale + overlay snap to whole, even pixels and shimmer); the part of a tall page below the screen is cropped off.
+    on = "(on/%d)" % FPS
+    S, TX, TY = (_path(state, moves, i, on) for i in range(3))
+    x0, y0 = "(-%d*(%s)/(%s))" % (K, TX, S), "(-%d*(%s)/(%s))" % (K, TY, S)
+    fc.append("%sperspective=x0='%s':y0='%s':x1='%s+%d/(%s)':y1='%s':x2='%s':y2='%s+%d/(%s)':x3='%s+%d/(%s)':y3='%s+%d/(%s)'"
+              ":interpolation=cubic:eval=frame%s,scale=%d:%d:flags=lanczos,format=yuv420p[cam]"
+              % (last, x0, y0, x0, W * K, S, y0, x0, y0, page_h * K, S, x0, W * K, S, y0, page_h * K, S,
+                 ",crop=%d:%d:0:0" % (W * K, H * K) if page_h > H else "", W, H))
     last = "[cam]"
 
     # screen-space overlays: callouts, the product badge, the caption

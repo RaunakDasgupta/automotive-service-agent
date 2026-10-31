@@ -20,7 +20,7 @@ or product shot at the open and the close; nothing held still. Narration there r
 | A1 | In every service department, the risk hides between shifts. | **Opening visual, in motion from the first frame:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
 | A2 | A safety finding sits in a technician's note that nobody has time to read. | Live dashboard: camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
 | A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe**; held a moment |
-| A5 | This is the Automotive Service Operations Intelligence Agent. | Pull back to the full dashboard; callout **NVIDIA stack** |
+| A5 | That's where the Service Operations Agent comes in. | Pull back to the full dashboard; callout **Service Operations Agent** |
 | B1 | Here is how it works. A technician speaks or types an update. | Dissolve from the dashboard to the process slide: stage 1 builds, camera on it; callout **Capture** |
 | B2 | NVIDIA Riva transcribes it, and Nemotron extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
 | B3 | Code checks every fact. Nothing is guessed. | Stage 3; callout **Verify** |
@@ -41,12 +41,11 @@ or product shot at the open and the close; nothing held still. Narration there r
 | V4 | And one update feeds the record, handover and dashboard. | Card 4: *1 update* feeds the whole shop; pull back to all four cards; footnote |
 | E1 | Three NVIDIA NIM microservices run on one L40S: language, embedding and reranking. | Infographic: an L40S chip with three tiles (chat, search, rank icons) that pulse in turn, then a memory bar fills to about 30 of 46 GB; callout **1 GPU**; held |
 | E3 | Riva handles speech. NeMo Guardrails stops unsafe requests. | Two white cards with the NVIDIA logo and pictograms (waveform, shield) fly in |
-| E4 | Only speech recognition uses NVIDIA's hosted service. | Ring on the Riva card, tagged *hosted* |
 | E5 | NeMo Evaluator scores every release. | Evaluator card (gauge pictogram), ring; held |
 | G1 | And DCGM streams live GPU telemetry into Grafana. | **Live Grafana** on the L40S: camera to the GPU utilisation and framebuffer panels, then the power panel, ring; held |
-| F1 | Your models, on your GPU. No hosted endpoint to retire. | Title and card 1 fly in |
-| F2 | About thirty gigabytes of a forty-six gigabyte card, pinned and reproducible. | Cards 2, 3 and 4 fly in one after another |
-| F4 | Fast. Grounded. Yours to run. | Large type; the video ends here |
+| F1 | So, in short: the Service Operations Agent finds the unsafe vehicle the moment it is logged. | Title *In short* and card 1 (*Safer*) fly in |
+| F2 | It answers in a tenth of a second, with every figure cited, on one L40S that you own. | Cards 2, 3 and 4 (*Faster*, *Grounded*, *Yours*) fly in one after another |
+| F4 | Fast. Grounded. Yours to run. That is the Service Operations Agent. | Large type, with the full product name beneath it; the video ends here |
 
 ```bash
 # beats, words, and the speaking time they imply at 190 wpm
@@ -92,8 +91,8 @@ changed since the footage was recorded. Only if it has, use the checklist below 
 | answer in ~0.1 s, no model call | `docs/EXAMPLES.md` (0.00–0.11 s), `verify_answers.py` proves no LLM call |
 | ~3.5 s narrated answer | `docs/EXAMPLES.md` (3.43–3.87 s) |
 | three NIMs on one L40S, "one card carries the stack" | measured 29,963 MiB resident of 46,068 MiB |
-| never depends on a retired hosted endpoint | the hosted LLM and embedder were both retired (HTTP 410); local containers were not |
-| reproducible | pinned container at temperature 0 (`README` hosted-vs-local table) |
+| unsafe vehicle found the moment it is logged | the write path flags the repair order when the update is applied (`app/pipeline/run.py`); scene C shows it live |
+| every figure cited | `check_grounding`; baseline grounding 100 % |
 | every figure checked | `check_grounding`; baseline grounding 100 %, traceability 905/905, routing 37/37 |
 | DCGM → Grafana | 19 GPU series, `docs/screenshots/09` |
 | business value, card 1: *{safety} of {open}* | read from the running dashboard (`Safety - do not release` over `Open repair orders`) on the demo dataset |
@@ -101,7 +100,7 @@ changed since the footage was recorded. Only if it has, use the checklist below 
 | business value, card 4: *1 update feeds the record, handover and dashboard* | state is folded from one event log (`docs/TECHNICAL.md`); the handover and dashboard are derived from it |
 | **not claimed** | retrieval accuracy (83.3 % recall@6), cost savings, speed against any competitor — none measured |
 
-Honest caveat to keep in the script: **speech-to-text is NVIDIA-hosted**, not on the box (scene 5 says so).
+Not said in the video (removed on request): **speech-to-text uses NVIDIA's hosted Riva endpoint**, not the box. Be ready to answer it if a client asks.
 
 ## 5. Pre-publish checklist
 

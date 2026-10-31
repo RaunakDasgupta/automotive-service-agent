@@ -455,10 +455,18 @@ def cap_D(pw, url):
 
     t.step("D1", lambda s: s.page.locator("textarea").first.evaluate("e => e.focus()"), settle=1.4)
     t.step("D2", ask(CAPTURE["q1"]), settle=0.2)
-    t.step("D3", answer_to_top, settle=1.6)
+    shown = {}
+
+    def d3(s):                                             # the number the answer on screen gives: scene C has flagged one more by now
+        answer_to_top(s)
+        shown["n"] = s.page.evaluate("() => { const m = ((document.querySelector('[role=log]') || {}).innerText || '').match(/(\\d+) repair orders? cannot/); return m && m[1]; }")
+    t.step("D3", d3, settle=1.6)
     t.step("D5", ask(CAPTURE["q2"], to_bottom=True), settle=0.2)
     t.step("D6", lambda s: s.until("() => (document.body.innerText.match(/whistling/g) || []).length > 1", 60000, stable=1.5), settle=1.2)
-    return t.finish()
+    scene = t.finish()
+    if shown.get("n"):
+        scene["ask_n"] = shown["n"]
+    return scene
 
 
 def cap_G(pw, url):
@@ -517,6 +525,8 @@ def main():
             for s in a.scene:
                 print("capturing scene %s" % s)
                 tl["scenes"][s] = jobs[s]()
+                if "ask_n" in tl["scenes"][s]:
+                    tl["subs"]["{ask_n}"] = tl["scenes"][s].pop("ask_n")
                 tl["size"] = [W * K, H * K]
                 tl["fps"] = FPS
                 (FOOT / "timeline.json").write_text(json.dumps(tl, indent=1))

@@ -5,7 +5,7 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:13): 33 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:14): 32 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
@@ -13,14 +13,14 @@ Two files, both recorded from the real application:
 | scene | what you see |
 |---|---|
 | Opening | an animated visual from the first frame: shift notes fly onto a moving grid and one is stamped SAFETY |
-| A Hook | the **live** Dashboard on the L40S box |
+| A Hook | the **live** Dashboard on the L40S box; the agent is introduced as *the Service Operations Agent* (the full name is on screen in the dashboard header and on the last card) |
 | B Process | a soft dissolve from the dashboard, then the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken, ending on the whole five-stage flow (not PowerPoint, so fonts differ slightly). The deck slide itself is process only now (no business figures); they have their own segment |
 | C Ingest | **live**, entered by a soft dissolve from the process slide: a spoken update is uploaded, Riva transcribes it, Nemotron extracts the measurement, the rules flag the repair order `SAFETY_RELATED` |
 | D Ask | **live**: a soft dissolve from the form, then a structured question answered with no model call and a free-text question answered by search + rerank + narration on the local NIMs |
-| V Business value | four cards: unsafe vehicles surfaced (`13 of 50`, read from the live dashboard), `0.1 s` answers, `905 / 905` traced answers, one update feeding the whole shop. No cost or speed-up claim is made |
+| V Business value | four cards: unsafe vehicles surfaced (read from the live dashboard), `0.1 s` answers, `905 / 905` traced answers, one update feeding the whole shop. No cost or speed-up claim is made |
 | E Components | an infographic: an L40S chip holding the three NIM tiles with a memory bar (about 30 of 46 GB), then NVIDIA-logo cards with pictograms for Riva, Guardrails and Evaluator |
 | G Telemetry | **live** Grafana with DCGM GPU telemetry, after real traffic through `/ask` |
-| F Advantages | animated cards ending on *Fast. Grounded. Yours to run.* |
+| F Conclusion | a recap, *In short*: four cards (Safer, Faster, Grounded, Yours), ending on *Fast. Grounded. Yours to run.* with the full product name beneath it |
 
 Logo badges (NVIDIA, Grafana) are laid over the live shots as each product is named. There is no cursor on screen except
 for the four clicks that start something (Transcribe, Extract and apply, and Ask twice).
@@ -49,6 +49,8 @@ The live scenes are produced in two stages (`scripts/demo_footage.py`, then `scr
 2. **Edit, offline.** Each beat takes its step from the footage, re-times it to the narration (only the wait for a slow
    model is ever cut), and adds the camera, ring, callout, badge, caption and cursor. Changing the script, pacing, zoom,
    callouts or cursor is a re-run of the edit and needs no GPU.
+   The camera is a sub-pixel zoom and pan (ffmpeg `perspective`, evaluated per frame) and the ring pulse is a smooth blend, so
+   nothing steps or shimmers; scale-and-overlay snapped to even pixels and did.
 
 A box is needed again **only when what the app puts on screen changes**. Each scene is stamped with a fingerprint of the app
 code, the Grafana dashboard and the inputs typed into it. `python scripts/demo_footage.py --check` (the edit prints the
