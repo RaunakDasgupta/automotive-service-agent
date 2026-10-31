@@ -5,7 +5,7 @@ AI assistant for a service department. **One idea:** *fast, grounded answers, ru
 
 ## 1. Script — written to be cut, not read
 
-**Target about 2:30.** ~345 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
+**Target 2:15.** ~330 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
 changes on every beat and something on screen is always moving**, except during those holds. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
@@ -17,40 +17,36 @@ or product shot at the open and the close; nothing held still. Narration there r
 
 | beat | narration (read aloud) | on screen |
 |---|---|---|
-| A1 | In every service department, the risk hides between shifts. | **Opening visual, in motion from the first frame:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY; headline *The risk hides between shifts* |
-| A2 | A safety finding sits in a technician's note that nobody has time to read. | Camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
-| A3 | A part is on hold. A promised time has slipped. Customers wait while managers chase. | Pan across the *Promise missed* and *Blocked* tiles; callout **Missed promises** |
-| A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe** |
+| A1 | In every service department, the risk hides between shifts. | **Opening visual, in motion from the first frame:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
+| A2 | A safety finding sits in a technician's note that nobody has time to read. | Live dashboard: camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
+| A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe**; held a moment |
 | A5 | This is the Automotive Service Operations Intelligence Agent. | Pull back to the full dashboard; callout **NVIDIA stack** |
-| B1 | A technician speaks or types an update at the bay. | Process slide: stage 1 builds, camera on it; callout **Capture** |
-| B2 | NVIDIA Riva transcribes it, and a Nemotron model extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
-| B3 | Code then checks every fact against the catalogue. Nothing is guessed. | Stage 3; callout **Verify** |
-| B4 | Each update joins an audit trail, and every order's state is derived from it. | Stage 4; callout **Record** |
-| B5 | So a manager simply asks, and gets a cited answer. | Stage 5, then the three business figures count up; callout **Decide** |
+| B1 | A technician speaks or types an update. | Process slide: stage 1 builds, camera on it; callout **Capture** |
+| B2 | NVIDIA Riva transcribes it, and Nemotron extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
+| B3 | Code checks every fact. Nothing is guessed. | Stage 3; callout **Verify** |
+| B4 | Each update joins an audit trail. | Stage 4; callout **Record** |
+| B5 | So a manager simply asks, and gets a cited answer. | Stage 5, then the three business figures count up; callout **Decide**; held a moment |
 | C1 | Watch. A technician dictates an update from the bay. | Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
 | C2 | NVIDIA Riva turns the speech into text. | Transcribe is clicked; the transcript fills; callout **Riva ASR** |
 | C3 | Nemotron pulls out the facts: the measurement, and the spec. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |
-| C4 | Code checks it, and flags the repair order unsafe to release, instantly. | Zoom on the *What changed* card and the out-of-spec line, ring; callout **Flagged unsafe** |
-| C5 | Every change is shown, so nothing is logged twice, or missed. | Camera pans down the diff card |
-| D1 | Now the manager asks the question that matters. | Manager Assistant, camera on the question box |
+| C4 | Code checks it, and flags the repair order unsafe to release, instantly. | Zoom on the *What changed* card and the out-of-spec line, ring; callout **Flagged unsafe**; held |
+| D1 | Now the manager asks the question that matters. | Manager Assistant (a soft dissolve from the form), camera on the question box |
 | D2 | Which vehicles cannot be released on safety grounds? | The question types out at speaking pace, then is asked |
-| D3 | {ask_n} vehicles. Every one cited. Answered in a tenth of a second, with no model call. | Zoom on the answer; callout **Cited · no model call** |
-| D4 | Not a guess. A calculation, with sources. | Scrolls to the `Tools: … Sources:` line, ring |
+| D3 | {ask_n} vehicles. Every one cited. Answered in a tenth of a second, with no model call. | Zoom on the answer; callout **Cited · no model call**; held |
 | D5 | Now an open question: has anyone seen a whistling noise on a Passat? | The second question types out and is asked |
-| D6 | Search, rerank and a cited answer, in seconds, on the same GPU. | Camera on the answer and its update citations; callout **Search + rerank** |
-| E1 | Three NVIDIA NIM microservices run on a single L40S GPU. | Infographic: an L40S chip with three tiles (chat, search, rank icons), then a memory bar fills to about 30 of 46 GB; callout **1 GPU**; held a moment |
-| E2 | Nemotron for language. An embedding model and a reranker for search. | The three tiles pulse in turn |
-| E3 | Riva handles speech. NeMo Guardrails stops unsafe requests before any tool runs. | Two white cards with the NVIDIA logo and pictograms (waveform, shield) fly in |
+| D6 | Search, rerank and a cited answer, in seconds, on the same GPU. | Camera on the answer and its update citations; callout **Search + rerank**; held |
+| V1 | What does that change? Unsafe vehicles surface at once. | **Business value:** four cards; card 1 *{safety} of {open}* unsafe vehicles found at once |
+| V2 | Managers get answers in a tenth of a second. | Card 2: *0.1 s* to answer a manager's question |
+| V3 | Every figure traces back to a real record. | Card 3: *905 / 905* answers traced to a real record |
+| V4 | And one update feeds the record, handover and dashboard. | Card 4: *1 update* feeds the whole shop; pull back to all four cards; footnote |
+| E1 | Three NVIDIA NIM microservices run on one L40S: language, embedding and reranking. | Infographic: an L40S chip with three tiles (chat, search, rank icons) that pulse in turn, then a memory bar fills to about 30 of 46 GB; callout **1 GPU**; held |
+| E3 | Riva handles speech. NeMo Guardrails stops unsafe requests. | Two white cards with the NVIDIA logo and pictograms (waveform, shield) fly in |
 | E4 | Only speech recognition uses NVIDIA's hosted service. | Ring on the Riva card, tagged *hosted* |
-| E5 | NeMo Evaluator scores every release. | Evaluator card (gauge pictogram), ring |
-| G1 | And DCGM streams live GPU telemetry into Grafana. | **Live Grafana** on the L40S: camera to the GPU utilisation and framebuffer panels, ring |
-| G2 | Latency, tool use and guardrail blocks are all measured. | Camera pans up across the answer, latency and tool panels |
-| H1 | Search vectors live in Milvus, fully inspectable. | **Live Attu**: collection `updates`, zoom on `vector FloatVector(1024)` |
-| F1 | Your models run on your own GPU. No hosted endpoint to retire. | Title and card 1 fly in |
-| F2 | The whole stack runs in about thirty gigabytes of a forty-six gigabyte card. | Card 2 |
-| F3 | Every answer reproducible, every figure checked, every call measured. | Cards 3 and 4 |
-| F4 | Fast. Grounded. Yours to run. | Large type |
-| F5 | Let's talk about your shop. | End card |
+| E5 | NeMo Evaluator scores every release. | Evaluator card (gauge pictogram), ring; held |
+| G1 | And DCGM streams live GPU telemetry into Grafana. | **Live Grafana** on the L40S: camera to the GPU utilisation and framebuffer panels, then the power panel, ring; held |
+| F1 | Your models, on your GPU. No hosted endpoint to retire. | Title and card 1 fly in |
+| F2 | About thirty gigabytes of a forty-six gigabyte card, pinned and reproducible. | Cards 2, 3 and 4 fly in one after another |
+| F4 | Fast. Grounded. Yours to run. | Large type; the video ends here |
 
 ```bash
 # beats, words, and the speaking time they imply at 190 wpm
@@ -58,7 +54,7 @@ python3 - <<'EOF'
 import re
 t = 0
 for l in open("docs/DEMO_VIDEO.md"):
-    m = re.match(r"\| ([A-H]\d) \| (.+?) \| ", l)
+    m = re.match(r"\| ([A-V]\d) \| (.+?) \| ", l)
     if m: t += len(m.group(2).split())
 print(t, "words =", round(t / 190 * 60), "s of speech at 190 wpm")
 EOF
@@ -95,6 +91,9 @@ EOF
 | reproducible | pinned container at temperature 0 (`README` hosted-vs-local table) |
 | every figure checked | `check_grounding`; baseline grounding 100 %, traceability 905/905, routing 37/37 |
 | DCGM → Grafana | 19 GPU series, `docs/screenshots/09` |
+| business value, card 1: *{safety} of {open}* | read from the running dashboard (`Safety - do not release` over `Open repair orders`) on the demo dataset |
+| business value, cards 2 and 3: *0.1 s*, *905 / 905* | the 0.1 s and traceability rows above |
+| business value, card 4: *1 update feeds the record, handover and dashboard* | state is folded from one event log (`docs/TECHNICAL.md`); the handover and dashboard are derived from it |
 | **not claimed** | retrieval accuracy (83.3 % recall@6), cost savings, speed against any competitor — none measured |
 
 Honest caveat to keep in the script: **speech-to-text is NVIDIA-hosted**, not on the box (scene 5 says so).

@@ -41,8 +41,8 @@ W, H, FPS = 1920, 1080, 30
 GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
-HOLD = {"A4": 0.8, "B5": 1.0, "C3": 0.6, "C4": 1.2, "D3": 1.0, "D4": 0.6, "D6": 1.2,
-        "E1": 0.7, "E5": 0.8, "G1": 0.9, "G2": 0.9, "H1": 1.3}
+HOLD = {"A4": 0.8, "B5": 0.8, "C3": 0.6, "C4": 1.0, "D3": 1.0, "D4": 0.6, "D6": 1.0,
+        "E1": 0.7, "E5": 0.8, "G1": 1.6, "V4": 0.9, "F4": 0.0}
 TTS_CACHE = Path.home() / ".cache" / "asoia-demo-tts"
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
@@ -67,10 +67,10 @@ def beats():
     """{scene letter: [(beat id, narration)]} from the beat table in docs/DEMO_VIDEO.md."""
     out: dict[str, list] = {}
     for line in (ROOT / "docs" / "DEMO_VIDEO.md").read_text().splitlines():
-        m = re.match(r"\| ([A-H])(\d) \| (.+?) \| (.+) \|$", line)
+        m = re.match(r"\| ([A-V])(\d) \| (.+?) \| (.+) \|$", line)
         if m:
             out.setdefault(m.group(1), []).append((m.group(1) + m.group(2), m.group(3)))
-    assert sorted(out) == list("ABCDEFGH"), "expected scenes A-H in docs/DEMO_VIDEO.md, found %s" % sorted(out)
+    assert sorted(out) == list("ABCDEFGV"), "expected scenes A-G and V in docs/DEMO_VIDEO.md, found %s" % sorted(out)
     return out
 
 
@@ -313,8 +313,7 @@ def inject(page):
 # ------------------------------------------------------------------ html scenes
 # ------------------------------------------------------------------ logos
 LOGO_URLS = {"nvidia": "https://upload.wikimedia.org/wikipedia/sco/2/21/Nvidia_logo.svg",
-             "grafana": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Grafana_logo.svg",
-             "milvus": "https://cdn.simpleicons.org/milvus"}
+             "grafana": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Grafana_logo.svg"}
 LOGO_CACHE = Path.home() / ".cache" / "asoia-demo-logos"
 
 
@@ -358,8 +357,7 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 #stamp{position:absolute;left:1010px;top:110px;width:210px;height:210px;border:12px solid #E5352B;border-radius:50%;color:#E5352B;font:900 38px/186px Arial;text-align:center;transform:rotate(-14deg);opacity:0;letter-spacing:2px;background:rgba(244,241,228,.0)}
 #head{position:absolute;left:0;right:0;top:845px;text-align:center;font:700 86px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}
 #head u{text-decoration:none;color:#76B900}
-#logo{position:absolute;left:70px;top:44px;height:64px;background:#fff;padding:12px 26px;border-radius:14px;box-sizing:content-box}
-</style><div class=grid></div><img id=logo src="@NV@">@CARDS@<div id=stamp>SAFETY</div>
+</style><div class=grid></div>@CARDS@<div id=stamp>SAFETY</div>
 <div id=head>The risk hides <u>between shifts.</u></div>
 <script>const $=id=>document.getElementById(id);
 const fly=(e,from,d,dur)=>e.animate([{opacity:0,transform:'translate('+from[0]+'px,'+from[1]+'px) rotate(var(--r)) scale(.9)'},{opacity:1,transform:'rotate(var(--r))'}],{duration:dur||520,delay:d,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});
@@ -368,7 +366,7 @@ window.__go=ms=>{const F=[[-700,-200],[0,-600],[700,-300],[-600,500],[700,600]];
  $('head').animate([{opacity:0,transform:'translateY(60px)'},{opacity:1,transform:'none'}],{duration:620,delay:ms*0.30,fill:'forwards',easing:'cubic-bezier(.2,.8,.2,1)'});
  $('stamp').animate([{opacity:0,transform:'rotate(-14deg) scale(2.4)'},{opacity:1,transform:'rotate(-14deg) scale(1)'}],{duration:300,delay:ms*0.58,fill:'forwards',easing:'cubic-bezier(.3,1.4,.5,1)'});
  $('n1').animate([{boxShadow:'0 20px 44px rgba(0,0,0,.5)'},{boxShadow:'0 0 0 10px rgba(229,53,43,.8),0 0 60px rgba(229,53,43,.9)'}],{duration:500,delay:ms*0.58,fill:'forwards'});};
-</script>""".replace("@NV@", logo("nvidia")).replace("@CARDS@", cards)
+</script>""".replace("@CARDS@", cards)
 
 
 def components_html() -> str:
@@ -422,16 +420,37 @@ h1{position:absolute;left:0;right:0;top:110px;text-align:center;margin:0;font-si
 .c{position:absolute;top:290px;width:400px;height:280px;background:#1E4035;border:2px solid #2E5245;border-radius:14px;padding:30px;box-sizing:border-box;opacity:0}
 .c b{display:block;color:#76B900;font-size:42px;margin-bottom:16px}.c span{font-size:27px;color:#DCE8CF;line-height:1.35}
 #big{position:absolute;left:0;right:0;top:650px;text-align:center;font-size:92px;font-weight:700;opacity:0}#big u{text-decoration:none;color:#76B900}
-#e{position:absolute;left:0;right:0;top:0;bottom:0;background:#14302A;opacity:0;text-align:center}#e h2{margin:300px 0 22px;font-size:90px}#e p{font-size:32px;color:#C8D6BE;margin:8px}
-#e small{display:block;margin-top:44px;font-size:26px;color:#8FA58A}
 </style><h1 id=t>Why it matters</h1>%s<div id=big>Fast. <u>Grounded.</u> Yours to run.</div>
-<div id=e><h2>Let's talk about your shop.</h2><p>Automotive Service Operations Intelligence Agent</p><p>NVIDIA NIM &middot; Riva &middot; NeMo &middot; DCGM</p>
-<small>[ your name &middot; contact details ]</small></div>
 <script>const $=id=>document.getElementById(id);
 const up=(e,d)=>e.animate([{opacity:0,transform:'translateY(60px) scale(.96)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
 window.__title=()=>up($('t'));window.__card=i=>up(document.querySelectorAll('.c')[i]);window.__big=()=>up($('big'),600);
-window.__end=()=>$('e').animate([{opacity:0},{opacity:1}],{duration:500,fill:'forwards'});
 </script>""" % "".join('<div class=c style="left:%dpx"><b>%s</b><span>%s</span></div>' % (80 + i * 440, a, b) for i, (a, b) in enumerate(cards))
+
+
+def value_html(subs: dict) -> str:
+    cards = [("v0", "shield", "%s of %s" % (subs["{safety}"], subs["{open}"]), "unsafe vehicles surfaced at once", "not buried in a technician's note"),
+             ("v1", "gauge", "0.1 s", "to answer a manager's question", "from live state, with no model call"),
+             ("v2", "search", "905 / 905", "answers traced to a real record", "every cited figure is checked"),
+             ("v3", "chat", "1 update", "feeds the whole shop", "the record, the handover and the dashboard")]
+    c_html = "".join('<div class=v id=%s><div class=ic>%s</div><div class=big>%s</div><div class=lab>%s</div><div class=sub>%s</div></div>'
+                     % (i, IC[ic], big, lab, sub) for i, ic, big, lab, sub in cards)
+    return """<!doctype html><meta charset=utf-8><style>
+:root{--co-x:1430px;--co-y:50px}
+body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;background:radial-gradient(circle at 25% 15%,#1d4d3f 0%,#0d201b 75%)}
+h1{position:absolute;left:0;right:0;top:78px;text-align:center;margin:0;font-size:64px}
+p.sub2{position:absolute;left:0;right:0;top:166px;text-align:center;margin:0;font-size:30px;color:#C8D6BE}
+.v{position:absolute;top:270px;width:410px;height:600px;border-radius:22px;background:#fff;color:#142019;opacity:0;box-shadow:0 22px 50px rgba(0,0,0,.45);border-top:14px solid #76B900;padding:34px;box-sizing:border-box}
+.v .ic{width:96px;height:96px;background:#EEF6DF;border-radius:20px;padding:16px;box-sizing:border-box}
+.v .big{font:800 82px/1.05 Arial;margin:34px 0 16px;color:#2f5f00;white-space:nowrap}
+.v .lab{font:700 38px/1.22 Arial}.v .sub{font:28px/1.32 Arial;color:#4b5b50;margin-top:18px}
+#v0{left:72px}#v1{left:527px}#v2{left:982px}#v3{left:1437px}
+#note{position:absolute;left:0;right:0;bottom:70px;text-align:center;font:26px Arial;color:#9FB59A;opacity:0}
+</style><h1>What it changes for the shop</h1><p class=sub2>Measured on the demo dataset</p>@CARDS@
+<div id=note>Figures are from this demo dataset. Your shop's results will vary.</div>
+<script>const $=id=>document.getElementById(id);
+const show=(e,d)=>e.animate([{opacity:0,transform:'translateY(50px) scale(.95)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
+window.__show=id=>show($(id));window.__note=()=>$('note').animate([{opacity:0},{opacity:1}],{duration:600,fill:'forwards'});
+</script>""".replace("@CARDS@", c_html)
 
 
 # ------------------------------------------------------------------ the box
@@ -509,10 +528,10 @@ def live_counts(pw):
     br = pw.chromium.launch(); pg = br.new_page(viewport={"width": W, "height": H})
     pg.goto("http://127.0.0.1:7871", wait_until="load", timeout=90000)
     pg.get_by_text("Safety - do not release").first.wait_for(timeout=90000)
-    tile = pg.evaluate("""() => document.evaluate("//*[text()='Safety - do not release']", document, null, 9, null)
-        .singleNodeValue.closest('div[style*="border-radius:10px"]').innerText.split('\\n')[0]""")
+    tiles = pg.evaluate("""() => ['Safety - do not release', 'Open repair orders'].map(t => document.evaluate("//*[text()='" + t + "']", document, null, 9, null)
+        .singleNodeValue.closest('div[style*="border-radius:10px"]').innerText.split('\\n')[0])""")
     br.close()
-    return int(tile), n_ask
+    return int(tiles[0]), n_ask, int(tiles[1])
 
 
 # ------------------------------------------------------------------ recording
@@ -578,7 +597,7 @@ def concat(parts, out: Path):
 # ------------------------------------------------------------------ logo badges and re-timed footage
 BADGES = {"C2": (["nvidia"], "Riva · speech to text"), "C3": (["nvidia"], "Nemotron 8B · NIM"),
           "D6": (["nvidia"], "NIM · embed + rerank"), "G1": (["nvidia", "grafana"], "DCGM telemetry"),
-          "G2": (["nvidia", "grafana"], "DCGM + Grafana"), "H1": (["milvus"], "Milvus vector store")}
+          "G2": (["nvidia", "grafana"], "DCGM + Grafana")}
 FOOTAGE = ROOT / "docs" / "demo" / "footage"
 
 
@@ -609,20 +628,38 @@ def overlay_badges(video: Path, wins, out: Path):
         "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "veryfast", "-an", out)
 
 
-def retime(scene: str, first: int, new_durs, holds, out: Path):
-    """Re-time recorded footage: stretch each beat's shot to its new (slower) length, then freeze its last frame for the hold."""
+def retime(scene: str, ids, new_durs, holds, out: Path):
+    """Re-time recorded footage: stretch each beat's shot to its new length (a slower shot is stretched; a shorter line
+    is allowed to run up to a third faster), then freeze its last frame for the hold."""
     old = json.loads((FOOTAGE / "beats.json").read_text())[scene]
-    offs = [sum(old[:i]) for i in range(len(old))]
+    offs, t = {}, 0.0
+    for bid, d in old:
+        offs[bid] = (t, d); t += d
     parts, labels = [], []
-    for k, (nd, h) in enumerate(zip(new_durs, holds)):
-        i = first + k
-        f = (nd - h) / old[i]
-        assert f > 0.9, "beat %s%d would have to be sped up (x%.2f); re-record it" % (scene, i + 1, 1 / f)
+    for k, (bid, nd, h) in enumerate(zip(ids, new_durs, holds)):
+        start, dur = offs[bid]
+        dur -= 0.40                      # stop before the next beat's caption appears
+        f = (nd - h) / dur
+        assert f > 0.75, "beat %s would have to be sped up (x%.2f); re-record it" % (bid, 1 / f)
         parts.append("[0:v]trim=start=%.3f:end=%.3f,setpts=(PTS-STARTPTS)*%.4f,fps=%d,tpad=stop_mode=clone:stop_duration=%.3f,scale=%d:%d[v%d]"
-                     % (offs[i], offs[i] + old[i], f, FPS, h, W, H, k))
+                     % (start, start + dur, f, FPS, h, W, H, k))
         labels.append("[v%d]" % k)
     run(ffmpeg(), "-y", "-i", FOOTAGE / (scene + ".mp4"), "-filter_complex", ";".join(parts) + ";" + "".join(labels) + "concat=n=%d:v=1:a=0[v]" % len(labels),
         "-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "21", "-preset", "veryfast", "-an", out)
+
+
+def bridge(prev: Path, nxt: Path, out: Path, d: float = 0.8):
+    """A short silent dissolve from the last frame of one piece to the first frame of the next, so a change of
+    screen eases in instead of cutting."""
+    fa, fb = WORK / "bridge_a.png", WORK / "bridge_b.png"
+    run(ffmpeg(), "-y", "-sseof", "-0.2", "-i", prev, "-frames:v", "1", "-update", "1", fa)
+    run(ffmpeg(), "-y", "-i", nxt, "-frames:v", "1", "-update", "1", fb)
+    silent = WORK / "bridge.wav"
+    with wave.open(str(silent), "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE); w.writeframes(b"\0\0" * int(RATE * d))
+    run(ffmpeg(), "-y", "-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % d, "-i", fa, "-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % d, "-i", fb,
+        "-i", silent, "-filter_complex", "[0:v][1:v]xfade=transition=fade:duration=%.2f:offset=0,format=yuv420p,scale=%d:%d[v]" % (d - 0.01, W, H),
+        "-map", "[v]", "-map", "2:a", "-c:v", "libx264", "-crf", "21", "-preset", "veryfast", "-c:a", "aac", "-b:a", "160k", "-t", "%.2f" % d, out)
 
 
 # ------------------------------------------------------------------ small page helpers
@@ -786,20 +823,18 @@ def scene_E():
 
     def e1(page, d):
         page.evaluate("() => window.__show('gpu')")
-        for k, i in enumerate(("t0", "t1", "t2")):
-            page.wait_for_timeout(int(d * 1000 * 0.16))
+        for i in ("t0", "t1", "t2"):
+            page.wait_for_timeout(int(d * 1000 * 0.10))
             page.evaluate("i => window.__show(i)", i)
-        page.wait_for_timeout(int(d * 1000 * 0.12))
+        page.wait_for_timeout(int(d * 1000 * 0.10))
         page.evaluate("() => window.__vram()")
-
-    def e2(page, d):
+        page.wait_for_timeout(int(d * 1000 * 0.25))
         for i in ("t0", "t1", "t2"):
             page.evaluate("i => window.__pulse(i)", i)
-            page.wait_for_timeout(int(d * 1000 / 3))
+            page.wait_for_timeout(int(d * 1000 * 0.08))
 
     GPU = {"sel": "#gpu"}
-    return [dict(cam=GPU, camo=dict(max=1.25, pad=90), co="1 GPU", act=e1),
-            dict(cam={"sel": ".chip"}, camo=dict(max=1.45, pad=90), act=e2),
+    return [dict(cam=GPU, camo=dict(max=1.3, pad=90), co="1 GPU", act=e1),
             dict(cam=[{"sel": "#c0"}, {"sel": "#c1"}], camo=dict(max=1.4, pad=90), act=seq("c0", "c1", share=0.42)),
             dict(cam={"sel": "#c0"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c0"}, ringpad=6,
                  act=lambda page, d: page.evaluate("() => window.__tag('c0')")),
@@ -828,14 +863,20 @@ def scene_G():
             dict(cam=LAT, camo=dict(max=1.9, pad=70), ring=LAT, ringpad=4, co=pct, act=g2)]
 
 
-def scene_H():
-    ENT = {"text": "Entity Count", "grow": [100, 40, 140, 30]}
-    VEC = {"text": "FloatVector(1024)", "grow": [240, 22, 760, 22]}
-
-    def h1(page, d):
-        page.wait_for_timeout(int(d * 1000 * 0.5))
-        aim(page, VEC, d * 420, ring=VEC, co="1,024-dim vectors", max=2.2, pad=60)
-    return [dict(cam=ENT, camo=dict(max=2.2, pad=80), co="1,897 vectors", act=h1)]
+def scene_V():
+    def show(*ids, note=False):
+        def f(page, d):
+            for i in ids:
+                page.evaluate("i => window.__show(i)", i)
+            if note:
+                page.wait_for_timeout(int(d * 500))
+                page.evaluate("() => window.__note()")
+        return f
+    V = lambda i: {"sel": "#v%d" % i}
+    return [dict(cam=V(0), camo=dict(max=1.55, pad=160), co="Safety", act=show("v0")),
+            dict(cam=[V(0), V(1)], camo=dict(max=1.5, pad=120), co="Speed", act=show("v1")),
+            dict(cam=[V(1), V(2)], camo=dict(max=1.5, pad=120), co="Trust", act=show("v2")),
+            dict(cam=None, camo=dict(to=1.0), co="One source", act=show("v3", note=True))]
 
 
 def scene_F():
@@ -852,10 +893,8 @@ def scene_F():
         page.wait_for_timeout(int(d * 250))
         page.evaluate("() => window.__card(0)")
     return [dict(cam={"sel": ".c", "nth": 0}, camo=dict(max=1.4, pad=240), act=f1),
-            dict(cam={"sel": ".c", "nth": 1}, camo=dict(max=1.5, pad=240), act=card(1)),
-            dict(cam=[{"sel": ".c", "nth": 2}, {"sel": ".c", "nth": 3}], camo=dict(max=1.4, pad=120), act=card(2, 3)),
-            dict(cam=None, camo=dict(to=1.0), act=lambda page, d: page.evaluate("() => window.__big()")),
-            dict(cam=None, camo=dict(to=1.0), act=lambda page, d: page.evaluate("() => window.__end()"))]
+            dict(cam=[{"sel": ".c", "nth": 1}, {"sel": ".c", "nth": 3}], camo=dict(max=1.25, pad=100), act=card(1, 2, 3)),
+            dict(cam=None, camo=dict(to=1.0), act=lambda page, d: page.evaluate("() => window.__big()"))]
 
 
 def live_scenes(wav: Path, n_safety: int):
@@ -869,12 +908,6 @@ def live_scenes(wav: Path, n_safety: int):
         choose(page, 1, idx=1)
         page.get_by_text("Parts Hold").first.wait_for(timeout=15000)
 
-    def prep_h(page):
-        page.get_by_role("button", name="Connect").click()
-        page.get_by_text("default", exact=True).first.click()
-        page.get_by_text("updates").first.click()
-        page.get_by_text("FloatVector(1024)").first.wait_for(timeout=30000)
-
     def ready_g(page):
         page.get_by_text("GPU utilisation and framebuffer").first.wait_for(timeout=120000)
         page.wait_for_timeout(4500)
@@ -882,16 +915,15 @@ def live_scenes(wav: Path, n_safety: int):
     return {"A": ("http://127.0.0.1:7871", scene_A(n_safety), None, wait("Open repair orders")),
             "C": ("http://127.0.0.1:7872", scene_C(wav), prep_c, ready_c),
             "D": ("http://127.0.0.1:7873", scene_D(), None, wait("Try these")),
-            "G": (graf, scene_G(), None, ready_g),
-            "H": ("http://127.0.0.1:8101/#/connect", scene_H(), prep_h,
-                  lambda page: page.get_by_role("button", name="Connect").wait_for(timeout=60000))}
+            "G": (graf, scene_G(), None, ready_g)}
 
 
 # ------------------------------------------------------------------ main
-# (output piece, script scene, first beat, end beat): the opening visual replaces the first dashboard shot
-PIECES = [("O", "A", 0, 1), ("A", "A", 1, 5), ("B", "B", 0, 5), ("C", "C", 0, 5), ("D", "D", 0, 6),
-          ("E", "E", 0, 5), ("G", "G", 0, 2), ("H", "H", 0, 1), ("F", "F", 0, 5)]
-LIVE = "ACDGH"
+# (output piece, script scene, beat ids or None for all): the opening visual replaces the first dashboard shot
+PIECES = [("O", "A", ["A1"]), ("A", "A", ["A2", "A4", "A5"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
+          ("V", "V", None), ("E", "E", None), ("G", "G", None), ("F", "F", None)]
+LIVE = "ACDG"
+BRIDGE_BEFORE = "D"          # ease from the Technician Update form into the Manager Assistant
 
 
 def main():
@@ -937,8 +969,8 @@ def main():
                 if not args.no_traffic:
                     print("box: 100 s of mixed questions through /ask so Grafana has real data")
                     ssh(args.box, TRAFFIC % 100)
-                n_safety, n_ask = live_counts(pw)
-                subs = {"{safety}": str(n_safety), "{ask_n}": str(n_ask)}
+                n_safety, n_ask, n_open = live_counts(pw)
+                subs = {"{safety}": str(n_safety), "{ask_n}": str(n_ask), "{open}": str(n_open)}
                 live_cfg = live_scenes(dictation(), n_safety)
 
             def fill(t):
@@ -948,31 +980,34 @@ def main():
             slide_driven, _ = slide_html(pptx, driven=True)
             (WORK / "slide_driven.html").write_text(slide_driven)
             (WORK / "intro.html").write_text(intro_html())
+            (WORK / "value.html").write_text(value_html(subs))
             (WORK / "comp.html").write_text(components_html())
             (WORK / "end.html").write_text(end_html())
             local = {"O": ((WORK / "intro.html").as_uri(), scene_O()),
                      "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
+                     "V": ((WORK / "value.html").as_uri(), scene_V()),
                      "E": ((WORK / "comp.html").as_uri(), scene_E()),
                      "F": ((WORK / "end.html").as_uri(), scene_F())}
             want = list(args.scene) if args.scene else [p[0] for p in PIECES]
             parts, total = [], 0.0
-            for name, sc, a, b in PIECES:
+            for name, sc, ids in PIECES:
                 if name not in want:
                     continue
-                rows = script[sc][a:b]
+                rows = [r for r in script[sc] if ids is None or r[0] in ids]
                 files, vdur = zip(*[voice(fill(t)) for _, t in rows])
                 holds = [HOLD.get(i, 0.0) for i, _ in rows]
                 durs = [v + h for v, h in zip(vdur, holds)]
-                tail = 2.2 if name == "F" else 0.0
-                vid = WORK / (name + "_v.mp4")
+                tail = 1.0 if name == "F" else 0.0
+                texts = [fill(t) for _, t in rows]
                 if name in LIVE and not args.box:
-                    retime(sc, a, durs, holds, vid)
+                    vid = WORK / (name + "_v.mp4")
+                    retime(sc, [i for i, _ in rows], durs, holds, vid)
                 elif name in LIVE:
                     url, plan, prep, ready = live_cfg[sc]
-                    vid = record(pw, name, url, [fill(t) for _, t in rows], durs, plan[a:b], prep, tail, ready, holds)
+                    vid = record(pw, name, url, texts, durs, [plan[int(i[1:]) - 1] for i, _ in rows], prep, tail, ready, holds)
                 else:
                     url, plan = local[name]
-                    vid = record(pw, name, url, [fill(t) for _, t in rows], durs, plan, None, tail, None, holds)
+                    vid = record(pw, name, url, texts, durs, plan, None, tail, None, holds)
                 wins, t = [], 0.0
                 for (i, _), d in zip(rows, durs):
                     if i in BADGES:
@@ -981,7 +1016,12 @@ def main():
                 shown = WORK / (name + "_b.mp4")
                 overlay_badges(vid, wins, shown)
                 wavf = WORK / (name + ".wav"); join_wavs(list(files), wavf, holds)
-                m = WORK / ("m_" + name + ".mp4"); mux(shown, wavf, sum(durs) + tail, m); parts.append(m)
+                m = WORK / ("m_" + name + ".mp4"); mux(shown, wavf, sum(durs) + tail, m)
+                if name == BRIDGE_BEFORE and parts:
+                    br_clip = WORK / "bridge.mp4"
+                    bridge(parts[-1], shown, br_clip)
+                    parts.append(br_clip); total += 0.8
+                parts.append(m)
                 total += sum(durs) + tail
                 print("piece %s: %d beats, %.1f s" % (name, len(rows), sum(durs) + tail))
                 if args.keep:
