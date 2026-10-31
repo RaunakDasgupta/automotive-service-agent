@@ -5,7 +5,7 @@ AI assistant for a service department. **One idea:** *fast, grounded answers, ru
 
 ## 1. Script — written to be cut, not read
 
-**Target 2:00–2:15.** 324 spoken words, voiced one beat at a time at ~190 wpm and timed so that **the picture
+**Target 2:00–2:15.** 352 spoken words, voiced one beat at a time at ~190 wpm and timed so that **the picture
 changes on every beat (2–5 s) and something on screen is always moving**. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
@@ -21,35 +21,36 @@ or product shot at the open and the close; nothing held still. Narration there r
 | A2 | A safety finding sits in a technician's note that nobody has time to read. | Camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
 | A3 | A part is on hold. A promised time has slipped. Customers wait while managers chase. | Pan across the *Promise missed* and *Blocked* tiles; callout **Missed promises** |
 | A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe** |
-| A5 | This is the Automotive Service Operations Intelligence Agent. | Pull back to the full dashboard; callout **NVIDIA-powered** |
-| A6 | Voice and text updates in. Decisions out. | Slide to the process scene |
+| A5 | This is the Automotive Service Operations Intelligence Agent. | Pull back to the full dashboard; callout **NVIDIA stack** |
 | B1 | A technician speaks or types an update at the bay. | Process slide: stage 1 builds, camera on it; callout **Capture** |
 | B2 | NVIDIA Riva transcribes it, and a Nemotron model extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
 | B3 | Code then checks every fact against the catalogue. Nothing is guessed. | Stage 3; callout **Verify** |
 | B4 | Each update joins an audit trail, and every order's state is derived from it. | Stage 4; callout **Record** |
 | B5 | So a manager simply asks, and gets a cited answer. | Stage 5, then the three business figures count up; callout **Decide** |
-| C1 | Watch. A technician logs a measurement: the front pads are one point eight millimetres thick. | Technician Update, fields fill, camera on the measurement fields; callout **1.8 mm** |
-| C2 | The minimum is three. | Spec minimum fills; callout **min 3.0 mm** |
-| C3 | One click. | Cursor to the button, ring and ripple |
-| C4 | The system matches the repair order and flags it unsafe to release, instantly. | Zoom on the `SAFETY_RELATED` line, highlight; callout **Flagged unsafe** |
+| C1 | Watch. A technician dictates an update from the bay. | Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
+| C2 | NVIDIA Riva turns the speech into text. | Transcribe is clicked; the transcript fills; callout **Riva ASR** |
+| C3 | Nemotron pulls out the facts: the measurement, and the spec. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |
+| C4 | Code checks it, and flags the repair order unsafe to release, instantly. | Zoom on the *What changed* card and the out-of-spec line, ring; callout **Flagged unsafe** |
 | C5 | Every change is shown, so nothing is logged twice, or missed. | Camera pans down the diff card |
 | D1 | Now the manager asks the question that matters. | Manager Assistant, camera on the question box |
-| D2 | Which vehicles cannot be released on safety grounds? | The question types out at speaking pace |
-| D3 | {ask_n} vehicles. Every one cited. Answered in a tenth of a second, with no model call. | Zoom on the answer and the `Tools: … Sources:` line; callout **0.1 s · no model call** |
-| D4 | Not a guess. A calculation, with the records it came from. | Slow pan along the sources |
+| D2 | Which vehicles cannot be released on safety grounds? | The question types out at speaking pace, then is asked |
+| D3 | {ask_n} vehicles. Every one cited. Answered in a tenth of a second, with no model call. | Zoom on the answer; callout **Cited · no model call** |
+| D4 | Not a guess. A calculation, with sources. | Scrolls to the `Tools: … Sources:` line, ring |
+| D5 | Now an open question: has anyone seen a whistling noise on a Passat? | The second question types out and is asked |
+| D6 | Search, rerank and a cited answer, in seconds, on the same GPU. | Camera on the answer and its update citations; callout **Search + rerank** |
 | E1 | Three NVIDIA NIM microservices run on a single L40S GPU. | Component page: three chips pop in; callout **1 GPU** |
 | E2 | Nemotron for language. An embedding model and a reranker for search. | The three chips highlight in turn |
 | E3 | Riva handles speech. NeMo Guardrails stops unsafe requests before any tool runs. | Riva and Guardrails chips land |
-| E4 | NeMo Evaluator scores every release. | Evaluator chip |
-| E5 | And DCGM streams live GPU telemetry into Grafana. | Grafana still, zoom to the 90.9 % tile, then the GPU panel |
-| E6 | Search vectors live in Milvus, fully inspectable. | Attu still, zoom on `vector FloatVector(1024)` |
-| E7 | Only speech recognition uses NVIDIA's hosted service. | Riva chip tagged *hosted* |
-| F1 | Why it matters. | Title |
-| F2 | Your models run on your own GPU, so there is no hosted endpoint to retire underneath you. | Card 1 flies in |
-| F3 | The whole stack runs in about thirty gigabytes of a forty-six gigabyte card. | Card 2 |
-| F4 | Every answer is reproducible, every figure is checked, and every call is measured. | Cards 3 and 4 |
-| F5 | Fast. Grounded. Yours to run. | Large type |
-| F6 | Let's talk about your shop. | End card |
+| E4 | Only speech recognition uses NVIDIA's hosted service. | Riva chip tagged *hosted* |
+| E5 | NeMo Evaluator scores every release. | Evaluator chip |
+| G1 | And DCGM streams live GPU telemetry into Grafana. | **Live Grafana** on the L40S: camera to the GPU utilisation and framebuffer panels, ring |
+| G2 | Latency, tool use and guardrail blocks are all measured. | Camera pans up across the answer, latency and tool panels |
+| H1 | Search vectors live in Milvus, fully inspectable. | **Live Attu**: collection `updates`, zoom on `vector FloatVector(1024)` |
+| F1 | Your models run on your own GPU, so there is no hosted endpoint to retire underneath you. | Title and card 1 fly in |
+| F2 | The whole stack runs in about thirty gigabytes of a forty-six gigabyte card. | Card 2 |
+| F3 | Every answer is reproducible, every figure is checked, and every call is measured. | Cards 3 and 4 |
+| F4 | Fast. Grounded. Yours to run. | Large type |
+| F5 | Let's talk about your shop. | End card |
 
 ```bash
 # beats, words, and the speaking time they imply at 190 wpm
@@ -57,7 +58,7 @@ python3 - <<'EOF'
 import re
 t = 0
 for l in open("docs/DEMO_VIDEO.md"):
-    m = re.match(r"\| ([A-F]\d) \| (.+?) \| ", l)
+    m = re.match(r"\| ([A-H]\d) \| (.+?) \| ", l)
     if m: t += len(m.group(2).split())
 print(t, "words =", round(t / 190 * 60), "s of speech at 190 wpm")
 EOF
