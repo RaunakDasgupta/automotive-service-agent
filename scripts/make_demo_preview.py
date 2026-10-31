@@ -42,8 +42,8 @@ WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
 GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
-HOLD = {"A4": 0.8, "B5": 0.5, "C3": 0.6, "C4": 1.0, "D3": 1.0, "D4": 0.6, "D6": 1.0,
-        "E1": 0.7, "E5": 0.6, "G1": 1.1, "V4": 0.9, "F4": 0.4}
+HOLD = {"A4": 0.8, "B5": 0.3, "C3": 1.0, "C4": 0.8, "D3": 0.7, "D4": 0.6, "D6": 0.8,
+        "E1": 0.7, "E5": 0.6, "G1": 0.7, "V4": 0.6, "F4": 0.4}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -192,6 +192,8 @@ def slide_html(pptx: Path, marker: str = "anim-s0-card", driven: bool = False) -
                 paras.append('<div style="%s">%s</div>' % (pst, runs or "&nbsp;"))
             inner = ('<div style="display:flex;flex-direction:column;justify-content:%s;height:100%%;'
                      'padding:%.1fpx %.1fpx %.1fpx %.1fpx;box-sizing:border-box">%s</div>' % ((anchor, *pad, "".join(paras))))
+        if "NVIDIA-hosted" in "".join(sp.itertext()):
+            continue                  # the slide's footnote about hosted speech recognition is not shown in the video
         shapes.append((c.get("id"), '<div class="sh" data-id="%s" data-name="%s" style="%s">%s</div>' % (c.get("id"), c.get("name"), ";".join(css), inner)))
         ids[c.get("id")] = c.get("name")
     anims = []
@@ -255,7 +257,7 @@ TOOLKIT_JS = r"""
   window.__find = d => {
     if (Array.isArray(d)) { const rs = d.map(window.__find).filter(Boolean); if (!rs.length) return null;
       const x0 = Math.min(...rs.map(r => r.x)), y0 = Math.min(...rs.map(r => r.y)), x1 = Math.max(...rs.map(r => r.x + r.w)), y1 = Math.max(...rs.map(r => r.y + r.h));
-      return {x: x0, y: y0, w: x1 - x0, h: y1 - y0}; }
+      return {x: x0, y: y0, w: x1 - x0, h: y1 - y0, o: Math.min(...rs.map(r => r.o === undefined ? 1 : r.o))}; }
     if (d.rect) return {x: d.rect[0], y: d.rect[1], w: d.rect[2], h: d.rect[3]};
     let el = null;
     if (d.fn) el = (new Function('return (' + d.fn + ')'))()();
@@ -265,7 +267,8 @@ TOOLKIT_JS = r"""
     if (!el) return null;
     if (d.up) el = el.closest(d.up) || el;
     const r = el.getBoundingClientRect(), b = body.getBoundingClientRect(), m = window.__mat();
-    const o = {x: (r.left - b.left) / m.s, y: (r.top - b.top) / m.s, w: r.width / m.s, h: r.height / m.s};
+    let op = 1; for (let n = el; n && n.nodeType === 1; n = n.parentElement) op *= +getComputedStyle(n).opacity;
+    const o = {x: (r.left - b.left) / m.s, y: (r.top - b.top) / m.s, w: r.width / m.s, h: r.height / m.s, o: op};
     if (d.skip) { o.y += d.skip; o.h = Math.max(40, o.h - d.skip); }
     if (d.top) o.h = Math.min(o.h, d.top);
     if (d.grow) { const g = d.grow; o.x -= g[0]; o.y -= g[1]; o.w += g[0] + g[2]; o.h += g[1] + g[3]; }
@@ -284,9 +287,12 @@ TOOLKIT_JS = r"""
     body.style.transition = 'transform ' + (o.ms || 1500) + 'ms ' + (o.ease || 'cubic-bezier(.45,.05,.25,1)');
     body.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
   };
-  window.__ring = (d, pad) => { document.querySelectorAll('.__ring').forEach(e => e.remove()); if (!d) return;
-    const L = window.__find(d); if (!L) return; pad = pad || 10; const e = document.createElement('div'); e.className = '__ring';
-    Object.assign(e.style, {left: (L.x - pad) + 'px', top: (L.y - pad) + 'px', width: (L.w + 2 * pad) + 'px', height: (L.h + 2 * pad) + 'px'}); body.appendChild(e); };
+  window.__ring = (d, pad) => { cancelAnimationFrame(window.__ringRaf); document.querySelectorAll('.__ring').forEach(e => e.remove()); if (!d) return;
+    pad = pad || 10; const e = document.createElement('div'); e.className = '__ring'; e.style.opacity = 0; body.appendChild(e);
+    const tick = () => { const L = window.__find(d);
+      if (L) Object.assign(e.style, {left: (L.x - pad) + 'px', top: (L.y - pad) + 'px', width: (L.w + 2 * pad) + 'px', height: (L.h + 2 * pad) + 'px', opacity: L.o});
+      window.__ringRaf = requestAnimationFrame(tick); };
+    tick(); };
   window.__co = text => { document.querySelectorAll('.__co').forEach(e => { e.animate([{opacity: 1}, {opacity: 0}], {duration: 160, fill: 'forwards'}); setTimeout(() => e.remove(), 180); });
     if (!text) return; const e = document.createElement('div'); e.className = '__co'; e.innerHTML = '<b>' + text + '</b>'; html.appendChild(e);
     e.animate([{opacity: 0, transform: 'translateX(-40px) scale(.9)'}, {opacity: 1, transform: 'none'}], {duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both'}); };
@@ -629,8 +635,8 @@ LIVE_PLAN = {
     "C1": dict(src="C1", cam="VOICE", camo=dict(max=1.55, pad=100), co="Voice in"),
     "C2": dict(src="C2", cam="TRANS", camo=dict(max=1.6, pad=100), co="Riva ASR", badge="C2"),
     "C3": dict(src="C3", cam="EXTR", camo=dict(max=1.5, pad=100), co="Nemotron 8B", badge="C3",
-               then=[dict(at="done+0.9", cam="MEAS", camo=dict(max=2.1, pad=60), ring="MEAS", dur=0.45)]),
-    "C4": dict(src="C4", freeze=True, cam="CARD120", camo=dict(max=2.2, pad=90), ring="CARD120", ringpad=6, co="Flagged unsafe"),
+               then=[dict(at="done+1.05", cam="MEAS", camo=dict(max=2.1, pad=60), ring="MEAS", dur=0.45)]),
+    "C4": dict(src="C4", freeze=True, cam="CARD", camo=dict(max=2.2, pad=90), ring="CARD", ringpad=6, co="Flagged unsafe"),
     "D1": dict(src="D1", freeze=True, cam="Q", camo=dict(max=1.5, pad=140)),
     "D2": dict(src="D2", cam="Q", camo=dict(max=1.75, pad=140), ring="Q"),
     "D3": dict(src="D3", cam=None, camo=dict(to=1.05),
@@ -793,10 +799,11 @@ def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int
         if isinstance(at, str):
             name, _, off = at.partition("+")
             at = out_t(st["marks"][name] + float(off or 0)) if name in st["marks"] else 0.55 * v
-            at = min(at, max(0.0, v - 1.0))
+            at = min(at, max(0.0, nd - 0.9))               # a late move may run into the hold, never past the beat
         else:
             at = at * v
         dur = m["dur"] if m is steps[0] else m["dur"] * v
+        dur = min(dur, max(0.3, nd - at - 0.05))      # the move must finish inside the beat, or the next one starts from the wrong place
         target = m.get("cam")
         r = rect(target) if target else None
         if target and not r:
@@ -956,7 +963,7 @@ def main():
             files, vdur = zip(*[voice(fill(t)) for _, t in rows])
             holds = [HOLD.get(i, 0.0) for i, _ in rows]
             durs = [v + h for v, h in zip(vdur, holds)]
-            tail = 1.0 if name == "F" else 0.0
+            tail = 0.8 if name == "F" else 0.0
             texts = [fill(t) for _, t in rows]
             if name in LIVE:
                 shown = live_piece(pngs, name, rows, durs, holds, texts, tl, subs, WORK / (name + "_v.mp4"))

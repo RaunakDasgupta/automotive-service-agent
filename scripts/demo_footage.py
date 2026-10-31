@@ -68,8 +68,8 @@ TARGETS = {
     "C": {"VOICE": [{"text": "Voice or free text"}, {"text": "Record or upload", "grow": [0, 0, 900, 150]}],
           "TRANS": [{"text": "Transcribe", "up": "button"}, {"text": "Transcript / free-text update", "grow": [0, 0, 1700, 110]}],
           "EXTR": [{"text": "Extract and apply", "up": "button"}, {"text": "Extracted 3 C's structure", "grow": [0, 0, 900, 230]}],
-          "MEAS": {"text": "safety_related", "grow": [330, 240, 330, 24]},
-          "CARD120": {"fn": _CARD, "top": 120}, "CARD280": {"fn": _CARD, "top": 280}},
+          "MEAS": [{"text": '"measurements"', "grow": [6, 6, 100, 0]}, {"text": '"safety_related"', "grow": [0, 0, 0, 13]}],   # the measurement entry in the JSON
+          "CARD": {"fn": _CARD, "top": 172}},                                                  # the what-changed text: first line to the last
     "D": {"Q": {"fn": "()=>[...document.querySelectorAll('textarea')].find(t=>t.offsetParent)"},
           "ANS": {"text": "repair orders cannot be released"},
           "LAST": {"fn": "()=>[...document.querySelectorAll('*')].filter(e=>e.children.length==0&&e.textContent.includes('whistling')).pop()",
