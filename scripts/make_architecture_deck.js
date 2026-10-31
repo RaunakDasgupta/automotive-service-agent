@@ -129,16 +129,11 @@ function slideTitleCard(pres) {
 // actually come in?" - answered on every stage by its badge. Five stages, each a
 // verb. Shapes are named "anim-*" so addAnimation() can find them in the XML.
 const STAGES = [
-  ["Capture", "A technician speaks or types the update at the bay.",
-   "No forms. No end-of-shift retyping.", "nv", "NVIDIA Riva\nParakeet speech-to-text"],
-  ["Understand", "Free-form shop talk becomes structured facts: concern, cause, correction.",
-   "Hours, parts and measurements pulled out automatically.", "nv", "NVIDIA NIM\nNemotron 8B"],
-  ["Verify", "Every fact is checked against the catalogue. Conflicts are raised, never overwritten.",
-   "Nothing is guessed. An unclear update asks a question.", "std", "Deterministic Python\nno model involved"],
-  ["Record", "The update joins an append-only log; each order's state is derived from it.",
-   "A full audit trail, and no stale status.", "std", "Event log\nSQLite, on the box"],
-  ["Decide", "Managers ask in plain English. Answers are computed, cited and checked.",
-   "Structured questions answered in about a tenth of a second.", "nv", "NVIDIA NIM retrieval\nNeMo Guardrails"],
+  ["Capture", "A technician speaks or types the update at the bay.", "nv", "NVIDIA Riva\nParakeet speech-to-text"],
+  ["Understand", "Free-form shop talk becomes structured facts: concern, cause, correction.", "nv", "NVIDIA NIM\nNemotron 8B"],
+  ["Verify", "Every fact is checked against the catalogue. Conflicts are raised, never overwritten.", "std", "Deterministic Python\nno model involved"],
+  ["Record", "The update joins an append-only log; each order's state is derived from it.", "std", "Event log\nSQLite, on the box"],
+  ["Decide", "Managers ask in plain English. Answers are computed, cited and checked.", "nv", "NVIDIA NIM retrieval\nNeMo Guardrails"],
 ];
 
 function slideProcess(pres) {
@@ -147,8 +142,8 @@ function slideProcess(pres) {
     "Five steps. The model reads and writes language; everything that counts - figures, status, safety - is checked by code");
 
   const FW = W - 2 * M, n = STAGES.length, gap = 0.3;
-  const cw = (FW - (n - 1) * gap) / n, top = 1.62, ch = 3.28;
-  STAGES.forEach(([name, what, gets, kind, badge], i) => {
+  const cw = (FW - (n - 1) * gap) / n, top = 2.4, ch = 2.6;
+  STAGES.forEach(([name, what, kind, badge], i) => {
     const x = M + i * (cw + gap);
     if (i) s.addShape("rightArrow", {
       x: x - gap + 0.04, y: top + 0.18, w: gap - 0.08, h: 0.26,
@@ -160,9 +155,7 @@ function slideProcess(pres) {
       fontSize: 16, bold: true, color: "FFFFFF", margin: 0, isTextBox: true, objectName: "anim-s" + i + "-num" });
     s.addText([
       { text: name, options: { bold: true, fontSize: 16, color: INK, fontFace: "Arial", breakLine: true } },
-      { text: what, options: { fontSize: 11, color: MUTE, breakLine: true, paraSpaceBefore: 4 } },
-      { text: "WHAT YOU GET", options: { bold: true, fontSize: 10, color: NVF, breakLine: true, paraSpaceBefore: 10 } },
-      { text: gets, options: { fontSize: 11, color: INK } },
+      { text: what, options: { fontSize: 12, color: MUTE, paraSpaceBefore: 4 } },
     ], txt(null, { x: x + 0.14, y: top + 0.36, w: cw - 0.28, h: ch - 1.02, valign: "top",
       lineSpacingMultiple: 0.95, objectName: "anim-s" + i + "-text" }));
     const nv = kind === "nv";
@@ -172,24 +165,10 @@ function slideProcess(pres) {
       margin: 0, isTextBox: true, lineSpacingMultiple: 0.9, objectName: "anim-s" + i + "-badge" });
   });
 
-  band(s, M, 5.28, FW, 0.26, "WHAT THAT MEANS FOR THE BUSINESS", { fs: 10.5 });
-  const sw = (FW - 2 * 0.2) / 3;
-  [["~0.1 s", "for a structured answer - computed, no model call"],
-   ["905 / 905", "answer citations resolve to a real record, in our evaluation set"],
-   ["1.8 < 3.0 mm", "an out-of-spec measurement flags the vehicle unsafe to release, automatically"],
-  ].forEach(([big, cap], i) => {
-    const x = M + i * (sw + 0.2);
-    s.addShape("rect", { x, y: 5.62, w: sw, h: 1.0, fill: { color: LANE }, line: { color: "2E5245" },
-      objectName: "anim-o" + i + "-card" });
-    s.addText(big, txt(null, { x: x + 0.16, y: 5.68, w: sw - 0.3, h: 0.46, fontSize: 26, bold: true,
-      color: NV, fontFace: "Arial", valign: "middle", objectName: "anim-o" + i + "-big" }));
-    s.addText(cap, txt(null, { x: x + 0.16, y: 6.16, w: sw - 0.3, h: 0.42, fontSize: 11, color: "DCE8CF",
-      valign: "top", lineSpacingMultiple: 0.95, objectName: "anim-o" + i + "-cap" }));
-  });
   s.addText("Speech recognition runs on NVIDIA-hosted Riva; every other model runs on the L40S in the box.",
-    txt(null, { x: M, y: 6.82, w: FW, h: 0.26, fontSize: 10, italic: true, color: MUTE }));
+    txt(null, { x: M, y: 5.6, w: FW, h: 0.26, fontSize: 11, italic: true, color: MUTE }));
 
-  s.addNotes("Narration (demo scene 2): A technician speaks or types an update. NVIDIA Riva Parakeet transcribes it. A Nemotron model extracts the facts. Python checks every one against the catalogue, folds it into an event log, and derives the state of the repair order. Nothing is guessed, and every answer cites its records. The slide builds itself in about eight seconds on entry; it does not need a click.");
+  s.addNotes("Narration (demo scene 2): A technician speaks or types an update. NVIDIA Riva Parakeet transcribes it. A Nemotron model extracts the facts. Python checks every one against the catalogue, folds it into an event log, and derives the state of the repair order. Nothing is guessed, and every answer cites its records. The slide builds itself in about six seconds on entry; it does not need a click.");
   return s;
 }
 
@@ -807,8 +786,7 @@ function slideUsageSurface(pres) {
 // pptxgenjs has no animation API, so the timing tree is written into the slide
 // XML after the file exists. Every "anim-*" shape gets an entrance effect (fade;
 // wipe for arrows and badges) with an absolute start delay, all inside ONE
-// auto-start group: the slide builds itself on entry, left to right, then the
-// three business figures. "With previous + delay" is how PowerPoint stores
+// auto-start group: the slide builds itself on entry, left to right. "With previous + delay" is how PowerPoint stores
 // "after previous" inside a single click group, and it plays unattended - which
 // is what a screen recording and an unattended kiosk both need.
 const STEP_MS = 1300, FADE_MS = 500;
@@ -817,8 +795,6 @@ function delayFor(name) {
   if (m) { const t = +m[1] * STEP_MS; return m[2] === "badge" ? [t + 450, "wipe(left)", 400] : [t, "fade", FADE_MS]; }
   const a = /^anim-a(\d)$/.exec(name);
   if (a) return [+a[1] * STEP_MS - 300, "wipe(left)", 300];
-  const o = /^anim-o(\d)-/.exec(name);
-  if (o) return [STEP_MS * STAGES.length + 200 + +o[1] * 450, "fade", FADE_MS];
   return null;
 }
 
@@ -862,7 +838,7 @@ async function addAnimation(file) {
   zip.file(hit, xml);
   fs.writeFileSync(file, await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
   console.log("animated " + hit + ": " + targets.length + " shapes, " +
-    (STEP_MS * STAGES.length + 200 + 2 * 450 + FADE_MS) / 1000 + " s");
+    (STEP_MS * (STAGES.length - 1) + 450 + 400) / 1000 + " s");
 }
 
 // ================================================================= build
