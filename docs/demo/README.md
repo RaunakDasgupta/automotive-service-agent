@@ -14,7 +14,7 @@ Two files, both recorded from the real application:
 |---|---|
 | Opening | an animated visual from the first frame: shift notes fly onto a moving grid and one is stamped SAFETY |
 | A Hook | the **live** Dashboard on the L40S box |
-| B Process | the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken (not PowerPoint, so fonts differ slightly) |
+| B Process | the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken, ending on the whole five-stage flow (not PowerPoint, so fonts differ slightly). The business figures are left to their own segment, so this scene is process only |
 | C Ingest | **live**: a spoken update is uploaded, Riva transcribes it, Nemotron extracts the measurement, the rules flag the repair order `SAFETY_RELATED` |
 | D Ask | **live**: a soft dissolve from the form, then a structured question answered with no model call and a free-text question answered by search + rerank + narration on the local NIMs |
 | V Business value | four cards: unsafe vehicles surfaced (`13 of 50`, read from the live dashboard), `0.1 s` answers, `905 / 905` traced answers, one update feeding the whole shop. No cost or speed-up claim is made |
@@ -66,3 +66,5 @@ The NVIDIA and Grafana logos are fetched once from their public brand assets int
 `~/.cache/asoia-demo-logos` and are not committed. `--box` needs the stack up (`docs/BREV_RUNBOOK.md`); the script starts
 its own recording UIs on a copy of the database, sends 100 s of questions through `/ask` so Grafana has data, records,
 and stops them again (`--no-traffic` skips the warm-up).
+
+The captions keep the real spelling; where the voice gets a word wrong it is given a respelling (`SPOKEN` in the script): *read* in the present tense, and *DCGM* spelled out letter by letter.

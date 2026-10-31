@@ -25,7 +25,7 @@ or product shot at the open and the close; nothing held still. Narration there r
 | B2 | NVIDIA Riva transcribes it, and Nemotron extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
 | B3 | Code checks every fact. Nothing is guessed. | Stage 3; callout **Verify** |
 | B4 | Each update joins an audit trail. | Stage 4; callout **Record** |
-| B5 | So a manager simply asks, and gets a cited answer. | Stage 5, then the three business figures count up; callout **Decide**; held a moment |
+| B5 | So a manager simply asks, and gets a cited answer. | Stage 5, then the camera pulls back to the whole five-stage flow; callout **Decide** |
 | C1 | Watch. A technician dictates an update from the bay. | Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
 | C2 | NVIDIA Riva turns the speech into text. | Transcribe is clicked; the transcript fills; callout **Riva ASR** |
 | C3 | Nemotron pulls out the facts: the measurement, and the spec. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |

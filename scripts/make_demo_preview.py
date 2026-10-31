@@ -41,7 +41,7 @@ W, H, FPS = 1920, 1080, 30
 GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
-HOLD = {"A4": 0.8, "B5": 0.8, "C3": 0.6, "C4": 1.0, "D3": 1.0, "D4": 0.6, "D6": 1.0,
+HOLD = {"A4": 0.8, "B5": 0.5, "C3": 0.6, "C4": 1.0, "D3": 1.0, "D4": 0.6, "D6": 1.0,
         "E1": 0.7, "E5": 0.8, "G1": 1.6, "V4": 0.9, "F4": 0.0}
 TTS_CACHE = Path.home() / ".cache" / "asoia-demo-tts"
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
@@ -75,6 +75,17 @@ def beats():
 
 
 # ------------------------------------------------------------------ voice
+# The caption keeps the real spelling; the voice is given a respelling where it would get the word wrong:
+# "read" as present tense, and DCGM spelled out letter by letter.
+SPOKEN = [(r"\bread\b", "reed"), (r"\bDCGM\b", "D C G M")]
+
+
+def spoken(text: str) -> str:
+    for pat, rep in SPOKEN:
+        text = re.sub(pat, rep, text)
+    return text
+
+
 _voice_cache: dict[tuple, tuple[Path, float]] = {}
 
 
@@ -86,7 +97,8 @@ def voice(text: str, tempo: float | None = None, gap: float | None = None) -> tu
         return _voice_cache[key]
     import _env  # noqa: F401  - .env like stack.sh; the key is never printed
     import hashlib
-    cached = TTS_CACHE / (hashlib.sha1((VOICE + text).encode()).hexdigest()[:16] + ".pcm")
+    said = spoken(text)
+    cached = TTS_CACHE / (hashlib.sha1((VOICE + said).encode()).hexdigest()[:16] + ".pcm")
     if not cached.exists():
         import riva.client as rc
         auth = rc.Auth(uri="grpc.nvcf.nvidia.com:443", use_ssl=True, metadata_args=[
@@ -96,11 +108,11 @@ def voice(text: str, tempo: float | None = None, gap: float | None = None) -> tu
             time.sleep(wait)
             try:
                 r = rc.SpeechSynthesisService(auth).synthesize(
-                    text, voice_name=VOICE, language_code="en-US", sample_rate_hz=RATE,
+                    said, voice_name=VOICE, language_code="en-US", sample_rate_hz=RATE,
                     encoding=rc.AudioEncoding.LINEAR_PCM)
                 break
             except Exception as e:
-                if "RESOURCE_EXHAUSTED" not in str(e) or wait == 45:
+                if not any(c in str(e) for c in ("RESOURCE_EXHAUSTED", "DEADLINE_EXCEEDED", "UNAVAILABLE")) or wait == 45:
                     raise
         TTS_CACHE.mkdir(parents=True, exist_ok=True)
         cached.write_bytes(r.audio)
@@ -139,6 +151,10 @@ def slide_html(pptx: Path, marker: str = "anim-s0-card", driven: bool = False) -
         xf = sp.find("p:spPr/a:xfrm", NS)
         if xf is None:
             continue
+        if driven and not c.get("name", "").startswith("anim-s") and 745 <= int(xf.find("a:off", NS).get("y")) * k < 1000:
+            continue                      # the band that carried the business figures
+        if driven and (c.get("name", "").startswith("anim-o") or "WHAT THAT MEANS FOR THE BUSINESS" in "".join(sp.itertext())):
+            continue
         off, ext = xf.find("a:off", NS), xf.find("a:ext", NS)
         x, y, w, h = (int(off.get("x")) * k, int(off.get("y")) * k,
                       int(ext.get("cx")) * k, int(ext.get("cy")) * k)
@@ -167,6 +183,8 @@ def slide_html(pptx: Path, marker: str = "anim-s0-card", driven: bool = False) -
             pad = [int(bp.get(i, d)) * k for i, d in (("tIns", 45720), ("rIns", 91440), ("bIns", 45720), ("lIns", 91440))]
             paras = []
             for p in body.findall("a:p", NS):
+                if driven and "".join(p.itertext()).strip() == "WHAT YOU GET":
+                    break                 # the video shows the process; the business value has its own segment
                 ppr = p.find("a:pPr", NS)
                 algn = {"l": "left", "ctr": "center", "r": "right"}.get(ppr.get("algn", "l") if ppr is not None else "l", "left")
                 ls = ppr.find("a:lnSpc/a:spcPct", NS) if ppr is not None else None
@@ -376,7 +394,7 @@ def components_html() -> str:
              ("c2", "gauge", "NeMo Evaluator", "Scores every release against the baseline")]
     c_html = "".join('<div class=card id=%s><div class=ic2>%s</div><div class=tx><img src="@NV@"><b>%s</b><i>%s</i></div></div>' % (i, IC[ic], a, b) for i, ic, a, b in cards)
     return """<!doctype html><meta charset=utf-8><style>
-:root{--co-x:1430px;--co-y:50px}
+:root{--co-x:1430px;--co-y:175px}
 body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;background:radial-gradient(circle at 25% 15%,#1d4d3f 0%,#0d201b 75%)}
 #logo{position:absolute;left:80px;top:44px;height:64px;background:#fff;padding:12px 26px;border-radius:14px;box-sizing:content-box}
 h1{position:absolute;left:520px;top:62px;margin:0;font-size:52px}
@@ -388,7 +406,7 @@ h1{position:absolute;left:520px;top:62px;margin:0;font-size:52px}
 .tile{position:absolute;top:120px;width:220px;height:260px;border-radius:16px;background:#1b3a30;border:2px solid #2f6a4a;text-align:center;opacity:0}
 .tile .ic{width:84px;height:84px;margin:26px auto 8px}.tile b{display:block;font-size:30px}.tile i{display:block;font:22px Arial;color:#BFD6B0;font-style:normal}
 .tile span{position:absolute;right:12px;top:10px;background:#76B900;color:#0d201b;font:700 16px Arial;padding:2px 9px;border-radius:9px}
-#t0{left:80px}#t1{left:340px}#t2{left:600px}
+#t0{left:34px}#t1{left:280px}#t2{left:526px}
 #vr{position:absolute;left:40px;top:535px;width:780px;opacity:0}
 #vr .l{font:600 26px Arial;color:#C8D6BE;margin-bottom:10px;display:flex;justify-content:space-between}
 #vr .tr{height:34px;border-radius:17px;background:#1b3a30;overflow:hidden;border:2px solid #2f6a4a}#vf{height:100%;width:0;background:linear-gradient(90deg,#4d8a00,#76B900)}
@@ -722,15 +740,12 @@ def scene_B():
         return dict(cam=c, camo=dict(max=1.55, pad=110), co=co, ring={"sel": '[data-name="anim-s%d-badge"]' % i}, ringpad=6,
                     act=lambda page, d, i=i: page.evaluate("i => window.__stage(i)", i))
     out = [stage(0, "Capture"), stage(1, "Understand"), stage(2, "Verify"), stage(3, "Record"), stage(4, "Decide")]
-    stats = [{"sel": '[data-name="anim-o%d-card"]' % i} for i in range(3)]
 
     def last(page, d):
         page.evaluate("() => window.__stage(4)")
-        page.wait_for_timeout(int(d * 450))
-        page.evaluate("() => window.__stats()")
     out[4]["act"] = last
-    out[4]["cam"] = [{"sel": '[data-name="anim-s4-card"]'}, *stats]
-    out[4]["camo"] = dict(max=1.25, pad=60)
+    out[4]["cam"] = None                       # pull back: the whole five-stage flow, with nothing else on the slide
+    out[4]["camo"] = dict(to=1.0)
     return out
 
 
@@ -834,7 +849,7 @@ def scene_E():
             page.wait_for_timeout(int(d * 1000 * 0.08))
 
     GPU = {"sel": "#gpu"}
-    return [dict(cam=GPU, camo=dict(max=1.3, pad=90), co="1 GPU", act=e1),
+    return [dict(cam=[{"sel": "#logo"}, {"sel": "h1"}, GPU], camo=dict(max=1.25, pad=90), co="1 GPU", act=e1),
             dict(cam=[{"sel": "#c0"}, {"sel": "#c1"}], camo=dict(max=1.4, pad=90), act=seq("c0", "c1", share=0.42)),
             dict(cam={"sel": "#c0"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c0"}, ringpad=6,
                  act=lambda page, d: page.evaluate("() => window.__tag('c0')")),
