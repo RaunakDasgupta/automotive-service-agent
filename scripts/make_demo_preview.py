@@ -42,8 +42,8 @@ WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
 GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
-HOLD = {"A4": 0.8, "B5": 0.3, "C3": 1.0, "C4": 0.8, "D3": 0.7, "D4": 0.6, "D6": 0.8,
-        "E1": 0.4, "E5": 0.6, "G1": 0.4, "G2": 0.2, "V4": 0.3, "F4": 0.4}
+HOLD = {"A4": 0.6, "B5": 0.3, "C3": 0.8, "C4": 0.8, "D3": 0.5, "D4": 0.6, "D6": 0.8,
+        "E1": 0.4, "E5": 0.6, "G1": 0.5, "V4": 0.3, "F4": 0.4}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -459,48 +459,49 @@ window.__link=i=>{const s=$('s'+i),m=$('mgr'),d=$('d'+i);
 
 
 def observ_html() -> str:
-    """The observability infographic: two sources (DCGM's 19 GPU series, the app's 13) into Prometheus into one Grafana dashboard."""
+    """The observability infographic: DCGM's 19 GPU series and the app's 13 into Prometheus into Grafana. The live dashboard is
+    laid into the empty frame by pip_overlay; the legend chips light up as its figures and graphs are ringed."""
     return """<!doctype html><meta charset=utf-8><style>
 body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;
  background:radial-gradient(circle at 30% 20%,#1d4d3f 0%,#0d201b 70%)}
 .grid{position:absolute;inset:-120px;background-image:linear-gradient(rgba(118,185,0,.08) 2px,transparent 2px),linear-gradient(90deg,rgba(118,185,0,.08) 2px,transparent 2px);background-size:120px 120px}
 h1{position:absolute;left:0;right:0;top:56px;margin:0;text-align:center;font:800 70px Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}h1 u{text-decoration:none;color:#76B900}
-.src{position:absolute;left:90px;width:720px;height:300px;border-radius:24px;background:#fff;color:#142019;border-left:18px solid #76B900;box-shadow:0 22px 50px rgba(0,0,0,.45);opacity:0}
-#a{top:210px}#b{top:560px}
-.src img{position:absolute;left:44px;top:34px;height:50px}.src .t{position:absolute;left:44px;top:38px;font:800 34px Arial}
-.src .n{position:absolute;right:44px;top:20px;font:800 128px/1 Arial;color:#2f5f00}.src .u{position:absolute;right:44px;top:150px;font:700 34px Arial;color:#4b5b50;text-align:right}
-.src .m{position:absolute;left:44px;right:44px;bottom:30px;font:30px/1.35 Arial;color:#4b5b50}.src .sub{position:absolute;left:44px;top:100px;font:700 32px Arial;color:#142019}
-#prom{position:absolute;left:930px;top:400px;width:300px;height:230px;border-radius:24px;background:#1b3a30;border:3px solid #76B900;text-align:center;opacity:0;box-shadow:0 0 50px rgba(118,185,0,.25)}
-#prom b{display:block;font:800 46px Arial;margin-top:62px}#prom i{display:block;font:30px Arial;color:#BFD6B0;font-style:normal;margin-top:12px}
-#graf{position:absolute;left:1360px;top:300px;width:470px;height:430px;border-radius:24px;background:#fff;color:#142019;box-shadow:0 22px 50px rgba(0,0,0,.45);opacity:0}
-#graf img{position:absolute;left:36px;top:30px;height:60px}#graf .sub{position:absolute;left:36px;top:108px;font:700 32px Arial}
-.pn{position:absolute;left:36px;right:36px;height:62px;border-radius:12px;background:#EEF6DF;font:700 28px/62px Arial;padding-left:20px;opacity:0}
-#p0{top:170px}#p1{top:248px}#p2{top:326px}
+.src{position:absolute;left:60px;width:540px;height:250px;border-radius:22px;background:#fff;color:#142019;border-left:16px solid #76B900;box-shadow:0 22px 50px rgba(0,0,0,.45);opacity:0}
+#a{top:288px}#b{top:591px}
+.src img{position:absolute;left:36px;top:26px;height:42px}.src .t{position:absolute;left:36px;top:34px;font:800 24px Arial;letter-spacing:.5px}
+.src .sub{position:absolute;left:36px;top:84px;font:700 28px Arial}
+.src .n{position:absolute;right:34px;top:14px;font:800 104px/1 Arial;color:#2f5f00}.src .u{position:absolute;right:34px;top:118px;font:700 28px Arial;color:#4b5b50;text-align:right}
+.src .m{position:absolute;left:36px;right:30px;bottom:22px;font:25px/1.35 Arial;color:#4b5b50}
+#prom{position:absolute;left:652px;top:474px;width:200px;height:180px;border-radius:22px;background:#1b3a30;border:3px solid #76B900;text-align:center;opacity:0;box-shadow:0 0 50px rgba(118,185,0,.25)}
+#prom b{display:block;font:800 30px Arial;margin-top:56px}#prom i{display:block;font:24px Arial;color:#BFD6B0;font-style:normal;margin-top:10px}
+#frame{position:absolute;left:918px;top:288px;width:964px;height:553px;border-radius:18px;background:#fff;box-shadow:0 22px 60px rgba(0,0,0,.55);opacity:0}
+#gl{position:absolute;left:918px;top:206px;height:64px;padding:0 26px;border-radius:16px;background:#fff;color:#142019;display:flex;align-items:center;gap:16px;font:700 30px Arial;opacity:0;box-shadow:0 8px 26px rgba(0,0,0,.35)}#gl img{height:44px}
 svg.ar{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
 .ln{fill:none;stroke:#76B900;stroke-width:7;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
-#note{position:absolute;left:0;right:0;bottom:140px;text-align:center;font:34px Arial;color:#C8D6BE;opacity:0}
+#lgs{position:absolute;left:918px;top:872px;display:flex;gap:14px}
+.lg{height:54px;padding:0 22px 0 18px;border-radius:27px;background:rgba(255,255,255,.1);border:2px solid rgba(118,185,0,.8);font:700 24px/50px Arial;white-space:nowrap;opacity:0}
+.lg:before{content:"";display:inline-block;width:20px;height:20px;border-radius:5px;border:4px solid #76B900;margin-right:10px;vertical-align:-3px;box-shadow:0 0 10px rgba(118,185,0,.8)}
 </style><div class=grid></div><h1>Observability, <u>built in</u></h1>
-<div class=src id=a><img src="@NV@"><div class=sub style="top:104px">DCGM exporter</div><div class=n><span class=v data-to=19>19</span></div><div class=u>GPU series</div>
+<div class=src id=a><img src="@NV@"><div class=sub style="top:80px">DCGM exporter</div><div class=n><span class=v data-to=19>19</span></div><div class=u>GPU series</div>
  <div class=m>utilisation &middot; framebuffer &middot; power &middot; temperature &middot; clock</div></div>
-<div class=src id=b><div class=t>Service Operations Agent</div><div class=sub style="top:104px">the app's own metrics</div><div class=n><span class=v data-to=13>13</span></div><div class=u>app series</div>
+<div class=src id=b><div class=t>Service Operations Agent</div><div class=sub style="top:80px">the app's own metrics</div><div class=n><span class=v data-to=13>13</span></div><div class=u>app series</div>
  <div class=m>answer latency &middot; NIM latency &middot; model calls &middot; tool use &middot; guardrail blocks</div></div>
 <div id=prom><b>Prometheus</b><i>scrapes both</i></div>
-<div id=graf><img src="@GR@"><div class=sub>one dashboard</div><div class=pn id=p0>Answer latency</div><div class=pn id=p1>Tool use</div><div class=pn id=p2>GPU load</div></div>
+<div id=gl><img src="@GR@">Grafana &middot; live</div><div id=frame></div>
 <svg class=ar viewBox="0 0 1920 1080"><defs><marker id=h viewBox="0 0 10 10" refX=7 refY=5 markerWidth=5 markerHeight=5 orient=auto-start-reverse><path d="M0 0L10 5L0 10z" fill="#76B900"/></marker></defs>
- <path class=ln id=l0 pathLength=1 marker-end="url(#h)" d="M830 360 C 880 360 880 480 922 480"/>
- <path class=ln id=l1 pathLength=1 marker-end="url(#h)" d="M830 710 C 880 710 880 560 922 560"/>
- <path class=ln id=l2 pathLength=1 marker-end="url(#h)" d="M1240 515 L 1350 515"/></svg>
-<div id=note>One place to see every answer, every tool call and every watt</div>
+ <path class=ln id=l0 pathLength=1 marker-end="url(#h)" d="M606 413 C 630 413 630 530 646 530"/>
+ <path class=ln id=l1 pathLength=1 marker-end="url(#h)" d="M606 716 C 630 716 630 598 646 598"/>
+ <path class=ln id=l2 pathLength=1 marker-end="url(#h)" d="M858 564 L 906 564"/></svg>
+<div id=lgs><div class=lg id=g0>Primary figures</div><div class=lg id=g1>DCGM &middot; GPU load</div><div class=lg id=g2>DCGM &middot; GPU power</div></div>
 <script>const $=id=>document.getElementById(id);
 const up=(e,d)=>e.animate([{opacity:0,transform:'translateY(46px) scale(.95)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
-const draw=e=>{e.style.opacity=1;e.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:520,fill:'forwards',easing:'ease-out'});};
+const draw=e=>{e.style.opacity=1;e.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:420,fill:'forwards',easing:'ease-out'});};
 const count=e=>{const to=+e.dataset.to,t0=performance.now();const tick=t=>{const k=Math.min(1,(t-t0)/800);e.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick);};requestAnimationFrame(tick);};
 window.__go=ms=>{const at=(f,fn)=>setTimeout(fn,ms*f);
- at(.03,()=>{up($('a'));count($('a').querySelector('.v'));});at(.14,()=>{up($('b'));count($('b').querySelector('.v'));});
- at(.30,()=>{draw($('l0'));draw($('l1'));});at(.36,()=>up($('prom'),420));
- at(.46,()=>draw($('l2')));at(.50,()=>up($('graf')));
- at(.58,()=>up($('p0'),360));at(.64,()=>up($('p1'),360));at(.70,()=>up($('p2'),360));
- at(.76,()=>$('note').animate([{opacity:0},{opacity:1}],{duration:500,fill:'forwards'}));};
+ at(.03,()=>{up($('a'));count($('a').querySelector('.v'));});at(.10,()=>{up($('b'));count($('b').querySelector('.v'));});
+ at(.18,()=>{draw($('l0'));draw($('l1'));});at(.22,()=>up($('prom'),380));
+ at(.28,()=>draw($('l2')));at(.30,()=>{$('frame').animate([{opacity:0},{opacity:1}],{duration:400,fill:'forwards'});up($('gl'),420);});
+ at(.46,()=>up($('g0'),360));at(.60,()=>up($('g1'),360));at(.72,()=>up($('g2'),360));};
 </script>""".replace("@NV@", logo("nvidia")).replace("@GR@", logo("grafana"))
 
 
@@ -650,7 +651,7 @@ def concat(parts, out: Path):
 
 # ------------------------------------------------------------------ logo badges and the transition between pieces
 BADGES = {"C2": (["nvidia"], "Riva · speech to text"), "C3": (["nvidia"], "Nemotron 8B · NIM"),
-          "D6": (["nvidia"], "NIM · embed + rerank"), "G2": (["nvidia", "grafana"], "DCGM + Grafana")}
+          "D6": (["nvidia"], "NIM · embed + rerank")}
 
 
 def badge_png(pw, key: str) -> Path:
@@ -709,7 +710,7 @@ def scene_P():
 
 
 def scene_I():
-    return [dict(cam=None, camo=dict(to=1.03), co="Observability", act=lambda page, d: page.evaluate("ms => window.__go(ms)", int(d * 1000)))]
+    return [dict(cam=None, camo=dict(to=1.0), co="Observability", act=lambda page, d: page.evaluate("ms => window.__go(ms)", int(d * 1000)))]
 
 
 def scene_B():
@@ -780,7 +781,7 @@ def scene_F():
             for k, i in enumerate(idx):
                 page.evaluate("i => window.__card(i)", i)
                 if k < len(idx) - 1:
-                    page.wait_for_timeout(int(d * 1000 * 0.45))
+                    page.wait_for_timeout(int(d * 1000 * 0.30))
         return f
 
     def f1(page, d):
@@ -788,8 +789,7 @@ def scene_F():
         page.wait_for_timeout(int(d * 250))
         page.evaluate("() => window.__card(0)")
     return [dict(cam={"sel": ".c", "nth": 0}, camo=dict(max=1.4, pad=240), act=f1),
-            dict(cam=[{"sel": ".c", "nth": 1}, {"sel": ".c", "nth": 2}], camo=dict(max=1.3, pad=120), act=card(1, 2)),
-            dict(cam={"sel": ".c", "nth": 3}, camo=dict(max=1.4, pad=240), act=card(3)),
+            dict(cam=[{"sel": ".c", "nth": 1}, {"sel": ".c", "nth": 3}], camo=dict(max=1.25, pad=100), act=card(1, 2, 3)),
             dict(cam=None, camo=dict(to=1.0), act=lambda page, d: page.evaluate("() => window.__big()"))]
 
 
@@ -814,11 +814,18 @@ LIVE_PLAN = {
     "D5": dict(src="D5", cam="Q", camo=dict(max=1.75, pad=140), ring="Q"),
     "D6": dict(src="D6", cam=None, camo=dict(to=1.05), badge="D6",
                then=[dict(at="done+0.2", cam="LAST", camo=dict(max=1.6, pad=60), ring=None, co="Search + rerank", dur=0.45)]),
-    "G2": dict(src="G1", cam="GPU", camo=dict(max=1.9, pad=70), ring="GPU", ringpad=4, co="Live dashboard", badge="G2",
-               then=[dict(at=0.55, cam="POWER", camo=dict(max=1.9, pad=70), ring="POWER", ringpad=4, dur=0.4)]),
 }
 RING_STATES = 2                  # the ring pulses by blending these two stills: a plain ring and a full glow
 PULSE = 1.4                      # seconds for one pulse
+PIP = (930, 300, 940)            # the live Grafana inset in the observability shot: left, top, width
+
+
+def pulse(fc: list, lo: int, hi: int, k: int, ts: float):
+    """Blend a plain ring still (input lo) and a glowing one (input hi) into a pulsing ring that fades in at ts: stream [rg<k>]."""
+    pm = "format=gbrap,premultiply=inplace=1,setpts=PTS+%.3f/TB" % ts          # blend in premultiplied alpha, so the glow has no dark fringe
+    fc.append("[%d:v]%s[ra%d];[%d:v]%s[rb%d]" % (lo, pm, k, hi, pm, k))
+    fc.append("[ra%d][rb%d]blend=all_expr='A+(B-A)*(0.5-0.5*cos(2*PI*(T-%.3f)/%.2f))',unpremultiply=inplace=1,format=rgba,"
+              "fade=t=in:st=%.3f:d=0.25:alpha=1[rg%d]" % (k, k, ts, PULSE, ts, k))
 CUR_FROM = (190, 130)            # the cursor glides in from this far down and right of the control, only for a click
 
 
@@ -996,11 +1003,7 @@ def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int
             continue
         w, h = r["w"] + 2 * pad, r["h"] + 2 * pad
         x, y = (r["x"] - pad - 44) * K, (r["y"] - pad - 44) * K
-        lo, hi = add(pngs.ring(w, h, 0), nd), add(pngs.ring(w, h, RING_STATES - 1), nd)
-        pm = "format=gbrap,premultiply=inplace=1,setpts=PTS+%.3f/TB" % ts          # blend in premultiplied alpha, so the glow has no dark fringe
-        fc.append("[%d:v]%s[ra%d];[%d:v]%s[rb%d]" % (lo, pm, k, hi, pm, k))
-        fc.append("[ra%d][rb%d]blend=all_expr='A+(B-A)*(0.5-0.5*cos(2*PI*(T-%.3f)/%.2f))',unpremultiply=inplace=1,format=rgba,"
-                  "fade=t=in:st=%.3f:d=0.25:alpha=1[rg%d]" % (k, k, ts, PULSE, ts, k))
+        pulse(fc, add(pngs.ring(w, h, 0), nd), add(pngs.ring(w, h, RING_STATES - 1), nd), k, ts)
         fc.append("%s[rg%d]overlay=x=%.1f:y=%.1f:format=yuv444:enable='between(t,%.3f,%.3f)'[g%d]" % (last, k, x, y, ts, te, k))
         last = "[g%d]" % k
     for n, c in enumerate(c for c in st["clicks"] if c.get("show") and not freeze):
@@ -1064,11 +1067,39 @@ def live_piece(pngs: Pngs, name: str, rows, durs, holds, texts, tl: dict, subs: 
     return out
 
 
+def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
+    """Lay the live Grafana footage, small, into the frame of the observability infographic and ring, one after another, its
+    primary figures and the two DCGM graphs. Rings are drawn at inset scale, after the footage is scaled down."""
+    sc = tl["scenes"]["G"]; st = sc["steps"][0]
+    x0, y0, w = PIP
+    sc_f = w / W; h = round(H * sc_f)
+    ts = 0.34 * nd                                           # the footage appears just as the frame does
+    cues = [("STATS", dict(x=16, y=16, w=1888, h=184), 0.46), ("GPU", st["rects1"]["GPU"], 0.60), ("POWER", st["rects1"]["POWER"], 0.72)]
+    ins = ["-i", bg, "-ss", "%.3f" % st["t0"], "-t", "%.3f" % nd, "-i", FOOT / sc["file"]]
+    fc = ["[1:v]scale=%d:%d:flags=lanczos,fps=%d,format=yuva420p,setpts=PTS-STARTPTS+%.3f/TB,fade=t=in:st=%.3f:d=0.4:alpha=1[pip]" % (w, h, FPS, ts, ts),
+          "[0:v]format=yuv420p[b]", "[b][pip]overlay=x=%d:y=%d:format=auto[v0]" % (x0, y0)]
+    last, n = "[v0]", 2
+    for k, (name, r, f) in enumerate(cues):
+        pad = 4
+        rw, rh = r["w"] * sc_f + 2 * pad, r["h"] * sc_f + 2 * pad
+        rx, ry = x0 + r["x"] * sc_f - pad - 44, y0 + r["y"] * sc_f - pad - 44
+        for png in (pngs.ring(rw, rh, 0), pngs.ring(rw, rh, RING_STATES - 1)):
+            ins += ["-loop", "1", "-framerate", str(FPS), "-t", "%.3f" % nd, "-i", png]
+        pulse(fc, n, n + 1, 10 + k, f * nd)
+        n += 2
+        fc.append("[rg%d]scale=iw/%d:ih/%d[rs%d]" % (10 + k, K, K, k))
+        fc.append("%s[rs%d]overlay=x=%.1f:y=%.1f:format=yuv444:enable='gte(t,%.3f)'[v%d]" % (last, k, rx, ry, f * nd, k + 1))
+        last = "[v%d]" % (k + 1)
+    run(ffmpeg(), "-y", *ins, "-filter_complex", ";".join(fc), "-map", last, "-t", "%.3f" % nd, "-r", str(FPS), "-an", "-c:v", "libx264",
+        "-pix_fmt", "yuv420p", "-crf", "18", "-preset", "veryfast", out)
+    return out
+
+
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
 PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("A", "A", ["A2", "A4", "A5"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
-          ("V", "V", None), ("E", "E", None), ("I", "G", ["G1"]), ("G", "G", ["G2"]), ("F", "F", None)]
-LIVE = "ACDG"
+          ("V", "V", None), ("E", "E", None), ("I", "G", None), ("F", "F", None)]
+LIVE = "ACD"
 BRIDGE_BEFORE = "ABCD"       # ease problem -> dashboard -> process slide -> Technician Update -> Manager Assistant instead of cutting
 
 
@@ -1137,13 +1168,15 @@ def main():
             files, vdur = zip(*[voice(fill(t)) for _, t in rows])
             holds = [HOLD.get(i, 0.0) for i, _ in rows]
             durs = [v + h for v, h in zip(vdur, holds)]
-            tail = 0.8 if name == "F" else 0.0
+            tail = 0.6 if name == "F" else 0.0
             texts = [fill(t) for _, t in rows]
             if name in LIVE:
                 shown = live_piece(pngs, name, rows, durs, holds, texts, tl, subs, WORK / (name + "_v.mp4"))
             else:
                 url, plan = local[name]
                 shown = record(pw, name, url, texts, durs, plan, tail, holds)
+                if name == "I":
+                    shown = pip_overlay(pngs, shown, tl, sum(durs), WORK / "I_pip.mp4")
             wavf = WORK / (name + ".wav"); join_wavs(list(files), wavf, holds)
             m = WORK / ("m_" + name + ".mp4"); mux(shown, wavf, sum(durs) + tail, m)
             if name in BRIDGE_BEFORE and parts:

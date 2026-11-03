@@ -1,11 +1,11 @@
 # Client demo video — plan, script and tooling
 
-**Target length about 2:30** (a 15-second problem opening on top of the 2:15 demo). **Audience:** a prospective client evaluating an
+**Target length: under 2:30** (the 2:15 demo plus a 15-second problem opening). **Audience:** a prospective client evaluating an
 AI assistant for a service department. **One idea:** *fast, grounded answers, running on your own GPU.*
 
 ## 1. Script — written to be cut, not read
 
-**Target 2:30.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
+**Target 2:30.** ~370 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
 changes on every beat and something on screen is always moving**, except during those holds. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
@@ -39,18 +39,16 @@ or product shot at the open and the close; nothing held still. Narration there r
 | D3 | {ask_n} vehicles. Every one cited. Answered in a tenth of a second, with no model call. | Zoom on the answer; callout **Cited · no model call**; held |
 | D5 | Now an open question: has anyone seen a whistling noise on a Passat? | The second question types out and is asked |
 | D6 | Search, rerank and a cited answer, in seconds, on the same GPU. | Camera on the answer and its update citations; callout **Search + rerank**; held |
-| V1 | What does that change? Unsafe vehicles surface at once. | **Business value:** four cards; card 1 *{safety} of {open}* unsafe vehicles found at once |
+| V1 | Unsafe vehicles surface at once. | **Business value:** four cards; card 1 *{safety} of {open}* unsafe vehicles found at once |
 | V2 | Managers get answers in a tenth of a second. | Card 2: *0.1 s* to answer a manager's question |
 | V3 | Every figure traces back to a real record. | Card 3: *905 / 905* answers traced to a real record |
 | V4 | And one update feeds the record, handover and dashboard. | Card 4: *1 update* feeds the whole shop; pull back to all four cards; footnote |
 | E1 | Three NVIDIA NIM microservices run on one L40S: language, embedding and reranking. | Infographic: an L40S chip with three tiles (chat, search, rank icons) that pulse in turn, then a memory bar fills to about 30 of 46 GB; callout **1 GPU**; held |
 | E3 | Riva handles speech. NeMo Guardrails stops unsafe requests. | Two white cards with the NVIDIA logo and pictograms (waveform, shield) fly in |
 | E5 | NeMo Evaluator scores every release. | Evaluator card (gauge pictogram), ring; held |
-| G1 | Observability is built in: DCGM and the app feed Grafana. | **Infographic:** the DCGM exporter (*19* GPU series) and the app (*13* series) feed Prometheus, which feeds one Grafana dashboard (*Answer latency, Tool use, GPU load*); the numbers count up; callout **Observability** |
-| G2 | And live, on the same box. | **Live Grafana** on the L40S, kept short: camera to the GPU utilisation and framebuffer panels, then the power panel, ring |
+| G1 | Observability is built in: DCGM and the app's own metrics, live in Grafana. | **Infographic with the live dashboard inset:** the DCGM exporter (*19* GPU series) and the app (*13*) feed Prometheus, which feeds Grafana; the live dashboard plays small in a frame, and rings light up its primary figures (the four stat tiles), then the two DCGM graphs (GPU load, GPU power), each with a legend chip; callout **Observability** |
 | F1 | In short, in numbers: {safety} of {open} unsafe vehicles flagged the moment an update is logged. | Title *In short, in numbers* and card 1 (*12 of 32*, counting up) fly in |
-| F2 | Answers in a tenth of a second, and every figure traced to a record. | Cards 2 and 3 (*0.1 s*, *100%*) fly in one after another |
-| F3 | All on one L40S, using 30 of its 46 gigabytes. | Card 4 (*30 of 46 GB*) flies in |
+| F2 | Answers in a tenth of a second, every figure traced, all on one L40S. | Cards 2, 3 and 4 (*0.1 s*, *100%*, *30 of 46 GB*) fly in one after another |
 | F4 | Fast. Grounded. Yours to run. That is the Service Operations Agent. | Large type, with *Service Operations Agent* beneath it; the video ends here |
 
 ```bash

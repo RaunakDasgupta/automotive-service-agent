@@ -5,7 +5,7 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:34): 38 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:28): 35 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
@@ -19,8 +19,7 @@ Two files, both recorded from the real application:
 | D Ask | **live**: a soft dissolve from the form, then a structured question answered with no model call and a free-text question answered by search + rerank + narration on the local NIMs |
 | V Business value | four cards: unsafe vehicles surfaced (read from the live dashboard), `0.1 s` answers, `905 / 905` traced answers, one update feeding the whole shop. No cost or speed-up claim is made |
 | E Components | an infographic: an L40S chip holding the three NIM tiles with a memory bar (about 30 of 46 GB), then NVIDIA-logo cards with pictograms for Riva, Guardrails and Evaluator |
-| I Observability | an infographic: the DCGM exporter (19 GPU series) and the app (13 series) feed Prometheus, which feeds one Grafana dashboard; the numbers count up, with the NVIDIA and Grafana logos |
-| G Live dashboard | a short cut to the **live** Grafana with DCGM GPU metrics, after real traffic through `/ask` |
+| G Observability | an infographic, the DCGM exporter (19 GPU series) and the app (13 series) feeding Prometheus and Grafana, with the **live** Grafana dashboard playing small in a frame beside it (after real traffic through `/ask`). Rings light up its primary figures, then the two DCGM graphs (GPU load and power), each with a legend chip |
 | F Conclusion | a recap, *In short, in numbers*: four cards that count up (12 of 32 flagged, 0.1 s, 100% grounded, 30 of 46 GB), ending on *Fast. Grounded. Yours to run.* with the product name beneath it |
 
 Logo badges (NVIDIA, Grafana) are laid over the live shots as each product is named. There is no cursor on screen except
