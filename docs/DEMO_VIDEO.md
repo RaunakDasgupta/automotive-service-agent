@@ -1,11 +1,11 @@
 # Client demo video — plan, script and tooling
 
-**Target length 2:00–2:15.** **Audience:** a prospective client evaluating an
+**Target length about 2:30** (a 15-second problem opening on top of the 2:15 demo). **Audience:** a prospective client evaluating an
 AI assistant for a service department. **One idea:** *fast, grounded answers, running on your own GPU.*
 
 ## 1. Script — written to be cut, not read
 
-**Target 2:15.** ~330 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
+**Target 2:30.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
 changes on every beat and something on screen is always moving**, except during those holds. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
@@ -17,8 +17,12 @@ or product shot at the open and the close; nothing held still. Narration there r
 
 | beat | narration (read aloud) | on screen |
 |---|---|---|
-| A1 | In every service department, the risk hides between shifts. | **Opening visual, in motion from the first frame:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
-| A2 | A safety finding sits in a technician's note that nobody has time to read. | Live dashboard: camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
+| P1 | Every service department runs on handovers. | **Title card, the first frame and the thumbnail:** the Deloitte logo above the app name, the grid drifting behind it, a slow push-in |
+| P2 | A technician scribbles a note, then the shift ends. | Day and night shift panels; a note appears on the day side and is carried across; on the night side half of it has gone and a red **?** lands; callout **Handover** |
+| P3 | A manager chases answers across notes, calls and screens. | A service-manager figure; three questions pop up (*Where is the Passat? Is it safe to release? Who worked on it?*) and Notes, Calls and Screens link in one by one; callout **Chasing answers** |
+| P4 | Time goes into asking, searching and re-typing, not fixing cars. | A clock spins; three chips (*Asking again, Searching old notes, Re-typing updates*) land; then *Less time fixing cars.*; callout **Lost time** |
+| P5 | And the real risk hides between shifts. | **The opening visual:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
+| A2 | A safety finding sits in a technician's note that nobody has time to read. | A soft dissolve to the live dashboard: camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
 | A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe**; held a moment |
 | A5 | That's where the Service Operations Agent comes in. | Pull back to the full dashboard; callout **Service Operations Agent** |
 | B1 | Here is how it works. A technician speaks or types an update. | Dissolve from the dashboard to the process slide: stage 1 builds, camera on it; callout **Capture** |

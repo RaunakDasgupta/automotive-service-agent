@@ -5,15 +5,15 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:14): 32 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:29): 36 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
 
 | scene | what you see |
 |---|---|
-| Opening | an animated visual from the first frame: shift notes fly onto a moving grid and one is stamped SAFETY |
-| A Hook | the **live** Dashboard on the L40S box; the agent is introduced as *the Service Operations Agent* (the full name is on screen in the dashboard header and on the last card) |
+| Title and problem | the first frame is a title card, the **Deloitte logo** above the app name (it is the thumbnail). Then the problem in three pictures: a shift handover that loses the detail, a manager chasing answers across notes, calls and screens, and the time that goes on it. It ends on shift notes flying onto a moving grid, one stamped SAFETY, and a soft dissolve into the live dashboard |
+| A Hook | the **live** Dashboard on the L40S box, entered by a soft dissolve from the stamped notes; the agent is introduced as *the Service Operations Agent* (the full name is on screen in the dashboard header and on the last card) |
 | B Process | a soft dissolve from the dashboard, then the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken, ending on the whole five-stage flow (not PowerPoint, so fonts differ slightly). The deck slide itself is process only now (no business figures); they have their own segment |
 | C Ingest | **live**, entered by a soft dissolve from the process slide: a spoken update is uploaded, Riva transcribes it, Nemotron extracts the measurement, the rules flag the repair order `SAFETY_RELATED` |
 | D Ask | **live**: a soft dissolve from the form, then a structured question answered with no model call and a free-text question answered by search + rerank + narration on the local NIMs |
@@ -35,7 +35,7 @@ The script is a table of short beats, each voiced on its own at the voice's natu
 (`TEMPO`, `GAP` in the script), so the **audio length of a beat sets the length of its shot** and the picture cannot
 drift from the words. Key visuals are **held still for a moment after they are spoken** (the `HOLD` table), so they can
 be read. Inside every other shot the camera is moving, a keyword callout lands as the word is spoken, a ring pulses on
-what is described, and a subtitle runs along the bottom. Hard cuts between scenes. No music is mixed in; a quiet
+what is described, and a transparent subtitle (white, thin dark outline, no plate) runs along the bottom. Hard cuts between scenes. No music is mixed in; a quiet
 royalty-free bed is recommended in `docs/DEMO_VIDEO.md` section 6.
 
 ## Capture once, edit as often as you like
@@ -85,6 +85,6 @@ Only if `--check` says the footage is stale, bring up a box per `docs/BREV_RUNBO
 
 `--box` starts its own recording UIs on a copy of the database, sends 100 s of questions through `/ask` so Grafana has
 data, captures, and stops them again (`--no-traffic` skips the warm-up). The NVIDIA and Grafana logos are fetched once
-from their public brand assets into `~/.cache/asoia-demo-logos` and are not committed.
+from their public brand assets into `~/.cache/asoia-demo-logos` and are not committed. The Deloitte logo comes from Wikimedia Commons, which has the older blue wordmark; it is recoloured to the current black with Deloitte green on first fetch. To use the official file instead, put it at `~/.cache/asoia-demo-logos/deloitte.svg` before building.
 
 The captions keep the real spelling; where the voice gets a word wrong it is given a respelling (`SPOKEN` in the script): *read* in the present tense, and *DCGM* spelled out letter by letter.
