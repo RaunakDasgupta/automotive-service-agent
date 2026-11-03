@@ -13,7 +13,7 @@ TWO STAGES, SO THE BOX IS ONLY NEEDED WHEN THE APP CHANGES
   1. scripts/demo_footage.py records the real application ONCE on the Brev L40S: the dashboard, the Technician Update
      tab (a spoken update is uploaded, transcribed by Riva, extracted by Nemotron and flagged by the rules), the
      Manager Assistant (a structured and a semantic question, search + rerank + narration on the local NIMs) and live
-     Grafana with DCGM telemetry. It saves 4K footage with nothing drawn on it, plus a timeline of where everything is.
+     Grafana with DCGM metrics. It saves 4K footage with nothing drawn on it, plus a timeline of where everything is.
   2. This script edits that footage into the video, offline: it re-times each shot to the narration, then adds the
      camera, the ring, the keyword callout, the product badge, the caption and - only on a click - a cursor.
      Changing the script, the pacing, the zoom or any of those overlays never needs the box.
@@ -43,7 +43,7 @@ GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.8, "B5": 0.3, "C3": 1.0, "C4": 0.8, "D3": 0.7, "D4": 0.6, "D6": 0.8,
-        "E1": 0.7, "E5": 0.6, "G1": 0.7, "V4": 0.6, "F4": 0.4}
+        "E1": 0.4, "E5": 0.6, "G1": 0.4, "G2": 0.2, "V4": 0.3, "F4": 0.4}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -390,9 +390,9 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 .layer{position:absolute;inset:0;opacity:0}
 #title{opacity:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
 #dl{background:#fff;border-radius:26px;padding:40px 78px;box-shadow:0 24px 70px rgba(0,0,0,.5)}#dl img{height:112px;display:block}
-#title h1{margin:60px 0 0;text-align:center;font:800 92px/1.08 Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}#title h1 u{text-decoration:none;color:#76B900}
+#title h1{margin:64px 0 0;text-align:center;font:800 118px/1.08 Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}#title h1 u{text-decoration:none;color:#76B900}
 #bar{width:420px;height:8px;border-radius:4px;background:#76B900;margin:38px 0 26px;box-shadow:0 0 24px rgba(118,185,0,.7)}
-#title p{margin:0;font:34px Arial;color:#BFD6B0;text-align:center}
+#title p{margin:0;font:40px Arial;color:#BFD6B0;text-align:center}
 .hd{position:absolute;left:0;right:0;top:70px;text-align:center;margin:0;font:700 56px Arial;color:#C8D6BE}
 .panel{position:absolute;top:210px;width:790px;height:610px;border-radius:22px;background:rgba(255,255,255,.06);border:2px solid rgba(118,185,0,.35);opacity:0}
 .panel b{position:absolute;left:36px;top:26px;font:800 40px Arial;letter-spacing:3px;color:#76B900}.panel i{position:absolute;left:36px;top:80px;font:30px Arial;color:#BFD6B0;font-style:normal}
@@ -417,8 +417,8 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 #c0{top:260px}#c1{top:430px}#c2{top:600px}
 #fin{position:absolute;left:0;right:0;top:870px;text-align:center;font:800 78px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#fin u{text-decoration:none;color:#76B900}
 </style><div class=grid></div>
-<div id=title class=layer><div id=dl><img src="@DL@"></div><h1>Automotive Service Operations<br><u>Intelligence</u> Agent</h1><div id=bar></div>
- <p>Voice and text shift updates &rarr; continuously derived repair-order state</p></div>
+<div id=title class=layer><div id=dl><img src="@DL@"></div><h1>Service Operations <u>Agent</u></h1><div id=bar></div>
+ <p>Turning every shift update into safe, cited answers, for any service department</p></div>
 
 <div id=shift class=layer><h2 class=hd>Every shift change</h2>
  <div class=panel id=day><b>DAY SHIFT</b><i>the technician who did the work</i></div><div class=panel id=night><b>NIGHT SHIFT</b><i>the technician who picks it up</i></div>
@@ -456,6 +456,52 @@ window.__link=i=>{const s=$('s'+i),m=$('mgr'),d=$('d'+i);
  Object.assign(d.style,{left:x1+'px',top:y1+'px',height:len+'px',transformOrigin:'0 0',transform:'rotate('+(-ang)+'rad)'});show(d,500);};
 </script>""".replace("@DL@", logo("deloitte")).replace("@DOC@", PI["doc"]).replace("@PHONE@", PI["phone"]).replace("@MON@", PI["monitor"]) \
         .replace("@PERSON@", PI["person"]).replace("@CLOCK@", PI["clock"]).replace("@SEARCH@", IC["search"])
+
+
+def observ_html() -> str:
+    """The observability infographic: two sources (DCGM's 19 GPU series, the app's 13) into Prometheus into one Grafana dashboard."""
+    return """<!doctype html><meta charset=utf-8><style>
+body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;
+ background:radial-gradient(circle at 30% 20%,#1d4d3f 0%,#0d201b 70%)}
+.grid{position:absolute;inset:-120px;background-image:linear-gradient(rgba(118,185,0,.08) 2px,transparent 2px),linear-gradient(90deg,rgba(118,185,0,.08) 2px,transparent 2px);background-size:120px 120px}
+h1{position:absolute;left:0;right:0;top:56px;margin:0;text-align:center;font:800 70px Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}h1 u{text-decoration:none;color:#76B900}
+.src{position:absolute;left:90px;width:720px;height:300px;border-radius:24px;background:#fff;color:#142019;border-left:18px solid #76B900;box-shadow:0 22px 50px rgba(0,0,0,.45);opacity:0}
+#a{top:210px}#b{top:560px}
+.src img{position:absolute;left:44px;top:34px;height:50px}.src .t{position:absolute;left:44px;top:38px;font:800 34px Arial}
+.src .n{position:absolute;right:44px;top:20px;font:800 128px/1 Arial;color:#2f5f00}.src .u{position:absolute;right:44px;top:150px;font:700 34px Arial;color:#4b5b50;text-align:right}
+.src .m{position:absolute;left:44px;right:44px;bottom:30px;font:30px/1.35 Arial;color:#4b5b50}.src .sub{position:absolute;left:44px;top:100px;font:700 32px Arial;color:#142019}
+#prom{position:absolute;left:930px;top:400px;width:300px;height:230px;border-radius:24px;background:#1b3a30;border:3px solid #76B900;text-align:center;opacity:0;box-shadow:0 0 50px rgba(118,185,0,.25)}
+#prom b{display:block;font:800 46px Arial;margin-top:62px}#prom i{display:block;font:30px Arial;color:#BFD6B0;font-style:normal;margin-top:12px}
+#graf{position:absolute;left:1360px;top:300px;width:470px;height:430px;border-radius:24px;background:#fff;color:#142019;box-shadow:0 22px 50px rgba(0,0,0,.45);opacity:0}
+#graf img{position:absolute;left:36px;top:30px;height:60px}#graf .sub{position:absolute;left:36px;top:108px;font:700 32px Arial}
+.pn{position:absolute;left:36px;right:36px;height:62px;border-radius:12px;background:#EEF6DF;font:700 28px/62px Arial;padding-left:20px;opacity:0}
+#p0{top:170px}#p1{top:248px}#p2{top:326px}
+svg.ar{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
+.ln{fill:none;stroke:#76B900;stroke-width:7;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
+#note{position:absolute;left:0;right:0;bottom:140px;text-align:center;font:34px Arial;color:#C8D6BE;opacity:0}
+</style><div class=grid></div><h1>Observability, <u>built in</u></h1>
+<div class=src id=a><img src="@NV@"><div class=sub style="top:104px">DCGM exporter</div><div class=n><span class=v data-to=19>19</span></div><div class=u>GPU series</div>
+ <div class=m>utilisation &middot; framebuffer &middot; power &middot; temperature &middot; clock</div></div>
+<div class=src id=b><div class=t>Service Operations Agent</div><div class=sub style="top:104px">the app's own metrics</div><div class=n><span class=v data-to=13>13</span></div><div class=u>app series</div>
+ <div class=m>answer latency &middot; NIM latency &middot; model calls &middot; tool use &middot; guardrail blocks</div></div>
+<div id=prom><b>Prometheus</b><i>scrapes both</i></div>
+<div id=graf><img src="@GR@"><div class=sub>one dashboard</div><div class=pn id=p0>Answer latency</div><div class=pn id=p1>Tool use</div><div class=pn id=p2>GPU load</div></div>
+<svg class=ar viewBox="0 0 1920 1080"><defs><marker id=h viewBox="0 0 10 10" refX=7 refY=5 markerWidth=5 markerHeight=5 orient=auto-start-reverse><path d="M0 0L10 5L0 10z" fill="#76B900"/></marker></defs>
+ <path class=ln id=l0 pathLength=1 marker-end="url(#h)" d="M830 360 C 880 360 880 480 922 480"/>
+ <path class=ln id=l1 pathLength=1 marker-end="url(#h)" d="M830 710 C 880 710 880 560 922 560"/>
+ <path class=ln id=l2 pathLength=1 marker-end="url(#h)" d="M1240 515 L 1350 515"/></svg>
+<div id=note>One place to see every answer, every tool call and every watt</div>
+<script>const $=id=>document.getElementById(id);
+const up=(e,d)=>e.animate([{opacity:0,transform:'translateY(46px) scale(.95)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
+const draw=e=>{e.style.opacity=1;e.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:520,fill:'forwards',easing:'ease-out'});};
+const count=e=>{const to=+e.dataset.to,t0=performance.now();const tick=t=>{const k=Math.min(1,(t-t0)/800);e.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick);};requestAnimationFrame(tick);};
+window.__go=ms=>{const at=(f,fn)=>setTimeout(fn,ms*f);
+ at(.03,()=>{up($('a'));count($('a').querySelector('.v'));});at(.14,()=>{up($('b'));count($('b').querySelector('.v'));});
+ at(.30,()=>{draw($('l0'));draw($('l1'));});at(.36,()=>up($('prom'),420));
+ at(.46,()=>draw($('l2')));at(.50,()=>up($('graf')));
+ at(.58,()=>up($('p0'),360));at(.64,()=>up($('p1'),360));at(.70,()=>up($('p2'),360));
+ at(.76,()=>$('note').animate([{opacity:0},{opacity:1}],{duration:500,fill:'forwards'}));};
+</script>""".replace("@NV@", logo("nvidia")).replace("@GR@", logo("grafana"))
 
 
 def components_html() -> str:
@@ -497,23 +543,27 @@ window.__pulse=id=>$(id).animate([{transform:'scale(1)',filter:'brightness(1)'},
 
 
 def end_html() -> str:
-    cards = [("Safer", "Unsafe vehicles surface the moment an update is logged"),
-             ("Faster", "Answers in a tenth of a second, with no model call"),
-             ("Grounded", "Every figure cited and checked against a record"),
-             ("Yours", "Runs on one L40S that you own")]
+    cards = [("12", "0", " of 32", "unsafe vehicles flagged", "the moment an update is logged"),
+             ("0.1", "1", " s", "to answer a manager", "from live state, with no model call"),
+             ("100", "0", "%", "of figures grounded", "905 of 905 answers traced to a record"),
+             ("30", "0", " of 46 GB", "used on one L40S", "language, embedding and reranking")]
     return """<!doctype html><meta charset=utf-8><style>
-body{margin:0;width:1920px;height:1080px;background:#14302A;font-family:Arial,sans-serif;color:#fff;overflow:hidden;position:relative}
-h1{position:absolute;left:0;right:0;top:110px;text-align:center;margin:0;font-size:84px;opacity:0}
-.c{position:absolute;top:290px;width:400px;height:280px;background:#1E4035;border:2px solid #2E5245;border-radius:14px;padding:30px;box-sizing:border-box;opacity:0}
-.c b{display:block;color:#76B900;font-size:42px;margin-bottom:16px}.c span{font-size:27px;color:#DCE8CF;line-height:1.35}
-#big{position:absolute;left:0;right:0;top:650px;text-align:center;font-size:92px;font-weight:700;opacity:0}#big u{text-decoration:none;color:#76B900}
-#nm{position:absolute;left:0;right:0;top:800px;text-align:center;font-size:40px;color:#C8D6BE;opacity:0}
-</style><h1 id=t>In short</h1>%s<div id=big>Fast. <u>Grounded.</u> Yours to run.</div><div id=nm>Automotive Service Operations Intelligence Agent</div>
+body{margin:0;width:1920px;height:1080px;background:radial-gradient(circle at 25% 15%,#1d4d3f 0%,#0d201b 75%);font-family:Arial,sans-serif;color:#fff;overflow:hidden;position:relative}
+h1{position:absolute;left:0;right:0;top:90px;text-align:center;margin:0;font-size:84px;opacity:0}
+.c{position:absolute;top:250px;width:410px;height:420px;background:#fff;color:#142019;border-top:14px solid #76B900;border-radius:20px;padding:36px 30px;box-sizing:border-box;opacity:0;box-shadow:0 22px 50px rgba(0,0,0,.45)}
+.c .n{font:800 92px/1.05 Arial;color:#2f5f00;white-space:nowrap}.c .n small{font:800 40px Arial}.c .l{font:700 36px/1.2 Arial;margin-top:22px}.c .s{font:27px/1.3 Arial;color:#4b5b50;margin-top:16px}
+#big{position:absolute;left:0;right:0;top:760px;text-align:center;font-size:92px;font-weight:700;opacity:0}#big u{text-decoration:none;color:#76B900}
+#nm{position:absolute;left:0;right:0;top:895px;text-align:center;font-size:44px;color:#C8D6BE;opacity:0}
+</style><h1 id=t>In short, in numbers</h1>@CARDS@<div id=big>Fast. <u>Grounded.</u> Yours to run.</div><div id=nm>Service Operations Agent</div>
 <script>const $=id=>document.getElementById(id);
 const up=(e,d)=>e.animate([{opacity:0,transform:'translateY(60px) scale(.96)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
-window.__title=()=>up($('t'));window.__card=i=>up(document.querySelectorAll('.c')[i]);
+const count=e=>{const to=parseFloat(e.dataset.to),dec=+e.dataset.dec,t0=performance.now();
+ const tick=t=>{const k=Math.min(1,(t-t0)/900);e.textContent=(to*(1-Math.pow(1-k,3))).toFixed(dec);if(k<1)requestAnimationFrame(tick);};requestAnimationFrame(tick);};
+window.__title=()=>up($('t'));window.__card=i=>{const c=document.querySelectorAll('.c')[i];up(c);count(c.querySelector('.v'));};
 window.__big=()=>{up($('big'),600);setTimeout(()=>up($('nm'),600),900);};
-</script>""" % "".join('<div class=c style="left:%dpx"><b>%s</b><span>%s</span></div>' % (80 + i * 440, a, b) for i, (a, b) in enumerate(cards))
+</script>""".replace("@CARDS@", "".join(
+        '<div class=c style="left:%dpx"><div class=n><span class=v data-to="%s" data-dec="%s">%s</span><small>%s</small></div><div class=l>%s</div><div class=s>%s</div></div>'
+        % (76 + i * 440, to, dec, to, tail, lab, sub) for i, (to, dec, tail, lab, sub) in enumerate(cards)))
 
 
 def value_html(subs: dict) -> str:
@@ -600,8 +650,7 @@ def concat(parts, out: Path):
 
 # ------------------------------------------------------------------ logo badges and the transition between pieces
 BADGES = {"C2": (["nvidia"], "Riva · speech to text"), "C3": (["nvidia"], "Nemotron 8B · NIM"),
-          "D6": (["nvidia"], "NIM · embed + rerank"), "G1": (["nvidia", "grafana"], "DCGM telemetry"),
-          "G2": (["nvidia", "grafana"], "DCGM + Grafana")}
+          "D6": (["nvidia"], "NIM · embed + rerank"), "G2": (["nvidia", "grafana"], "DCGM + Grafana")}
 
 
 def badge_png(pw, key: str) -> Path:
@@ -657,6 +706,10 @@ def scene_P():
             dict(cam=None, camo=dict(to=1.0), co="Lost time",
                  act=go("lost", (0.04, call("__fade", "clk")), (0.26, call("__pop", "c0")), (0.44, call("__pop", "c1")), (0.60, call("__pop", "c2")),
                         (0.80, call("__fade", "fin"))))]
+
+
+def scene_I():
+    return [dict(cam=None, camo=dict(to=1.03), co="Observability", act=lambda page, d: page.evaluate("ms => window.__go(ms)", int(d * 1000)))]
 
 
 def scene_B():
@@ -735,7 +788,8 @@ def scene_F():
         page.wait_for_timeout(int(d * 250))
         page.evaluate("() => window.__card(0)")
     return [dict(cam={"sel": ".c", "nth": 0}, camo=dict(max=1.4, pad=240), act=f1),
-            dict(cam=[{"sel": ".c", "nth": 1}, {"sel": ".c", "nth": 3}], camo=dict(max=1.25, pad=100), act=card(1, 2, 3)),
+            dict(cam=[{"sel": ".c", "nth": 1}, {"sel": ".c", "nth": 2}], camo=dict(max=1.3, pad=120), act=card(1, 2)),
+            dict(cam={"sel": ".c", "nth": 3}, camo=dict(max=1.4, pad=240), act=card(3)),
             dict(cam=None, camo=dict(to=1.0), act=lambda page, d: page.evaluate("() => window.__big()"))]
 
 
@@ -760,7 +814,7 @@ LIVE_PLAN = {
     "D5": dict(src="D5", cam="Q", camo=dict(max=1.75, pad=140), ring="Q"),
     "D6": dict(src="D6", cam=None, camo=dict(to=1.05), badge="D6",
                then=[dict(at="done+0.2", cam="LAST", camo=dict(max=1.6, pad=60), ring=None, co="Search + rerank", dur=0.45)]),
-    "G1": dict(src="G1", cam="GPU", camo=dict(max=1.9, pad=70), ring="GPU", ringpad=4, co="L40S telemetry", badge="G1",
+    "G2": dict(src="G1", cam="GPU", camo=dict(max=1.9, pad=70), ring="GPU", ringpad=4, co="Live dashboard", badge="G2",
                then=[dict(at=0.55, cam="POWER", camo=dict(max=1.9, pad=70), ring="POWER", ringpad=4, dur=0.4)]),
 }
 RING_STATES = 2                  # the ring pulses by blending these two stills: a plain ring and a full glow
@@ -1013,7 +1067,7 @@ def live_piece(pngs: Pngs, name: str, rows, durs, holds, texts, tl: dict, subs: 
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
 PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("A", "A", ["A2", "A4", "A5"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
-          ("V", "V", None), ("E", "E", None), ("G", "G", None), ("F", "F", None)]
+          ("V", "V", None), ("E", "E", None), ("I", "G", ["G1"]), ("G", "G", ["G2"]), ("F", "F", None)]
 LIVE = "ACDG"
 BRIDGE_BEFORE = "ABCD"       # ease problem -> dashboard -> process slide -> Technician Update -> Manager Assistant instead of cutting
 
@@ -1064,12 +1118,14 @@ def main():
         (WORK / "problem.html").write_text(problem_html())
         (WORK / "value.html").write_text(value_html(subs))
         (WORK / "comp.html").write_text(components_html())
+        (WORK / "observ.html").write_text(observ_html())
         (WORK / "end.html").write_text(end_html())
         local = {"P": ((WORK / "problem.html").as_uri(), scene_P()),
                  "O": ((WORK / "intro.html").as_uri(), scene_O()),
                  "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
                  "V": ((WORK / "value.html").as_uri(), scene_V()),
                  "E": ((WORK / "comp.html").as_uri(), scene_E()),
+                 "I": ((WORK / "observ.html").as_uri(), scene_I()),
                  "F": ((WORK / "end.html").as_uri(), scene_F())}
         want = list(args.scene) if args.scene else [p[0] for p in PIECES]
         pngs = Pngs(pw)

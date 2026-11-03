@@ -5,22 +5,23 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:29): 36 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:34): 38 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
 
 | scene | what you see |
 |---|---|
-| Title and problem | the first frame is a title card, the **Deloitte logo** above the app name (it is the thumbnail). Then the problem in three pictures: a shift handover that loses the detail, a manager chasing answers across notes, calls and screens, and the time that goes on it. It ends on shift notes flying onto a moving grid, one stamped SAFETY, and a soft dissolve into the live dashboard |
+| Title and problem | the first frame is a title card, the **Deloitte logo** above the title *Service Operations Agent* and a one-line use case for any service department (it is the thumbnail). Then the problem in three pictures: a shift handover that loses the detail, a manager chasing answers across notes, calls and screens, and the time that goes on it. It ends on shift notes flying onto a moving grid, one stamped SAFETY, and a soft dissolve into the live dashboard |
 | A Hook | the **live** Dashboard on the L40S box, entered by a soft dissolve from the stamped notes; the agent is introduced as *the Service Operations Agent* (the full name is on screen in the dashboard header and on the last card) |
 | B Process | a soft dissolve from the dashboard, then the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken, ending on the whole five-stage flow (not PowerPoint, so fonts differ slightly). The deck slide itself is process only now (no business figures); they have their own segment |
 | C Ingest | **live**, entered by a soft dissolve from the process slide: a spoken update is uploaded, Riva transcribes it, Nemotron extracts the measurement, the rules flag the repair order `SAFETY_RELATED` |
 | D Ask | **live**: a soft dissolve from the form, then a structured question answered with no model call and a free-text question answered by search + rerank + narration on the local NIMs |
 | V Business value | four cards: unsafe vehicles surfaced (read from the live dashboard), `0.1 s` answers, `905 / 905` traced answers, one update feeding the whole shop. No cost or speed-up claim is made |
 | E Components | an infographic: an L40S chip holding the three NIM tiles with a memory bar (about 30 of 46 GB), then NVIDIA-logo cards with pictograms for Riva, Guardrails and Evaluator |
-| G Telemetry | **live** Grafana with DCGM GPU telemetry, after real traffic through `/ask` |
-| F Conclusion | a recap, *In short*: four cards (Safer, Faster, Grounded, Yours), ending on *Fast. Grounded. Yours to run.* with the full product name beneath it |
+| I Observability | an infographic: the DCGM exporter (19 GPU series) and the app (13 series) feed Prometheus, which feeds one Grafana dashboard; the numbers count up, with the NVIDIA and Grafana logos |
+| G Live dashboard | a short cut to the **live** Grafana with DCGM GPU metrics, after real traffic through `/ask` |
+| F Conclusion | a recap, *In short, in numbers*: four cards that count up (12 of 32 flagged, 0.1 s, 100% grounded, 30 of 46 GB), ending on *Fast. Grounded. Yours to run.* with the product name beneath it |
 
 Logo badges (NVIDIA, Grafana) are laid over the live shots as each product is named. There is no cursor on screen except
 for the four clicks that start something (Transcribe, Extract and apply, and Ask twice).

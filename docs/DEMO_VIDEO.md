@@ -46,10 +46,12 @@ or product shot at the open and the close; nothing held still. Narration there r
 | E1 | Three NVIDIA NIM microservices run on one L40S: language, embedding and reranking. | Infographic: an L40S chip with three tiles (chat, search, rank icons) that pulse in turn, then a memory bar fills to about 30 of 46 GB; callout **1 GPU**; held |
 | E3 | Riva handles speech. NeMo Guardrails stops unsafe requests. | Two white cards with the NVIDIA logo and pictograms (waveform, shield) fly in |
 | E5 | NeMo Evaluator scores every release. | Evaluator card (gauge pictogram), ring; held |
-| G1 | And DCGM streams live GPU telemetry into Grafana. | **Live Grafana** on the L40S: camera to the GPU utilisation and framebuffer panels, then the power panel, ring; held |
-| F1 | So, in short: the Service Operations Agent finds the unsafe vehicle the moment it is logged. | Title *In short* and card 1 (*Safer*) fly in |
-| F2 | It answers in a tenth of a second, with every figure cited, on one L40S that you own. | Cards 2, 3 and 4 (*Faster*, *Grounded*, *Yours*) fly in one after another |
-| F4 | Fast. Grounded. Yours to run. That is the Service Operations Agent. | Large type, with the full product name beneath it; the video ends here |
+| G1 | Observability is built in: DCGM and the app feed Grafana. | **Infographic:** the DCGM exporter (*19* GPU series) and the app (*13* series) feed Prometheus, which feeds one Grafana dashboard (*Answer latency, Tool use, GPU load*); the numbers count up; callout **Observability** |
+| G2 | And live, on the same box. | **Live Grafana** on the L40S, kept short: camera to the GPU utilisation and framebuffer panels, then the power panel, ring |
+| F1 | In short, in numbers: {safety} of {open} unsafe vehicles flagged the moment an update is logged. | Title *In short, in numbers* and card 1 (*12 of 32*, counting up) fly in |
+| F2 | Answers in a tenth of a second, and every figure traced to a record. | Cards 2 and 3 (*0.1 s*, *100%*) fly in one after another |
+| F3 | All on one L40S, using 30 of its 46 gigabytes. | Card 4 (*30 of 46 GB*) flies in |
+| F4 | Fast. Grounded. Yours to run. That is the Service Operations Agent. | Large type, with *Service Operations Agent* beneath it; the video ends here |
 
 ```bash
 # beats, words, and the speaking time they imply at 190 wpm
@@ -98,7 +100,9 @@ changed since the footage was recorded. Only if it has, use the checklist below 
 | unsafe vehicle found the moment it is logged | the write path flags the repair order when the update is applied (`app/pipeline/run.py`); scene C shows it live |
 | every figure cited | `check_grounding`; baseline grounding 100 % |
 | every figure checked | `check_grounding`; baseline grounding 100 %, traceability 905/905, routing 37/37 |
-| DCGM → Grafana | 19 GPU series, `docs/screenshots/09` |
+| DCGM → Prometheus → Grafana, 19 GPU series and 13 app series | `docs/TECHNICAL.md` (observability, `app/obs/metrics.py`), `docs/screenshots/09` |
+| *100%* of figures grounded, *905 of 905* traced | baseline grounding 100 %, traceability 905/905 (`scripts/evaluate.py`) |
+| *30 of 46 GB* | measured 29,963 MiB resident of 46,068 MiB |
 | business value, card 1: *{safety} of {open}* | read from the running dashboard (`Safety - do not release` over `Open repair orders`) on the demo dataset |
 | business value, cards 2 and 3: *0.1 s*, *905 / 905* | the 0.1 s and traceability rows above |
 | business value, card 4: *1 update feeds the record, handover and dashboard* | state is folded from one event log (`docs/TECHNICAL.md`); the handover and dashboard are derived from it |
