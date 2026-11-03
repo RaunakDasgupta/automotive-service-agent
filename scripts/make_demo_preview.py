@@ -43,7 +43,7 @@ GAP = 0.30                       # silence after each beat's voice
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.6, "B5": 0.3, "C3": 0.8, "C4": 0.8, "D3": 0.5, "D4": 0.6, "D6": 0.8,
-        "E1": 0.4, "E5": 0.6, "G1": 0.5, "V4": 0.3, "F4": 0.4}
+        "E1": 0.4, "E5": 1.2, "G1": 0.5, "V4": 0.3, "F4": 0.4}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -505,41 +505,49 @@ window.__go=ms=>{const at=(f,fn)=>setTimeout(fn,ms*f);
 </script>""".replace("@NV@", logo("nvidia")).replace("@GR@", logo("grafana"))
 
 
-def components_html() -> str:
+def architecture_html() -> str:
+    """The deployed architecture as a layered diagram inside one frame: quality on top, speech and safety in the middle, the three
+    NIMs on the L40S at the bottom. Parts are shown one at a time; the camera frames each with the earlier ones still on screen."""
     tiles = [("t0", "chat", "Nemotron 8B", "language"), ("t1", "search", "Embedding", "search"), ("t2", "rank", "Reranking", "search")]
     t_html = "".join('<div class=tile id=%s><div class=ic>%s</div><b>%s</b><i>%s</i><span>NIM</span></div>' % (i, IC[ic], a, b) for i, ic, a, b in tiles)
     cards = [("c0", "wave", "Riva", "Speech to text, for spoken updates"), ("c1", "shield", "NeMo Guardrails", "Stops unsafe requests before any tool runs"),
              ("c2", "gauge", "NeMo Evaluator", "Scores every release against the baseline")]
     c_html = "".join('<div class=card id=%s><div class=ic2>%s</div><div class=tx><img src="@NV@"><b>%s</b><i>%s</i></div></div>' % (i, IC[ic], a, b) for i, ic, a, b in cards)
     return """<!doctype html><meta charset=utf-8><style>
-:root{--co-x:1430px;--co-y:175px}
+:root{--co-x:1480px;--co-y:34px}
 body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;background:radial-gradient(circle at 25% 15%,#1d4d3f 0%,#0d201b 75%)}
-#logo{position:absolute;left:80px;top:44px;height:64px;background:#fff;padding:12px 26px;border-radius:14px;box-sizing:content-box}
-h1{position:absolute;left:520px;top:62px;margin:0;font-size:52px}
-#gpu{position:absolute;left:90px;top:200px;width:860px;height:600px;opacity:0}
-.chip{position:absolute;left:40px;top:30px;width:780px;height:420px;border:6px solid #76B900;border-radius:26px;background:#10261f;box-shadow:0 0 60px rgba(118,185,0,.25)}
-.pins{position:absolute;left:70px;top:14px;width:720px;height:20px;background:repeating-linear-gradient(90deg,#76B900 0 10px,transparent 10px 40px)}
-.pins.b{top:446px}
-.lab{position:absolute;left:70px;top:60px;font:700 30px Arial;color:#76B900;letter-spacing:4px}
-.tile{position:absolute;top:120px;width:220px;height:260px;border-radius:16px;background:#1b3a30;border:2px solid #2f6a4a;text-align:center;opacity:0}
-.tile .ic{width:84px;height:84px;margin:26px auto 8px}.tile b{display:block;font-size:30px}.tile i{display:block;font:22px Arial;color:#BFD6B0;font-style:normal}
-.tile span{position:absolute;right:12px;top:10px;background:#76B900;color:#0d201b;font:700 16px Arial;padding:2px 9px;border-radius:9px}
-#t0{left:34px}#t1{left:280px}#t2{left:526px}
-#vr{position:absolute;left:40px;top:535px;width:780px;opacity:0}
+#logo{position:absolute;left:70px;top:26px;height:44px;background:#fff;padding:9px 20px;border-radius:12px;box-sizing:content-box}
+#ttl{position:absolute;left:0;right:0;top:20px;margin:0;text-align:center;font:800 58px Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}#ttl u{text-decoration:none;color:#76B900}
+#frame{position:absolute;left:120px;top:110px;width:1680px;height:930px;border:3px dashed rgba(118,185,0,.55);border-radius:30px;box-sizing:border-box}
+#tab{position:absolute;left:150px;top:92px;padding:6px 22px;background:#0d201b;border:2px solid rgba(118,185,0,.7);border-radius:14px;font:700 26px Arial;color:#BFD6B0}
+.lab{position:absolute;left:200px;font:700 22px Arial;letter-spacing:4px;color:#76B900}
+#r2{position:absolute;left:200px;top:372px;width:1520px;height:170px}
+#gpu{position:absolute;left:200px;top:604px;width:1520px;height:410px;opacity:0}
+.chip{position:absolute;inset:0;border:6px solid #76B900;border-radius:26px;background:#10261f;box-shadow:0 0 60px rgba(118,185,0,.25)}
+.chip .nm{position:absolute;left:40px;top:22px;font:700 30px Arial;color:#76B900;letter-spacing:4px}
+.tile{position:absolute;top:76px;width:380px;height:210px;border-radius:16px;background:#1b3a30;border:2px solid #2f6a4a;opacity:0}
+.tile .ic{position:absolute;left:24px;top:30px;width:84px;height:84px}.tile b{position:absolute;left:130px;top:46px;font-size:34px}.tile i{position:absolute;left:130px;top:96px;font:26px Arial;color:#BFD6B0;font-style:normal}
+.tile span{position:absolute;right:14px;top:12px;background:#76B900;color:#0d201b;font:700 17px Arial;padding:2px 9px;border-radius:9px}
+#t0{left:40px}#t1{left:470px}#t2{left:900px}
+#vr{position:absolute;left:40px;right:40px;top:316px;opacity:0}
 #vr .l{font:600 26px Arial;color:#C8D6BE;margin-bottom:10px;display:flex;justify-content:space-between}
-#vr .tr{height:34px;border-radius:17px;background:#1b3a30;overflow:hidden;border:2px solid #2f6a4a}#vf{height:100%;width:0;background:linear-gradient(90deg,#4d8a00,#76B900)}
-.card{position:absolute;left:1010px;width:820px;height:200px;border-radius:20px;background:#fff;color:#142019;opacity:0;box-shadow:0 18px 40px rgba(0,0,0,.4);border-left:16px solid #76B900}
-#c0{top:200px}#c1{top:430px}#c2{top:660px}
-.ic2{position:absolute;left:36px;top:46px;width:108px;height:108px;background:#EEF6DF;border-radius:22px;padding:18px;box-sizing:border-box}
-.tx{position:absolute;left:176px;top:26px;right:30px}.tx img{height:54px;display:block;margin:-8px 0 6px -4px}.tx b{display:block;font-size:42px}.tx i{display:block;font:28px/1.25 Arial;color:#4b5b50;font-style:normal;margin-top:6px}
-</style><img id=logo src="@NV@"><h1>at every step that needs a model</h1>
-<div id=gpu><div class=chip><div class=pins></div><div class="pins b"></div><div class=lab>NVIDIA L40S</div>@TILES@</div>
+#vr .tr{height:30px;border-radius:15px;background:#1b3a30;overflow:hidden;border:2px solid #2f6a4a}#vf{height:100%;width:0;background:linear-gradient(90deg,#4d8a00,#76B900)}
+.card{position:absolute;height:170px;border-radius:20px;background:#fff;color:#142019;opacity:0;box-shadow:0 18px 40px rgba(0,0,0,.4);border-left:16px solid #76B900}
+#c0{left:200px;top:372px;width:740px}#c1{left:980px;top:372px;width:740px}#c2{left:200px;top:178px;width:1520px;height:150px}
+.ic2{position:absolute;left:34px;top:30px;width:104px;height:104px;background:#EEF6DF;border-radius:22px;padding:18px;box-sizing:border-box}#c2 .ic2{top:22px}
+.tx{position:absolute;left:170px;top:20px;right:30px}.tx img{height:46px;display:block;margin:-4px 0 4px -4px}.tx b{display:block;font-size:40px}.tx i{display:block;font:27px/1.25 Arial;color:#4b5b50;font-style:normal;margin-top:4px}
+</style><img id=logo src="@NV@"><h1 id=ttl>Deployed <u>architecture</u></h1>
+<div id=frame></div><div id=tab>Service Operations Agent</div>
+<div class=lab style="top:148px">QUALITY</div><div class=lab style="top:342px">SPEECH AND SAFETY</div><div class=lab style="top:572px">MODELS, ON ONE GPU</div>
+<div id=r2></div>
+<div id=gpu><div class=chip><div class=nm>NVIDIA L40S</div>@TILES@</div>
  <div id=vr><div class=l><span>GPU memory in use</span><span>about 30 GB of 46 GB</span></div><div class=tr><div id=vf></div></div></div></div>
 @CARDS@
 <script>const $=id=>document.getElementById(id);
 const show=(e,d)=>e.animate([{opacity:0,transform:'translateY(46px) scale(.94)'},{opacity:1,transform:'none'}],{duration:d||480,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
 window.__show=id=>show($(id));window.__vram=()=>{show($('vr'));$('vf').animate([{width:'0%'},{width:'65%'}],{duration:1200,fill:'forwards',easing:'ease-out'});};
 window.__pulse=id=>$(id).animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.09)',filter:'brightness(1.35)'},{transform:'scale(1)',filter:'brightness(1)'}],{duration:640});
+window.__dim=(ids,on)=>ids.forEach(i=>{const e=$(i);e.animate([{opacity:getComputedStyle(e).opacity},{opacity:on?.5:1}],{duration:450,fill:'forwards'});});
 </script>""".replace("@NV@", logo("nvidia")).replace("@TILES@", t_html).replace("@CARDS@", c_html.replace("@NV@", logo("nvidia")))
 
 
@@ -733,14 +741,6 @@ def scene_O():
 
 
 def scene_E():
-    def seq(*ids, share=0.2):
-        def f(page, d):
-            for k, i in enumerate(ids):
-                page.evaluate("i => window.__show(i)", i)
-                if k < len(ids) - 1:
-                    page.wait_for_timeout(int(d * 1000 * share))
-        return f
-
     def e1(page, d):
         page.evaluate("() => window.__show('gpu')")
         for i in ("t0", "t1", "t2"):
@@ -748,15 +748,30 @@ def scene_E():
             page.evaluate("i => window.__show(i)", i)
         page.wait_for_timeout(int(d * 1000 * 0.10))
         page.evaluate("() => window.__vram()")
-        page.wait_for_timeout(int(d * 1000 * 0.25))
+        page.wait_for_timeout(int(d * 1000 * 0.22))
         for i in ("t0", "t1", "t2"):
             page.evaluate("i => window.__pulse(i)", i)
-            page.wait_for_timeout(int(d * 1000 * 0.08))
+            page.wait_for_timeout(int(d * 1000 * 0.07))
+
+    def ring(page, sel):
+        page.evaluate("s => window.__ring({sel: s}, 8)", sel)
+
+    def e3(page, d):                      # the GPU shrinks back into the frame, dimmed; speech and safety come up in front of it
+        page.evaluate("() => window.__dim(['gpu'], true)")
+        page.evaluate("() => window.__show('c0')"); ring(page, "#c0")
+        page.wait_for_timeout(int(d * 1000 * 0.45))
+        page.evaluate("() => window.__show('c1')"); ring(page, "#c1")
+
+    def e5(page, d):                      # quality comes in on top, then the camera pulls all the way out to the whole architecture
+        page.evaluate("() => window.__dim(['gpu', 'c0', 'c1'], true)")
+        page.evaluate("() => window.__show('c2')"); ring(page, "#c2")
+        page.wait_for_timeout(int(d * 1000 * 0.40))
+        page.evaluate("() => { window.__ring(null); window.__dim(['gpu', 'c0', 'c1'], false); window.__cam(null, {to: 1.0, ms: 1200}); }")
 
     GPU = {"sel": "#gpu"}
-    return [dict(cam=[{"sel": "#logo"}, {"sel": "h1"}, GPU], camo=dict(max=1.25, pad=90), co="1 GPU", act=e1),
-            dict(cam=[{"sel": "#c0"}, {"sel": "#c1"}], camo=dict(max=1.4, pad=90), act=seq("c0", "c1", share=0.42)),
-            dict(cam={"sel": "#c2"}, camo=dict(max=1.9, pad=200), ring={"sel": "#c2"}, ringpad=6, act=seq("c2"))]
+    return [dict(cam=GPU, camo=dict(max=1.9, pad=70), co="Deployed architecture", act=e1),
+            dict(cam=[GPU, {"sel": "#r2"}], camo=dict(max=1.3, pad=50), co="Speech + safety", act=e3),
+            dict(cam={"sel": "#frame"}, camo=dict(max=1.18, pad=10), co="Evaluation", act=e5)]
 
 
 def scene_V():
@@ -1148,7 +1163,7 @@ def main():
         (WORK / "intro.html").write_text(intro_html())
         (WORK / "problem.html").write_text(problem_html())
         (WORK / "value.html").write_text(value_html(subs))
-        (WORK / "comp.html").write_text(components_html())
+        (WORK / "comp.html").write_text(architecture_html())
         (WORK / "observ.html").write_text(observ_html())
         (WORK / "end.html").write_text(end_html())
         local = {"P": ((WORK / "problem.html").as_uri(), scene_P()),
