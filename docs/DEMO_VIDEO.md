@@ -1,11 +1,11 @@
 # Client demo video — plan, script and tooling
 
-**Target length: about 2:37** (the 2:15 demo, a 15-second problem opening, and the Deloitte and NVIDIA preface and closing cards). **Audience:** a prospective client evaluating an
+**Target length: about 2:38** (the 2:15 demo, a 15-second problem opening, and the Deloitte and NVIDIA preface and closing cards). **Audience:** a prospective client evaluating an
 AI assistant for a service department. **One idea:** *fast, grounded answers, running on your own GPU.*
 
 ## 1. Script — written to be cut, not read
 
-**Target 2:37.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
+**Target 2:38.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
 changes on every beat and something on screen is always moving**, except during those holds. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.

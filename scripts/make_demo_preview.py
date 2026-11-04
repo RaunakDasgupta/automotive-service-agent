@@ -708,8 +708,8 @@ OUTRO_DIR = Path.home() / ".cache" / "asoia-demo-outro"      # the client's Delo
 OUTRO_CUTS = [(0.30, 3.60)]                  # seconds of the recording to use: the wordmark animating in with its sound, and nothing after it (the legal text comes later)
 OUTRO_CROP = (980, 551, 100, 822)            # w, h, x, y of the Deloitte frame inside the 1180 x 2556 recording: wordmark and legal text, no player controls
 OUTRO_WM = (739, 262, 443)                   # x, y, width of the clip's wordmark once placed on the 1920 x 1080 frame (measured)
-OUTRO_SETTLE = 2.20                          # seconds into the outro when the animation has finished: the crisp vector wordmark swaps in over it
-OUTRO_HOLD = 1.5                             # the last frame stays this long, then fades to black
+OUTRO_SETTLE = 1.75                          # seconds into the outro when the animation has finished: the crisp vector wordmark swaps in over it
+OUTRO_HOLD = 2.5                             # the last frame stays this long, then fades to black
 OUTRO_DB = -2.0                              # the clip's own sound, relative to how it was recorded
 
 
