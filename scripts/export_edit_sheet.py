@@ -64,6 +64,12 @@ def main():
             wavs.append((None, 0.0, 0.0, BRIDGE)); now += BRIDGE
         first = False
         state = (1.0, 0.0, 0.0)
+        if name == "K" and m.outro_file():
+            cuts = " + ".join("%.2f-%.2f s" % c for c in m.OUTRO_CUTS)
+            rows.append((name, "K1", now, m.outro_len(), "(none: the clip's own sound)", "the supplied Deloitte outro recording, playing stretches %s joined (the pause between them dropped)" % cuts,
+                         "crop %d x %d at (%d, %d) of the recording, scaled to the full frame; last frame held %.1f s" % (*m.OUTRO_CROP, m.OUTRO_HOLD), "none", "none", m.OUTRO_HOLD))
+            wavs.append((None, 0.0, m.outro_len(), 0.0)); now += m.outro_len()
+            continue
         for k, (bid, text) in enumerate(piece):
             text = fill(text)
             wav, v = m.voice(text)

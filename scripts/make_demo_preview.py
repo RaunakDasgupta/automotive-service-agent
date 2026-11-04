@@ -704,6 +704,34 @@ def mux(video: Path, wav: Path | None, total: float, out: Path):
         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", "%.2f" % total, out)
 
 
+OUTRO_DIR = Path.home() / ".cache" / "asoia-demo-outro"      # the client's Deloitte outro clip (a phone screen recording): kept here, not committed
+OUTRO_CUTS = [(0.30, 3.60), (6.00, 7.55)]    # seconds of the recording that are the clip playing (3.6-6.0 is the player paused)
+OUTRO_CROP = (980, 551, 100, 822)            # w, h, x, y of the Deloitte frame inside the 1180 x 2556 recording: wordmark and legal text, no player controls
+OUTRO_HOLD = 1.5                             # the last frame stays this long
+
+
+def outro_file() -> Path | None:
+    return next(iter(sorted(OUTRO_DIR.glob("outro.*"))), None)
+
+
+def outro_len() -> float:
+    return sum(b - a for a, b in OUTRO_CUTS) + OUTRO_HOLD
+
+
+def build_outro(src: Path, out: Path):
+    """The Deloitte outro, from the recording: the two stretches where it plays joined (the pause between them dropped),
+    cropped to the frame itself, scaled to 1920 x 1080, the last frame held; its own sound, as mono to join the rest."""
+    n = len(OUTRO_CUTS)
+    v = "".join("[0:v]trim=%.2f:%.2f,setpts=PTS-STARTPTS[v%d];" % (a, b, i) for i, (a, b) in enumerate(OUTRO_CUTS))
+    au = "".join("[0:a]atrim=%.2f:%.2f,asetpts=PTS-STARTPTS,afade=t=in:d=0.04,afade=t=out:st=%.2f:d=0.08[a%d];" % (a, b, b - a - 0.08, i) for i, (a, b) in enumerate(OUTRO_CUTS))
+    w, h, x, y = OUTRO_CROP
+    fc = (v + au + "".join("[v%d]" % i for i in range(n)) + "concat=n=%d:v=1:a=0,crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos:in_range=pc:out_range=tv,fps=%d,tpad=stop_mode=clone:stop_duration=%.2f,format=yuv420p[v];"
+          % (n, w, h, x, y, W, H, FPS, OUTRO_HOLD)
+          + "".join("[a%d]" % i for i in range(n)) + "concat=n=%d:v=0:a=1,aformat=channel_layouts=mono,aresample=%d,apad[a]" % (n, RATE))
+    run(ffmpeg(), "-y", "-i", src, "-filter_complex", fc, "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
+        "-c:a", "aac", "-b:a", "160k", "-t", "%.2f" % outro_len(), out)
+
+
 MUSIC_DIR = Path.home() / ".cache" / "asoia-demo-music"      # the music bed is the client's own file: kept here, not committed
 MUSIC_BELOW = 9.0                # dB: the bed's average level under the narration's
 DUCK = dict(threshold=0.02, ratio=4, attack=25, release=500)   # the bed dips while the voice speaks and swells back in the gaps
@@ -725,7 +753,7 @@ def duration(f: Path) -> float:
     return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
 
 
-LOOP_XFADE, FADE_IN, FADE_OUT = 3.0, 2.0, 4.0     # seconds: the overlap where one pass of the track melts into the next, and the ends
+LOOP_XFADE, FADE_IN, FADE_OUT = 3.0, 2.0, 6.0     # seconds: the overlap where one pass of the track melts into the next, and the ends
 
 
 def add_music(video: Path, music: Path, out: Path):
@@ -1302,6 +1330,15 @@ def main():
         parts, total = [], 0.0
         for name, sc, ids in PIECES:
             if name not in want:
+                continue
+            if name == "K" and outro_file():            # the supplied Deloitte outro replaces the closing card
+                m = WORK / "m_K.mp4"; build_outro(outro_file(), m)
+                if parts:
+                    br_clip = WORK / "bridge_K.mp4"; bridge(parts[-1], m, br_clip); parts.append(br_clip); total += 0.5
+                parts.append(m); total += outro_len()
+                print("piece K: the supplied Deloitte outro, %.1f s" % outro_len())
+                if args.keep:
+                    Path(args.keep).mkdir(parents=True, exist_ok=True); shutil.copy(m, Path(args.keep) / "piece_K.mp4")
                 continue
             rows = [r for r in script[sc] if ids is None or r[0] in ids]
             files, vdur = zip(*[voice(fill(t)) for _, t in rows])

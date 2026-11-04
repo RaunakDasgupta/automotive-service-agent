@@ -134,7 +134,3 @@ Answers in a tenth of a second, every figure traced to a record, all on one GPU 
 00:02:25,456 --> 00:02:30,747
 Fast. Grounded. Yours to run. That is the Service Operations Agent.
 
-35
-00:02:32,347 --> 00:02:36,197
-Service Operations Agent, powered by Deloitte and NVIDIA.
-

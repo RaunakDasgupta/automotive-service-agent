@@ -5,7 +5,7 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:37): 35 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:39): 34 voiced beats and the Deloitte outro from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
@@ -22,7 +22,7 @@ Two files, both recorded from the real application:
 | E Deployed architecture | a layered diagram in one frame: the L40S chip with the three NIM tiles and a memory bar (about 30 of 46 GB), speech (Riva) and safety (NeMo Guardrails) above it, quality (NeMo Evaluator) on top. Row names sit in a left gutter and the part being shown glows (no ring on its own border). Each layer is shown in turn with arrows for its data flow (the transcript to the language model, a checked question in and a checked answer out through the rails, test questions in and scored answers back for the evaluator), then shrinks back, dimmed but still on screen, as the next is shown; at the end the camera pulls out to the whole frame |
 | G Observability | an infographic, the DCGM exporter (19 GPU series) and the app (13 series) feeding Prometheus and Grafana, with the **live** Grafana dashboard playing small in a frame beside it (after real traffic through `/ask`). Rings light up its primary figures, then the two DCGM graphs (GPU load and power), each with a legend chip |
 | F Summary | the application's strengths as four cards (*Safety first*, *Instant answers*, *Grounded in records*, *Yours to run*), each with one supporting figure, ending on *Fast. Grounded. Yours to run.* with the product name beneath it |
-| K Closing card | after the summary, a soft dissolve to the product name over the same Deloitte and NVIDIA panel with *Powered by Deloitte and NVIDIA* beneath, held a moment (the video ends here) |
+| K Deloitte outro | after the summary, a soft dissolve to the supplied Deloitte outro clip (the wordmark animating in with its sound, then the legal text), cropped from the phone recording to the frame itself, with no narration, the last frame held (the video ends here). Without the clip, a card with the product name over the Deloitte and NVIDIA panel |
 
 Logo badges (NVIDIA, Grafana) are laid over the live shots as each product is named. There is no cursor on screen except
 for the four clicks that start something (Transcribe, Extract and apply, and Ask twice).
@@ -39,7 +39,7 @@ drift from the words. Key visuals are **held still for a moment after they are s
 be read. Inside every other shot the camera is moving, a keyword callout lands as the word is spoken, a ring pulses on
 what is described, and no captions are burned in (`demo-preview.srt` carries them as a separate file). Soft dissolves between scenes.
 
-**Music.** If a bed is at `~/.cache/asoia-demo-music/bed.<ext>` (or passed as `--music FILE`) the build mixes it under the narration: the track is repeated with each pass cross-faded into the next so the loop has no seam, set about 9 dB under the voice, dipped a further ~8 dB by the voice itself (a sidechain compressor, so it never competes with a word and swells back in the gaps), faded in over 2 s and out over the last 4 s. The track is not committed (it is the client's file); without one the video has narration only.
+**Music.** If a bed is at `~/.cache/asoia-demo-music/bed.<ext>` (or passed as `--music FILE`) the build mixes it under the narration: the track is repeated with each pass cross-faded into the next so the loop has no seam, set about 9 dB under the voice, dipped a further ~8 dB by the voice itself (a sidechain compressor, so it never competes with a word and swells back in the gaps), faded in over 2 s and out over the last 6 s, so it is gone for the Deloitte outro's own sound. The track is not committed (it is the client's file); without one the video has narration only.
 
 ## Capture once, edit as often as you like
 
@@ -108,6 +108,6 @@ Only if `--check` says the footage is stale, bring up a box per `docs/BREV_RUNBO
 
 `--box` starts its own recording UIs on a copy of the database, sends 100 s of questions through `/ask` so Grafana has
 data, captures, and stops them again (`--no-traffic` skips the warm-up). The NVIDIA and Grafana logos are fetched once
-from their public brand assets into `~/.cache/asoia-demo-logos` and are not committed. The Deloitte logo comes from Wikimedia Commons, which has the older blue wordmark; it is recoloured to the current black with Deloitte green on first fetch. To use the official file instead, put it at `~/.cache/asoia-demo-logos/deloitte.svg` before building.
+from their public brand assets into `~/.cache/asoia-demo-logos` and are not committed. The Deloitte outro clip lives at `~/.cache/asoia-demo-outro/outro.<ext>` (not committed; `OUTRO_CUTS` and `OUTRO_CROP` in the script say which seconds and which part of the recording are used). The Deloitte logo comes from Wikimedia Commons, which has the older blue wordmark; it is recoloured to the current black with Deloitte green on first fetch. To use the official file instead, put it at `~/.cache/asoia-demo-logos/deloitte.svg` before building.
 
 The captions keep the real spelling; where the voice gets a word wrong it is given a respelling (`SPOKEN` in the script): *read* in the present tense, and *DCGM* spelled out letter by letter.
