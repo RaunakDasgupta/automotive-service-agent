@@ -40,11 +40,12 @@ from demo_footage import FOOT, FPS, H, K, TTS_CACHE, W, check, ffmpeg, load_time
 OUT = ROOT / "docs" / "demo"
 WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
 GAP = 0.30                       # silence after each beat's voice
-F_TAIL = 0.6                     # seconds the closing card stays after the last word
+F_TAIL = 0.4                     # seconds the closing card stays after the last word
+CAPTIONS = False                 # burned-in captions: off. demo-preview.srt (scripts/export_edit_sheet.py) carries them as a separate file
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
-HOLD = {"A4": 0.6, "B5": 0.3, "C3": 0.8, "C4": 0.8, "D3": 0.5, "D4": 0.6, "D6": 0.8,
-        "E1": 0.4, "E5": 1.2, "G1": 0.5, "V4": 0.3, "F4": 0.4}
+HOLD = {"A4": 0.3, "B5": 0.3, "C3": 0.6, "C4": 0.6, "D3": 0.4, "D4": 0.6, "D6": 0.5,
+        "E1": 0.4, "E5": 1.0, "G1": 0.3, "V4": 0.0, "F4": 0.4}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -419,7 +420,7 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 #fin{position:absolute;left:0;right:0;top:870px;text-align:center;font:800 78px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#fin u{text-decoration:none;color:#76B900}
 </style><div class=grid></div>
 <div id=title class=layer><div id=dl><img src="@DL@"></div><h1>Service Operations <u>Agent</u></h1><div id=bar></div>
- <p>Turning every shift update into safe, cited answers, for any service department</p></div>
+ <p>From first update to final answer: one connected view of service operations</p></div>
 
 <div id=shift class=layer><h2 class=hd>Every shift change</h2>
  <div class=panel id=day><b>DAY SHIFT</b><i>the technician who did the work</i></div><div class=panel id=night><b>NIGHT SHIFT</b><i>the technician who picks it up</i></div>
@@ -577,7 +578,7 @@ h1{position:absolute;left:0;right:0;top:90px;text-align:center;margin:0;font-siz
 .c .n{font:800 92px/1.05 Arial;color:#2f5f00;white-space:nowrap}.c .n small{font:800 40px Arial}.c .l{font:700 36px/1.2 Arial;margin-top:22px}.c .s{font:27px/1.3 Arial;color:#4b5b50;margin-top:16px}
 #big{position:absolute;left:0;right:0;top:760px;text-align:center;font-size:92px;font-weight:700;opacity:0}#big u{text-decoration:none;color:#76B900}
 #nm{position:absolute;left:0;right:0;top:895px;text-align:center;font-size:44px;color:#C8D6BE;opacity:0}
-</style><h1 id=t>In short, in numbers</h1>@CARDS@<div id=big>Fast. <u>Grounded.</u> Yours to run.</div><div id=nm>Service Operations Agent</div>
+</style><h1 id=t>In summary, in numbers</h1>@CARDS@<div id=big>Fast. <u>Grounded.</u> Yours to run.</div><div id=nm>Service Operations Agent</div>
 <script>const $=id=>document.getElementById(id);
 const up=(e,d)=>e.animate([{opacity:0,transform:'translateY(60px) scale(.96)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
 const count=e=>{const to=parseFloat(e.dataset.to),dec=+e.dataset.dec,t0=performance.now();
@@ -636,7 +637,7 @@ def record(pw, name: str, url: str, texts, durs, plan, tail=0.0, holds=None) -> 
         began = time.perf_counter()
         segs.append((time.time() - t_ctx, d + (tail if i == len(plan) - 1 else 0.0)))
         co = b["co"](page) if callable(b.get("co")) else b.get("co")
-        page.evaluate("b => window.__beat(b)", {"cap": text, "ms": int((d - (holds[i] if holds else 0.0)) * 1000) - 40, "cam": b.get("cam"),
+        page.evaluate("b => window.__beat(b)", {"cap": text if CAPTIONS else "", "ms": int((d - (holds[i] if holds else 0.0)) * 1000) - 40, "cam": b.get("cam"),
                                                  "camo": b.get("camo"), "ring": b.get("ring"),
                                                  "ringpad": b.get("ringpad"), "co": co})
         if b.get("act"):
@@ -834,9 +835,9 @@ def scene_F():
 # camera's limits; `co` the keyword callout; `freeze` shows one still of the step instead of playing it. `then` lists
 # later moves: `at` is a fraction of the beat, or "done+0.9" = 0.9 s after the step's result appeared on screen.
 LIVE_PLAN = {
-    "A2": dict(src="A", freeze=True, cam="ROW", camo=dict(max=1.7, pad=70), ring="ROW", co="Safety findings"),
-    "A4": dict(src="A", freeze=True, cam="TILE", camo=dict(max=2.3, pad=200), ring="TILE", co="{safety} unsafe"),
-    "A5": dict(src="A", freeze=True, cam=None, camo=dict(to=1.0), co="Service Operations Agent"),
+    "A1": dict(src="A", freeze=True, cam=None, camo=dict(to=1.04), co="Service Operations Agent"),
+    "A2": dict(src="A", freeze=True, cam="ROW", camo=dict(max=1.7, pad=70), ring="ROW", co="Live view"),
+    "A4": dict(src="A", freeze=True, cam="TILE", camo=dict(max=2.3, pad=200), ring="TILE", co="{safety} flagged"),
     "C1": dict(src="C1", cam="VOICE", camo=dict(max=1.55, pad=100), co="Voice in"),
     "C2": dict(src="C2", cam="TRANS", camo=dict(max=1.6, pad=100), co="Riva ASR", badge="C2"),
     "C3": dict(src="C3", cam="EXTR", camo=dict(max=1.5, pad=100), co="Nemotron 8B", badge="C3",
@@ -1084,9 +1085,12 @@ def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int
         j = add(b)
         fc.append("%s[%d:v]overlay=x=%d:y=44:enable='gte(t,0.15)'[bd]" % (last, j, W - bw - 48))
         last = "[bd]"
-    cp = pngs.caption(caption); cw, ch = png_size(cp)
-    j = add(cp)
-    fc.append("%s[%d:v]overlay=x=%d:y=%d[fin]" % (last, j, (W - cw) // 2, H - 16 - ch))
+    if CAPTIONS:
+        cp = pngs.caption(caption); cw, ch = png_size(cp)
+        j = add(cp)
+        fc.append("%s[%d:v]overlay=x=%d:y=%d[fin]" % (last, j, (W - cw) // 2, H - 16 - ch))
+    else:
+        fc.append("%snull[fin]" % last)
     run(ffmpeg(), "-y", *ins, "-filter_complex", ";".join(fc), "-map", "[fin]", "-t", "%.3f" % nd, "-r", str(FPS), "-an", "-c:v", "libx264",
         "-pix_fmt", "yuv420p", "-crf", "18", "-preset", "veryfast", out)
     return end_state
@@ -1138,7 +1142,7 @@ def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
 
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
-PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("A", "A", ["A2", "A4", "A5"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
+PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
           ("V", "V", None), ("E", "E", None), ("I", "G", None), ("F", "F", None)]
 LIVE = "ACD"
 BRIDGE_BEFORE = "ABCD"       # ease problem -> dashboard -> process slide -> Technician Update -> Manager Assistant instead of cutting

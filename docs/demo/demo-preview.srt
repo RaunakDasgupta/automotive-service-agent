@@ -1,132 +1,132 @@
 1
-00:00:00,000 --> 00:00:02,506
-Every service department runs on handovers.
+00:00:00,000 --> 00:00:02,595
+Every service operation runs on handovers.
 
 2
-00:00:02,806 --> 00:00:05,770
-A technician scribbles a note, then the shift ends.
+00:00:02,895 --> 00:00:06,047
+A technician records a finding, and the shift changes.
 
 3
-00:00:06,070 --> 00:00:09,967
-A manager chases answers across notes, calls and screens.
+00:00:06,347 --> 00:00:10,103
+Managers chase answers across notes, calls and systems.
 
 4
-00:00:10,267 --> 00:00:14,721
-Time goes into asking, searching and re-typing, not fixing cars.
+00:00:10,403 --> 00:00:15,183
+Time is lost asking, searching and re-keying, not repairing vehicles.
 
 5
-00:00:15,021 --> 00:00:17,433
-And the real risk hides between shifts.
+00:00:15,483 --> 00:00:17,890
+And critical details slip between shifts.
 
 6
-00:00:18,233 --> 00:00:22,682
-A safety finding sits in a technician's note that nobody has time to read.
+00:00:18,690 --> 00:00:21,518
+This is where the Service Operations Agent comes in.
 
 7
-00:00:22,982 --> 00:00:26,879
-Right now, 12 vehicles on this floor are unsafe to release.
+00:00:21,818 --> 00:00:25,249
+It turns every update into one live view of the floor.
 
 8
-00:00:27,779 --> 00:00:30,374
-That's where the Service Operations Agent comes in.
+00:00:25,549 --> 00:00:29,397
+Right now, 12 vehicles are flagged as unsafe to release.
 
 9
-00:00:31,174 --> 00:00:35,068
+00:00:30,497 --> 00:00:34,391
 Here is how it works. A technician speaks or types an update.
 
 10
-00:00:35,368 --> 00:00:39,587
+00:00:34,691 --> 00:00:38,911
 NVIDIA Riva transcribes it, and Nemotron extracts the facts.
 
 11
-00:00:39,887 --> 00:00:42,853
-Code checks every fact. Nothing is guessed.
+00:00:39,211 --> 00:00:42,502
+Code verifies every fact. Nothing is guessed.
 
 12
-00:00:43,153 --> 00:00:45,193
+00:00:42,802 --> 00:00:44,841
 Each update joins an audit trail.
 
 13
-00:00:45,493 --> 00:00:50,503
-So a manager simply asks, and gets a cited answer. Now, the real thing.
+00:00:45,141 --> 00:00:50,059
+Managers simply ask, and receive cited answers. Here it is, live.
 
 14
-00:00:51,603 --> 00:00:55,079
-Watch. A technician dictates an update from the bay.
+00:00:51,159 --> 00:00:54,177
+In the live system, a technician dictates an update.
 
 15
-00:00:55,379 --> 00:00:58,018
+00:00:54,477 --> 00:00:57,115
 NVIDIA Riva turns the speech into text.
 
 16
-00:00:58,318 --> 00:01:02,121
-Nemotron pulls out the facts: the measurement, and the spec.
+00:00:57,415 --> 00:01:01,777
+Nemotron extracts the facts: the measurement and the specification.
 
 17
-00:01:03,221 --> 00:01:07,678
-Code checks it, and flags the repair order unsafe to release, instantly.
+00:01:02,677 --> 00:01:07,317
+Code verifies it, and flags the repair order unsafe to release, instantly.
 
 18
-00:01:09,278 --> 00:01:11,877
-Now the manager asks the question that matters.
+00:01:08,717 --> 00:01:11,918
+Next, a manager asks the question that matters.
 
 19
-00:01:12,177 --> 00:01:15,052
+00:01:12,218 --> 00:01:15,093
 Which vehicles cannot be released on safety grounds?
 
 20
-00:01:15,352 --> 00:01:22,216
-13 vehicles. Every one cited. Answered in a tenth of a second, with no model call.
+00:01:15,393 --> 00:01:21,327
+13 vehicles, each one cited, in a tenth of a second, with no model call.
 
 21
-00:01:23,016 --> 00:01:27,698
-Now an open question: has anyone seen a whistling noise on a Passat?
+00:01:22,027 --> 00:01:26,658
+Then an open question: has anyone seen a whistling noise on a Passat?
 
 22
-00:01:27,998 --> 00:01:32,730
-Search, rerank and a cited answer, in seconds, on the same GPU.
+00:01:26,958 --> 00:01:31,590
+Search, reranking and a cited answer, in seconds, on the same GPU.
 
 23
-00:01:33,830 --> 00:01:36,099
-Unsafe vehicles surface at once.
+00:01:32,390 --> 00:01:34,802
+Unsafe vehicles surface immediately.
 
 24
-00:01:36,399 --> 00:01:38,854
+00:01:35,102 --> 00:01:37,557
 Managers get answers in a tenth of a second.
 
 25
-00:01:39,154 --> 00:01:41,613
+00:01:37,857 --> 00:01:40,316
 Every figure traces back to a real record.
 
 26
-00:01:41,913 --> 00:01:45,485
-And one update feeds the record, handover and dashboard.
+00:01:40,616 --> 00:01:44,559
+And one update feeds the record, the handover and the dashboard.
 
 27
-00:01:46,085 --> 00:01:51,469
+00:01:44,859 --> 00:01:50,243
 The deployed architecture: three NVIDIA NIMs on one L40S.
 
 28
-00:01:52,169 --> 00:01:56,624
+00:01:50,943 --> 00:01:55,398
 Riva handles speech. NeMo Guardrails stops unsafe requests.
 
 29
-00:01:56,924 --> 00:02:00,914
+00:01:55,698 --> 00:01:59,688
 NeMo Evaluator scores every release. That is the whole stack.
 
 30
-00:02:02,414 --> 00:02:08,068
+00:02:00,988 --> 00:02:06,643
 Observability is built in: DCGM and the app's own metrics, live in Grafana.
 
 31
-00:02:08,868 --> 00:02:15,735
-In short, in numbers: 12 of 32 unsafe vehicles flagged the moment an update is logged.
+00:02:07,243 --> 00:02:13,274
+In summary: 12 of 32 unsafe vehicles flagged the moment an update is logged.
 
 32
-00:02:16,035 --> 00:02:20,955
+00:02:13,574 --> 00:02:18,494
 Answers in a tenth of a second, every figure traced, all on one L40S.
 
 33
-00:02:21,255 --> 00:02:26,546
+00:02:18,794 --> 00:02:24,085
 Fast. Grounded. Yours to run. That is the Service Operations Agent.
 

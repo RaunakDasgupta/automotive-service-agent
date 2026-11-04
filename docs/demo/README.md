@@ -5,15 +5,15 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:28): 33 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:25): 33 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
 
 | scene | what you see |
 |---|---|
-| Title and problem | the first frame is a title card, the **Deloitte logo** above the title *Service Operations Agent* and a one-line use case for any service department (it is the thumbnail). Then the problem in three pictures: a shift handover that loses the detail, a manager chasing answers across notes, calls and screens, and the time that goes on it. It ends on shift notes flying onto a moving grid, one stamped SAFETY, and a soft dissolve into the live dashboard |
-| A Hook | the **live** Dashboard on the L40S box, entered by a soft dissolve from the stamped notes; the agent is introduced as *the Service Operations Agent* (the full name is on screen in the dashboard header and on the last card) |
+| Title and problem | the first frame is a title card, the **Deloitte logo** above the title *Service Operations Agent* and the line *From first update to final answer: one connected view of service operations* (it is the thumbnail). Then the problem in three pictures: a shift handover that loses the detail, a manager chasing answers across notes, calls and screens, and the time that goes on it. It ends on shift notes flying onto a moving grid, one stamped SAFETY, and a soft dissolve into the live dashboard |
+| A Solution: the live view | the **live** dashboard, introduced as part of the solution (*This is where the Service Operations Agent comes in*) and shown as one live view built from every update, with the flagged-vehicles tile ringed; entered by a soft dissolve from the stamped notes |
 | B Process | a soft dissolve from the dashboard, then the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken, ending on the whole five-stage flow (not PowerPoint, so fonts differ slightly). The deck slide itself is process only now (no business figures); they have their own segment |
 | C Ingest | **live**, entered by a soft dissolve from the process slide: a spoken update is uploaded, Riva transcribes it, Nemotron extracts the measurement, the rules flag the repair order `SAFETY_RELATED` |
 | D Ask | **live**: a soft dissolve from the form, then a structured question answered with no model call and a free-text question answered by search + rerank + narration on the local NIMs |
@@ -35,7 +35,7 @@ The script is a table of short beats, each voiced on its own at the voice's natu
 (`TEMPO`, `GAP` in the script), so the **audio length of a beat sets the length of its shot** and the picture cannot
 drift from the words. Key visuals are **held still for a moment after they are spoken** (the `HOLD` table), so they can
 be read. Inside every other shot the camera is moving, a keyword callout lands as the word is spoken, a ring pulses on
-what is described, and a transparent subtitle (white, thin dark outline, no plate) runs along the bottom. Hard cuts between scenes. No music is mixed in; a quiet
+what is described, and no captions are burned in (`demo-preview.srt` carries them as a separate file). Hard cuts between scenes. No music is mixed in; a quiet
 royalty-free bed is recommended in `docs/DEMO_VIDEO.md` section 6.
 
 ## Capture once, edit as often as you like

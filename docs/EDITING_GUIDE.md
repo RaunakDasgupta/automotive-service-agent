@@ -241,7 +241,7 @@ All overlay sizes are for a 1920 x 1080 canvas. Scale together if the canvas dif
 **Badge** (the product or technology named)
 - A white pill at the top right: the official logo(s) and a short label, 30 px bold, fading in 0.15 s into the beat. Use official logo files at their real colours; never recolour a brand mark.
 
-**Subtitles**
+**Captions** (optional: this format ships **without burned-in captions** and offers an SRT as a separate file; if you do burn them in, follow these rules)
 - One caption per beat, the words exactly as spoken. Bold white, 32 px, centred, 16 px above the bottom edge, at most 1560 px wide, never more than two lines.
 - **Transparent: no background plate.** A thin dark outline (about 1.5 px) and a soft shadow keep it readable on light and dark screens. A thick outline smears on light screens, so keep it thin.
 - Proofread against the screen. Put the real spelling in the caption even if the voice needed a respelling.
@@ -276,7 +276,7 @@ All overlay sizes are for a 1920 x 1080 canvas. Scale together if the canvas dif
    compute the camera with the framing function; set the move's start and length; place the ring, callout and badge; decide the hold.
 6. **Generated diagrams:** build or render the process, impact, architecture, observability and recap pictures as short clips; time their elements to the narration (a part appears when its word is spoken).
 7. **Write the edit decision list** (section 10). Review it against the checklist before building.
-8. **Build** the timeline in the editor, in this order: voice, pictures, camera, overlays, dissolves, subtitles, audio levels.
+8. **Build** the timeline in the editor, in this order: voice, pictures, camera, overlays, dissolves, audio levels, and the SRT as a separate file.
 9. **Run the checklist** (section 12) with the playhead on the first, middle and last frame of every beat that has a ring, then at full screen. Fix, then export.
 
 ---
@@ -305,7 +305,7 @@ Produce this before editing. Times are seconds from the start of the video; coor
       "badge": null
     }
   ],
-  "subtitles": "one caption per beat, text = narration"
+  "captions": "none burned in; deliver one SRT entry per beat, text = narration"
 }
 ```
 Field rules:
@@ -347,7 +347,7 @@ Order of work: drop the narration first and add a marker at each beat start from
 - [ ] Zoom stays within limits; no black edge shows; on-screen text is readable at the zoom used.
 - [ ] Every glide eases in and out and starts where the last one ended; no jump at a cut.
 - [ ] Each ring covers **all** of its target at its first, middle and last frame, and does not sit on a layout that is still moving.
-- [ ] Subtitles are transparent, inside the safe margin, exactly the spoken words.
+- [ ] No captions are burned in; the SRT, if delivered, is exactly the spoken words (and if captions are burned in, they are transparent and inside the safe margin).
 - [ ] Every number in the narration, callouts and cards is in the brief's CLAIMS and **matches the screen** at that moment.
 - [ ] Every feature in the brief has been named, shown and proved (section 1.2); none outside the brief appears.
 - [ ] The first frame is the title card (logo, short name, one line); the last beat holds on the tagline.

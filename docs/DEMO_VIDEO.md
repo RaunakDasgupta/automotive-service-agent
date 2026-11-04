@@ -12,42 +12,42 @@ length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are r
 
 What the reference video (Deloitte's 62-second FastForward EX preview) teaches, and this script copies:
 a cut about every 2.7 s (22 cuts in 62 s); a **keyword callout that lands on the word being spoken**
-("Cloud-based", "Quick to implement"); subtitles burned into every shot; camera drift on every shot; a persona
+("Cloud-based", "Quick to implement"); subtitles on every shot (this cut ships without burned-in captions; `demo-preview.srt` is exported separately); camera drift on every shot; a persona
 or product shot at the open and the close; nothing held still. Narration there runs ~150 wpm *without gaps*.
 
 | beat | narration (read aloud) | on screen |
 |---|---|---|
-| P1 | Every service department runs on handovers. | **Title card, the first frame and the thumbnail:** the Deloitte logo above the app name, the grid drifting behind it, a slow push-in |
-| P2 | A technician scribbles a note, then the shift ends. | Day and night shift panels; a note appears on the day side and is carried across; on the night side half of it has gone and a red **?** lands; callout **Handover** |
-| P3 | A manager chases answers across notes, calls and screens. | A service-manager figure; three questions pop up (*Where is the Passat? Is it safe to release? Who worked on it?*) and Notes, Calls and Screens link in one by one; callout **Chasing answers** |
-| P4 | Time goes into asking, searching and re-typing, not fixing cars. | A clock spins; three chips (*Asking again, Searching old notes, Re-typing updates*) land; then *Less time fixing cars.*; callout **Lost time** |
-| P5 | And the real risk hides between shifts. | **The opening visual:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
-| A2 | A safety finding sits in a technician's note that nobody has time to read. | A soft dissolve to the live dashboard: camera snaps to the first table row, ring on the out-of-spec measurement; callout **Safety findings** |
-| A4 | Right now, {safety} vehicles on this floor are unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} unsafe**; held a moment |
-| A5 | That's where the Service Operations Agent comes in. | Pull back to the full dashboard; callout **Service Operations Agent** |
+| P1 | Every service operation runs on handovers. | **Title card, the first frame and the thumbnail:** the Deloitte logo above the app name, the grid drifting behind it, a slow push-in |
+| P2 | A technician records a finding, and the shift changes. | Day and night shift panels; a note appears on the day side and is carried across; on the night side half of it has gone and a red **?** lands; callout **Handover** |
+| P3 | Managers chase answers across notes, calls and systems. | A service-manager figure; three questions pop up (*Where is the Passat? Is it safe to release? Who worked on it?*) and Notes, Calls and Screens link in one by one; callout **Chasing answers** |
+| P4 | Time is lost asking, searching and re-keying, not repairing vehicles. | A clock spins; three chips (*Asking again, Searching old notes, Re-typing updates*) land; then *Less time fixing cars.*; callout **Lost time** |
+| P5 | And critical details slip between shifts. | **The opening visual:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
+| A1 | This is where the Service Operations Agent comes in. | A soft dissolve from the stamped notes to the **live dashboard**, shown as the solution: a slow push-in on the whole screen; callout **Service Operations Agent** |
+| A2 | It turns every update into one live view of the floor. | Camera moves to the first table row, ring on it: the dashboard as one live view built from the updates; callout **Live view** |
+| A4 | Right now, {safety} vehicles are flagged as unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} flagged**; held a moment |
 | B1 | Here is how it works. A technician speaks or types an update. | Dissolve from the dashboard to the process slide: stage 1 builds, camera on it; callout **Capture** |
 | B2 | NVIDIA Riva transcribes it, and Nemotron extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
-| B3 | Code checks every fact. Nothing is guessed. | Stage 3; callout **Verify** |
+| B3 | Code verifies every fact. Nothing is guessed. | Stage 3; callout **Verify** |
 | B4 | Each update joins an audit trail. | Stage 4; callout **Record** |
-| B5 | So a manager simply asks, and gets a cited answer. Now, the real thing. | Stage 5, then the camera pulls back to the whole five-stage flow; callout **Decide** |
-| C1 | Watch. A technician dictates an update from the bay. | Dissolve from the process slide to Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
+| B5 | Managers simply ask, and receive cited answers. Here it is, live. | Stage 5, then the camera pulls back to the whole five-stage flow; callout **Decide** |
+| C1 | In the live system, a technician dictates an update. | Dissolve from the process slide to Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
 | C2 | NVIDIA Riva turns the speech into text. | Transcribe is clicked; the transcript fills; callout **Riva ASR** |
-| C3 | Nemotron pulls out the facts: the measurement, and the spec. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |
-| C4 | Code checks it, and flags the repair order unsafe to release, instantly. | Zoom on the *What changed* card and the out-of-spec line, ring; callout **Flagged unsafe**; held |
-| D1 | Now the manager asks the question that matters. | Manager Assistant (a soft dissolve from the form), camera on the question box |
+| C3 | Nemotron extracts the facts: the measurement and the specification. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |
+| C4 | Code verifies it, and flags the repair order unsafe to release, instantly. | Zoom on the *What changed* card and the out-of-spec line, ring; callout **Flagged unsafe**; held |
+| D1 | Next, a manager asks the question that matters. | Manager Assistant (a soft dissolve from the form), camera on the question box |
 | D2 | Which vehicles cannot be released on safety grounds? | The question types out at speaking pace, then is asked |
-| D3 | {ask_n} vehicles. Every one cited. Answered in a tenth of a second, with no model call. | Zoom on the answer; callout **Cited · no model call**; held |
-| D5 | Now an open question: has anyone seen a whistling noise on a Passat? | The second question types out and is asked |
-| D6 | Search, rerank and a cited answer, in seconds, on the same GPU. | Camera on the answer and its update citations; callout **Search + rerank**; held |
-| V1 | Unsafe vehicles surface at once. | **Business value:** four cards; card 1 *{safety} of {open}* unsafe vehicles found at once |
+| D3 | {ask_n} vehicles, each one cited, in a tenth of a second, with no model call. | Zoom on the answer; callout **Cited · no model call**; held |
+| D5 | Then an open question: has anyone seen a whistling noise on a Passat? | The second question types out and is asked |
+| D6 | Search, reranking and a cited answer, in seconds, on the same GPU. | Camera on the answer and its update citations; callout **Search + rerank**; held |
+| V1 | Unsafe vehicles surface immediately. | **Business value:** four cards; card 1 *{safety} of {open}* unsafe vehicles found at once |
 | V2 | Managers get answers in a tenth of a second. | Card 2: *0.1 s* to answer a manager's question |
 | V3 | Every figure traces back to a real record. | Card 3: *905 / 905* answers traced to a real record |
-| V4 | And one update feeds the record, handover and dashboard. | Card 4: *1 update* feeds the whole shop; pull back to all four cards; footnote |
+| V4 | And one update feeds the record, the handover and the dashboard. | Card 4: *1 update* feeds the whole shop; pull back to all four cards; footnote |
 | E1 | The deployed architecture: three NVIDIA NIMs on one L40S. | **Deployed architecture:** a layered diagram in one frame (*Service Operations Agent*). The camera drops to the bottom layer, the L40S chip with its three NIM tiles (chat, search, rank) pulsing in turn and a memory bar filling to about 30 of 46 GB; callout **Deployed architecture** |
 | E3 | Riva handles speech. NeMo Guardrails stops unsafe requests. | The GPU layer shrinks back, dimmed but still on screen; the speech-and-safety layer appears above it, the Riva card then the NeMo Guardrails card, each ringed; arrows show the flow: Riva's *transcript* down to the language model, a *checked question* down through the rail and a *checked answer* back up |
 | E5 | NeMo Evaluator scores every release. That is the whole stack. | The quality layer appears on top and is ringed with the others dimmed, with arrows for *test questions* in and *answers scored* back; then the camera pulls all the way out to show the whole architecture, held |
 | G1 | Observability is built in: DCGM and the app's own metrics, live in Grafana. | **Infographic with the live dashboard inset:** the DCGM exporter (*19* GPU series) and the app (*13*) feed Prometheus, which feeds Grafana; the live dashboard plays small in a frame, and rings light up its primary figures (the four stat tiles), then the two DCGM graphs (GPU load, GPU power), each with a legend chip; callout **Observability** |
-| F1 | In short, in numbers: {safety} of {open} unsafe vehicles flagged the moment an update is logged. | Title *In short, in numbers* and card 1 (*12 of 32*, counting up) fly in |
+| F1 | In summary: {safety} of {open} unsafe vehicles flagged the moment an update is logged. | Title *In short, in numbers* and card 1 (*12 of 32*, counting up) fly in |
 | F2 | Answers in a tenth of a second, every figure traced, all on one L40S. | Cards 2, 3 and 4 (*0.1 s*, *100%*, *30 of 46 GB*) fly in one after another |
 | F4 | Fast. Grounded. Yours to run. That is the Service Operations Agent. | Large type, with *Service Operations Agent* beneath it; the video ends here |
 
