@@ -482,7 +482,7 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
  <div id=qb>Is it safe to sign off<u>?</u></div>
  <div id=cnt>One question. <u>Six places to look.</u></div></div>
 
-<div id=lost class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Hours <em>lost</em>, shift after shift</h2>
+<div id=lost class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Hours <em>lost</em>, from start to end</h2>
  <div id=tr></div><div class=tm style="left:150px">START</div><div class=tm style="right:150px">END</div>
  <div class=lgd id=l0><i></i>Doing the work</div><div class=lgd id=l1><i></i>Asking, searching, re-typing</div>
  <div id=fin>Hours that never <u>reach the work.</u></div></div>
@@ -490,7 +490,7 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
 <div id=sectors class=layer><div class="tag ok">THE SAME PATTERN, ACROSS SERVICE</div><h2 class=hd>Many sectors, <em>one example</em></h2>
  <svg class=wr viewBox="0 0 1920 1080">@SCW@</svg>@SCN@
  <div id=hub>The same<br>problem</div><div id=bdg>SHOWN IN THIS DEMO</div>
- <div id=sl>Shown in automotive. <u>Same pattern wherever work is handed over and safety matters.</u></div></div>
+ <div id=sl>One agent for any service operation. <u>Starting with automotive service.</u></div></div>
 <script>const $=id=>document.getElementById(id);
 {const h=location.hash.slice(1);if(h&&$(h)){$('title').style.opacity=0;$(h).style.opacity=1;}}
 const pop=(e,d,y,rot)=>{const r=rot||'rotate(0deg)';e.animate([{opacity:0,transform:r+' translateY('+(y===undefined?40:y)+'px) scale(.92)'},{opacity:1,transform:r}],{duration:d||460,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});};
