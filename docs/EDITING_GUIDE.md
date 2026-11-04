@@ -3,7 +3,7 @@
 A self-contained specification for turning **screen recordings plus a use case** into a polished, voice-led product demo of about 2 to 3
 minutes. It depends on no particular product, repository, tool or footage. Give it to an editor, a person or an AI agent, together with your
 own footage and a filled-in brief (section 2), and they can produce the same kind of video: a problem hook, a live walk-through where every
-feature is named, zoomed and highlighted as it is spoken, the impact in numbers, and a recap.
+feature is named, zoomed and highlighted as it is spoken, the impact in numbers, and a summary of strengths.
 
 Nothing here assumes a particular editor. Section 11 maps the steps onto a browser editor (OpenReel) as an example.
 
@@ -47,7 +47,7 @@ A **voice-led screen demo**. The narration is a list of short sentences, called 
 | 6 | **Impact in numbers** | three or four large-figure cards, each a measured result | 10 to 15 s |
 | 7 | **How it is built / deployed** | a layered architecture diagram, built part by part, with arrows for the data flow, ending on the whole picture | 12 to 18 s |
 | 8 | **How it is watched** | a monitoring or observability diagram with the live dashboard inset and its key figures highlighted | 6 to 8 s |
-| 9 | **Recap in numbers** | the same figures counting up, ending on the tagline | 15 to 20 s |
+| 9 | **Summary** | the product's three or four strengths, each a plain-language claim with one supporting figure, ending on the tagline | 15 to 20 s |
 
 Drop a section that does not apply; keep the order. If there is no architecture story, sections 7 and 8 go. Do not add sections.
 
@@ -123,7 +123,7 @@ The script is a table of beats. Write it before touching the footage.
 | Numbers as the viewer will hear them | "seven of twelve", "under half a second". Put the digits in the caption, spell them for the voice if the voice engine misreads |
 | Introduce, show, prove | A feature takes 1 to 3 beats: say what it is, show it, say what it did |
 | The hook ties the problem to the product | The last problem beat ends on the risk; the next beat opens with "That is where *<short name>* comes in" |
-| End on a recap | Same figures as the impact section, then the tagline, spoken once |
+| End on a summary of strengths | Three or four strengths, each named and backed by one figure from the brief (not a second wall of numbers), then the tagline, spoken once. Head it "Summary" |
 | Sentence rhythm | Vary length; avoid three of the same shape in a row |
 | Claims | Only from the brief |
 
@@ -246,11 +246,11 @@ All overlay sizes are for a 1920 x 1080 canvas. Scale together if the canvas dif
 - **Transparent: no background plate.** A thin dark outline (about 1.5 px) and a soft shadow keep it readable on light and dark screens. A thick outline smears on light screens, so keep it thin.
 - Proofread against the screen. Put the real spelling in the caption even if the voice needed a respelling.
 
-**Counting figures.** In the impact and recap cards the number counts up from 0 over about 0.9 s as it is spoken, and stops. Decimals count with their decimals (0.0 to 0.1).
+**Counting figures.** In the impact cards the number counts up from 0 over about 0.9 s as it is spoken, and stops. In the summary, a figure is a small supporting chip under each strength. Decimals count with their decimals (0.0 to 0.1).
 
 **Diagrams** (process, architecture, observability)
 - **Process:** one stage per beat, each appearing as it is spoken, camera on the new stage; the last beat pulls back to show all stages.
-- **Architecture:** layers in one frame. Show one part large, then **shrink it back into the diagram, dimmed but still on screen**, while the next is shown; finish by pulling out to the whole frame with everything lit.
+- **Architecture:** layers in one frame, with the layer names in a gutter at the left so that no label crosses a card, and clear space between layers for arrows and their labels. Highlight the part being shown with a **soft glow, never a ring**: a ring sits on the part's own border and clashes with it. Do not add callouts to this diagram; each part is already labelled. Show one part large, then **shrink it back into the diagram, dimmed but still on screen**, while the next is shown; finish by pulling out to the whole frame with everything lit.
   Draw an **arrow with a short label** for each true data flow, as the layer it belongs to appears (for example *transcript*, *checked question*, *answer*). Only draw flows that are real.
 - **Observability:** the sources (with their counts) into the collector into the dashboard; the live dashboard as an inset, with a ring on its primary figures and then on its key graphs, and a legend chip under the frame for each ring.
 
@@ -259,6 +259,7 @@ All overlay sizes are for a 1920 x 1080 canvas. Scale together if the canvas dif
 ## 8. Transitions, holds and audio
 
 - **Hard cut** between beats of the same scene (the camera state carries over).
+- **Script the transition, not just the cut.** The first sentence of every section links to the one before ("Behind it, the deployed architecture...", "With the update recorded, a manager asks...", "And it is all observable..."). Do not open a section with an imperative ("Watch", "Look") or a bare "Now"; keep the register calm and formal.
 - **A 0.5 s cross-dissolve** between different screens (diagram to live product, one app screen to another). No wipes, spins or other effects.
 - **Open on the title card.** Its first frame is the thumbnail: logo, short name, one line. It is on screen from frame 0, not animated in.
 - **Holds** as in section 5. **Hold the final frame** of the video for about 0.6 s after the last word.
@@ -365,7 +366,7 @@ Order of work: drop the narration first and add a marker at each beat start from
 | A callout covers what is described | move the callout; keep the text size |
 | A number disagrees with the screen | the recording changed after the script was written. Read the figure from the screen and change the sentence and the caption |
 | The video is too long | cut holds and lead-in words first (section 5), then whole beats |
-| The recap repeats earlier cards word for word | keep the figures, change the framing: the recap names the benefit, the cards named the evidence |
+| The summary repeats earlier cards word for word | name the strength and give one figure; the earlier cards were the evidence |
 
 ---
 

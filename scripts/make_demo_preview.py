@@ -340,6 +340,7 @@ IC = {
     "rank": '<svg viewBox="0 0 64 64"><path d="M8 14h40M8 30h30M8 46h20" stroke="#76B900" stroke-width="6" stroke-linecap="round"/><path d="M52 52V22m-8 8l8-10 8 10" fill="none" stroke="#76B900" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     "wave": '<svg viewBox="0 0 64 64"><path d="M8 32v0M16 22v20M24 12v40M32 24v16M40 16v32M48 26v12M56 32v0" stroke="#76B900" stroke-width="5" stroke-linecap="round"/></svg>',
     "shield": '<svg viewBox="0 0 64 64"><path d="M32 5l22 8v17c0 14-9 24-22 29C19 54 10 44 10 30V13z" fill="none" stroke="#76B900" stroke-width="4" stroke-linejoin="round"/><path d="M22 32l7 7 14-15" fill="none" stroke="#76B900" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    "chip": '<svg viewBox="0 0 64 64"><rect x="16" y="16" width="32" height="32" rx="4" fill="none" stroke="#76B900" stroke-width="4"/><rect x="25" y="25" width="14" height="14" rx="2" fill="#76B900"/><path d="M24 6v10M32 6v10M40 6v10M24 48v10M32 48v10M40 48v10M6 24h10M6 32h10M6 40h10M48 24h10M48 32h10M48 40h10" stroke="#76B900" stroke-width="3.5" stroke-linecap="round"/></svg>',
     "gauge": '<svg viewBox="0 0 64 64"><path d="M10 46a24 24 0 1 1 44 0" fill="none" stroke="#76B900" stroke-width="5" stroke-linecap="round"/><path d="M32 42l12-16" stroke="#76B900" stroke-width="5" stroke-linecap="round"/><circle cx="32" cy="42" r="4" fill="#76B900"/><path d="M14 56h36" stroke="#76B900" stroke-width="4" stroke-linecap="round"/></svg>',
 }
 
@@ -509,50 +510,55 @@ window.__go=ms=>{const at=(f,fn)=>setTimeout(fn,ms*f);
 
 def architecture_html() -> str:
     """The deployed architecture as a layered diagram inside one frame: quality on top, speech and safety in the middle, the three
-    NIMs on the L40S at the bottom. Parts are shown one at a time; the camera frames each with the earlier ones still on screen."""
+    NIMs on the L40S at the bottom. Row names sit in a left gutter, so nothing crosses a card or its border. Parts are shown one at a
+    time; the camera frames each with the earlier ones still on screen, dimmed. The part being shown glows; it is not ringed, because
+    a ring would sit on the part's own border."""
     tiles = [("t0", "chat", "Nemotron 8B", "language"), ("t1", "search", "Embedding", "search"), ("t2", "rank", "Reranking", "search")]
     t_html = "".join('<div class=tile id=%s><div class=ic>%s</div><b>%s</b><i>%s</i><span>NIM</span></div>' % (i, IC[ic], a, b) for i, ic, a, b in tiles)
-    cards = [("c0", "wave", "Riva", "Speech to text, for spoken updates"), ("c1", "shield", "NeMo Guardrails", "Stops unsafe requests before any tool runs"),
+    cards = [("c0", "wave", "Riva", "Speech to text, for spoken updates"), ("c1", "shield", "NeMo Guardrails", "Stops unsafe requests before tools run"),
              ("c2", "gauge", "NeMo Evaluator", "Scores every release against the baseline")]
     c_html = "".join('<div class=card id=%s><div class=ic2>%s</div><div class=tx><img src="@NV@"><b>%s</b><i>%s</i></div></div>' % (i, IC[ic], a, b) for i, ic, a, b in cards)
     return """<!doctype html><meta charset=utf-8><style>
-:root{--co-x:1480px;--co-y:34px}
 body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;background:radial-gradient(circle at 25% 15%,#1d4d3f 0%,#0d201b 75%)}
-#logo{position:absolute;left:70px;top:26px;height:44px;background:#fff;padding:9px 20px;border-radius:12px;box-sizing:content-box}
-#ttl{position:absolute;left:0;right:0;top:20px;margin:0;text-align:center;font:800 58px Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}#ttl u{text-decoration:none;color:#76B900}
-#frame{position:absolute;left:120px;top:110px;width:1680px;height:930px;border:3px dashed rgba(118,185,0,.55);border-radius:30px;box-sizing:border-box}
-#tab{position:absolute;left:150px;top:92px;padding:6px 22px;background:#0d201b;border:2px solid rgba(118,185,0,.7);border-radius:14px;font:700 26px Arial;color:#BFD6B0}
-.lab{position:absolute;left:200px;font:700 22px Arial;letter-spacing:4px;color:#76B900}
-#r2{position:absolute;left:200px;top:380px;width:1520px;height:160px}
-#gpu{position:absolute;left:200px;top:640px;width:1520px;height:380px;opacity:0}
-.chip{position:absolute;inset:0;border:6px solid #76B900;border-radius:26px;background:#10261f;box-shadow:0 0 60px rgba(118,185,0,.25)}
+#logo{position:absolute;left:70px;top:30px;height:44px;background:#fff;padding:9px 20px;border-radius:12px;box-sizing:content-box}
+#ttl{position:absolute;left:0;right:0;top:26px;margin:0;text-align:center;font:800 58px Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}#ttl u{text-decoration:none;color:#76B900}
+#frame{position:absolute;left:100px;top:120px;width:1720px;height:930px;border:3px dashed rgba(118,185,0,.45);border-radius:30px;box-sizing:border-box}
+#tab{position:absolute;left:140px;top:104px;padding:6px 22px;background:#0d201b;border:2px solid rgba(118,185,0,.6);border-radius:14px;font:700 26px Arial;color:#BFD6B0}
+.lab{position:absolute;left:140px;width:190px;font:700 24px/1.3 Arial;letter-spacing:3px;color:#76B900;opacity:0}
+#r2{position:absolute;left:350px;top:380px;width:1440px;height:160px}
+#gpu{position:absolute;left:350px;top:640px;width:1440px;height:380px;opacity:0}
+.chip{position:absolute;inset:0;border:5px solid #2f6a4a;border-radius:26px;background:#10261f;transition:box-shadow .4s,border-color .4s}
+#gpu.hl .chip{border-color:#76B900;animation:glow 1.4s ease-in-out infinite alternate}
 .chip .nm{position:absolute;left:40px;top:22px;font:700 30px Arial;color:#76B900;letter-spacing:4px}
-.tile{position:absolute;top:70px;width:380px;height:200px;border-radius:16px;background:#1b3a30;border:2px solid #2f6a4a;opacity:0}
-.tile .ic{position:absolute;left:24px;top:30px;width:84px;height:84px}.tile b{position:absolute;left:130px;top:46px;font-size:34px}.tile i{position:absolute;left:130px;top:96px;font:26px Arial;color:#BFD6B0;font-style:normal}
+.tile{position:absolute;top:72px;width:410px;height:196px;border-radius:16px;background:#1b3a30;border:2px solid #2f6a4a;opacity:0}
+.tile .ic{position:absolute;left:24px;top:30px;width:84px;height:84px}.tile b{position:absolute;left:130px;top:44px;font-size:34px}.tile i{position:absolute;left:130px;top:94px;font:26px Arial;color:#BFD6B0;font-style:normal}
 .tile span{position:absolute;right:14px;top:12px;background:#76B900;color:#0d201b;font:700 17px Arial;padding:2px 9px;border-radius:9px}
-#t0{left:40px}#t1{left:470px}#t2{left:900px}
-#vr{position:absolute;left:40px;right:40px;top:296px;opacity:0}
+#t0{left:40px}#t1{left:490px}#t2{left:940px}
+#vr{position:absolute;left:40px;right:40px;top:300px;opacity:0}
 #vr .l{font:600 26px Arial;color:#C8D6BE;margin-bottom:10px;display:flex;justify-content:space-between}
 #vr .tr{height:30px;border-radius:15px;background:#1b3a30;overflow:hidden;border:2px solid #2f6a4a}#vf{height:100%;width:0;background:linear-gradient(90deg,#4d8a00,#76B900)}
-.card{position:absolute;height:160px;border-radius:20px;background:#fff;color:#142019;opacity:0;box-shadow:0 18px 40px rgba(0,0,0,.4);border-left:16px solid #76B900}
-#c0{left:200px;top:380px;width:740px}#c1{left:980px;top:380px;width:740px}#c2{left:200px;top:164px;width:1520px;height:148px}
-.ic2{position:absolute;left:34px;top:26px;width:104px;height:104px;background:#EEF6DF;border-radius:22px;padding:18px;box-sizing:border-box}#c2 .ic2{top:22px}#c2 .tx{top:10px}#c2 .tx img{height:38px;margin:-2px 0 2px -4px}#c2 .tx b{font-size:38px}
+.card{position:absolute;height:160px;border-radius:20px;background:#fff;color:#142019;opacity:0;box-shadow:0 14px 34px rgba(0,0,0,.4);border-left:12px solid #76B900}
+.card.hl{animation:glow 1.4s ease-in-out infinite alternate}
+@keyframes glow{from{box-shadow:0 0 30px 6px rgba(118,185,0,.40)}to{box-shadow:0 0 56px 14px rgba(118,185,0,.75)}}
+#c0{left:350px;top:380px;width:700px}#c1{left:1090px;top:380px;width:700px}#c2{left:350px;top:160px;width:1440px;height:140px}
+.ic2{position:absolute;left:30px;top:26px;width:104px;height:104px;background:#EEF6DF;border-radius:22px;padding:18px;box-sizing:border-box}#c2 .ic2{top:18px}
+.tx{position:absolute;left:162px;top:20px;right:24px}.tx img{height:44px;display:block;margin:-4px 0 4px -4px}.tx b{display:block;font-size:40px}.tx i{display:block;font:27px/1.25 Arial;color:#4b5b50;font-style:normal;margin-top:4px}
+#c2 .tx{top:12px}#c2 .tx img{height:38px;margin:-2px 0 2px -4px}#c2 .tx b{font-size:38px}
 svg#flow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
-.fl{fill:none;stroke:#76B900;stroke-width:7;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
-.fn{position:absolute;padding:4px 14px;border-radius:14px;background:#0d201b;border:2px solid rgba(118,185,0,.7);font:700 22px Arial;color:#DCE8CF;white-space:nowrap;opacity:0}
-.tx{position:absolute;left:170px;top:20px;right:30px}.tx img{height:46px;display:block;margin:-4px 0 4px -4px}.tx b{display:block;font-size:40px}.tx i{display:block;font:27px/1.25 Arial;color:#4b5b50;font-style:normal;margin-top:4px}
+.fl{fill:none;stroke:#76B900;stroke-width:6;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
+.fn{position:absolute;padding:3px 14px;border-radius:14px;background:#0d201b;border:2px solid rgba(118,185,0,.7);font:700 24px Arial;color:#DCE8CF;white-space:nowrap;opacity:0}
 </style><img id=logo src="@NV@"><h1 id=ttl>Deployed <u>architecture</u></h1>
 <div id=frame></div><div id=tab>Service Operations Agent</div>
-<div class=lab style="top:140px">QUALITY</div><div class=lab style="top:350px">SPEECH AND SAFETY</div><div class=lab style="top:610px">MODELS, ON ONE GPU</div>
+<div class=lab id=lab0 style="top:216px">QUALITY</div><div class=lab id=lab1 style="top:432px">SPEECH AND SAFETY</div><div class=lab id=lab2 style="top:662px">MODELS ON ONE GPU</div>
 <div id=r2></div>
 <svg id=flow viewBox="0 0 1920 1080"><defs><marker id=ah viewBox="0 0 10 10" refX=7 refY=5 markerWidth=4.5 markerHeight=4.5 orient=auto-start-reverse><path d="M0 0L10 5L0 10z" fill="#76B900"/></marker></defs>
- <path class=fl id=f0 pathLength=1 marker-end="url(#ah)" d="M560 546 L560 630"/>
- <path class=fl id=f1 pathLength=1 marker-end="url(#ah)" d="M1150 546 L1150 630"/>
- <path class=fl id=f2 pathLength=1 marker-end="url(#ah)" d="M1500 634 L1500 550"/>
- <path class=fl id=f3 pathLength=1 marker-end="url(#ah)" d="M1150 316 L1150 374"/>
- <path class=fl id=f4 pathLength=1 marker-end="url(#ah)" d="M1500 378 L1500 320"/></svg>
-<div class=fn id=n0 style="left:580px;top:572px">transcript</div><div class=fn id=n1 style="left:1170px;top:572px">checked question</div><div class=fn id=n2 style="left:1520px;top:572px">checked answer</div>
-<div class=fn id=n3 style="left:1170px;top:330px">test questions</div><div class=fn id=n4 style="left:1520px;top:330px">answers scored</div>
+ <path class=fl id=f0 pathLength=1 marker-end="url(#ah)" d="M640 548 L640 630"/>
+ <path class=fl id=f1 pathLength=1 marker-end="url(#ah)" d="M1230 548 L1230 630"/>
+ <path class=fl id=f2 pathLength=1 marker-end="url(#ah)" d="M1560 632 L1560 550"/>
+ <path class=fl id=f3 pathLength=1 marker-end="url(#ah)" d="M1230 308 L1230 372"/>
+ <path class=fl id=f4 pathLength=1 marker-end="url(#ah)" d="M1560 374 L1560 310"/></svg>
+<div class=fn id=n0 style="left:660px;top:573px">transcript</div><div class=fn id=n1 style="left:1250px;top:573px">checked question</div><div class=fn id=n2 style="left:1580px;top:573px">checked answer</div>
+<div class=fn id=n3 style="left:1250px;top:323px">test questions</div><div class=fn id=n4 style="left:1580px;top:323px">answers scored</div>
 <div id=gpu><div class=chip><div class=nm>NVIDIA L40S</div>@TILES@</div>
  <div id=vr><div class=l><span>GPU memory in use</span><span>about 30 GB of 46 GB</span></div><div class=tr><div id=vf></div></div></div></div>
 @CARDS@
@@ -560,34 +566,36 @@ svg#flow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-event
 const show=(e,d)=>e.animate([{opacity:0,transform:'translateY(46px) scale(.94)'},{opacity:1,transform:'none'}],{duration:d||480,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
 window.__show=id=>show($(id));window.__vram=()=>{show($('vr'));$('vf').animate([{width:'0%'},{width:'65%'}],{duration:1200,fill:'forwards',easing:'ease-out'});};
 window.__pulse=id=>$(id).animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.09)',filter:'brightness(1.35)'},{transform:'scale(1)',filter:'brightness(1)'}],{duration:640});
+window.__hl=id=>{document.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'));if(id)$(id).classList.add('hl');};
+window.__dim=(ids,on)=>ids.forEach(i=>{const e=$(i);e.animate([{opacity:getComputedStyle(e).opacity},{opacity:on?.5:1}],{duration:450,fill:'forwards'});});
 window.__flow=ids=>ids.forEach(i=>{const f=$('f'+i),n=$('n'+i);f.style.opacity=1;f.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:520,fill:'forwards',easing:'ease-out'});
  n.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:420,delay:260,fill:'forwards'});});
-window.__dim=(ids,on)=>ids.forEach(i=>{const e=$(i);e.animate([{opacity:getComputedStyle(e).opacity},{opacity:on?.5:1}],{duration:450,fill:'forwards'});});
 </script>""".replace("@NV@", logo("nvidia")).replace("@TILES@", t_html).replace("@CARDS@", c_html.replace("@NV@", logo("nvidia")))
 
 
-def end_html() -> str:
-    cards = [("12", "0", " of 32", "unsafe vehicles flagged", "the moment an update is logged"),
-             ("0.1", "1", " s", "to answer a manager", "from live state, with no model call"),
-             ("100", "0", "%", "of figures grounded", "905 of 905 answers traced to a record"),
-             ("30", "0", " of 46 GB", "used on one L40S", "language, embedding and reranking")]
+def end_html(subs: dict) -> str:
+    """The summary: the application's strengths, each with one supporting figure, then the tagline."""
+    cards = [("shield", "Safety first", "Safety-critical findings are flagged the moment an update is logged.", "%s of %s vehicles flagged" % (subs["{safety}"], subs["{open}"])),
+             ("gauge", "Instant answers", "Managers get answers in a tenth of a second, with no model call.", "0.1 s per answer"),
+             ("search", "Grounded in records", "Every figure is checked and traced back to a real record.", "905 of 905 answers traced"),
+             ("chip", "Yours to run", "Three NIMs on one GPU you own, with observability built in.", "30 of 46 GB used")]
+    c_html = "".join('<div class=c style="left:%dpx"><div class=ic>%s</div><div class=l>%s</div><div class=d>%s</div><div class=m>%s</div></div>'
+                     % (76 + i * 440, IC[ic], t, d, m) for i, (ic, t, d, m) in enumerate(cards))
     return """<!doctype html><meta charset=utf-8><style>
 body{margin:0;width:1920px;height:1080px;background:radial-gradient(circle at 25% 15%,#1d4d3f 0%,#0d201b 75%);font-family:Arial,sans-serif;color:#fff;overflow:hidden;position:relative}
-h1{position:absolute;left:0;right:0;top:90px;text-align:center;margin:0;font-size:84px;opacity:0}
-.c{position:absolute;top:250px;width:410px;height:420px;background:#fff;color:#142019;border-top:14px solid #76B900;border-radius:20px;padding:36px 30px;box-sizing:border-box;opacity:0;box-shadow:0 22px 50px rgba(0,0,0,.45)}
-.c .n{font:800 92px/1.05 Arial;color:#2f5f00;white-space:nowrap}.c .n small{font:800 40px Arial}.c .l{font:700 36px/1.2 Arial;margin-top:22px}.c .s{font:27px/1.3 Arial;color:#4b5b50;margin-top:16px}
-#big{position:absolute;left:0;right:0;top:760px;text-align:center;font-size:92px;font-weight:700;opacity:0}#big u{text-decoration:none;color:#76B900}
-#nm{position:absolute;left:0;right:0;top:895px;text-align:center;font-size:44px;color:#C8D6BE;opacity:0}
-</style><h1 id=t>In summary, in numbers</h1>@CARDS@<div id=big>Fast. <u>Grounded.</u> Yours to run.</div><div id=nm>Service Operations Agent</div>
+h1{position:absolute;left:0;right:0;top:96px;text-align:center;margin:0;font-size:84px;opacity:0}
+.c{position:absolute;top:250px;width:410px;height:450px;background:#fff;color:#142019;border-top:14px solid #76B900;border-radius:20px;padding:34px 30px;box-sizing:border-box;opacity:0;box-shadow:0 22px 50px rgba(0,0,0,.45)}
+.c .ic{width:84px;height:84px;background:#EEF6DF;border-radius:20px;padding:14px;box-sizing:border-box}
+.c .l{font:800 42px/1.15 Arial;margin-top:26px}.c .d{font:28px/1.35 Arial;color:#4b5b50;margin-top:16px}
+.c .m{position:absolute;left:30px;bottom:30px;padding:8px 18px;border-radius:22px;background:#EEF6DF;color:#2f5f00;font:700 26px Arial}
+#big{position:absolute;left:0;right:0;top:770px;text-align:center;font-size:92px;font-weight:700;opacity:0}#big u{text-decoration:none;color:#76B900}
+#nm{position:absolute;left:0;right:0;top:900px;text-align:center;font-size:44px;color:#C8D6BE;opacity:0}
+</style><h1 id=t>Summary</h1>@CARDS@<div id=big>Fast. <u>Grounded.</u> Yours to run.</div><div id=nm>Service Operations Agent</div>
 <script>const $=id=>document.getElementById(id);
 const up=(e,d)=>e.animate([{opacity:0,transform:'translateY(60px) scale(.96)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
-const count=e=>{const to=parseFloat(e.dataset.to),dec=+e.dataset.dec,t0=performance.now();
- const tick=t=>{const k=Math.min(1,(t-t0)/900);e.textContent=(to*(1-Math.pow(1-k,3))).toFixed(dec);if(k<1)requestAnimationFrame(tick);};requestAnimationFrame(tick);};
-window.__title=()=>up($('t'));window.__card=i=>{const c=document.querySelectorAll('.c')[i];up(c);count(c.querySelector('.v'));};
+window.__title=()=>up($('t'));window.__card=i=>up(document.querySelectorAll('.c')[i]);
 window.__big=()=>{up($('big'),600);setTimeout(()=>up($('nm'),600),900);};
-</script>""".replace("@CARDS@", "".join(
-        '<div class=c style="left:%dpx"><div class=n><span class=v data-to="%s" data-dec="%s">%s</span><small>%s</small></div><div class=l>%s</div><div class=s>%s</div></div>'
-        % (76 + i * 440, to, dec, to, tail, lab, sub) for i, (to, dec, tail, lab, sub) in enumerate(cards)))
+</script>""".replace("@CARDS@", c_html)
 
 
 def value_html(subs: dict) -> str:
@@ -757,7 +765,7 @@ def scene_O():
 
 def scene_E():
     def e1(page, d):
-        page.evaluate("() => window.__show('gpu')")
+        page.evaluate("() => { window.__show('gpu'); window.__hl('gpu'); }")
         for i in ("t0", "t1", "t2"):
             page.wait_for_timeout(int(d * 1000 * 0.10))
             page.evaluate("i => window.__show(i)", i)
@@ -768,31 +776,26 @@ def scene_E():
             page.evaluate("i => window.__pulse(i)", i)
             page.wait_for_timeout(int(d * 1000 * 0.07))
 
-    def ring(page, sel):
-        page.evaluate("s => window.__ring({sel: s}, 8)", sel)
-
     def e3(page, d):                      # the GPU shrinks back into the frame, dimmed; speech and safety come up in front of it
-        page.evaluate("() => window.__dim(['gpu'], true)")
-        page.evaluate("() => window.__show('c0')"); ring(page, "#c0")
+        page.evaluate("() => { window.__dim(['gpu'], true); window.__show('lab2'); window.__show('lab1'); window.__show('c0'); window.__hl('c0'); }")
         page.wait_for_timeout(int(d * 1000 * 0.18))
         page.evaluate("() => window.__flow([0])")                                    # speech: Riva's transcript goes to the language model
         page.wait_for_timeout(int(d * 1000 * 0.30))
-        page.evaluate("() => window.__show('c1')"); ring(page, "#c1")
+        page.evaluate("() => { window.__show('c1'); window.__hl('c1'); }")
         page.wait_for_timeout(int(d * 1000 * 0.18))
         page.evaluate("() => window.__flow([1, 2])")                                 # a question goes through the rail in, the answer through it out
 
     def e5(page, d):                      # quality comes in on top, then the camera pulls all the way out to the whole architecture
-        page.evaluate("() => window.__dim(['gpu', 'c0', 'c1'], true)")
-        page.evaluate("() => window.__show('c2')"); ring(page, "#c2")
+        page.evaluate("() => { window.__dim(['gpu', 'c0', 'c1'], true); window.__show('lab0'); window.__show('c2'); window.__hl('c2'); }")
         page.wait_for_timeout(int(d * 1000 * 0.16))
         page.evaluate("() => window.__flow([3, 4])")                                 # the evaluator asks through the same doorway and scores what comes back
         page.wait_for_timeout(int(d * 1000 * 0.30))
-        page.evaluate("() => { window.__ring(null); window.__dim(['gpu', 'c0', 'c1'], false); window.__cam(null, {to: 1.0, ms: 1200}); }")
+        page.evaluate("() => { window.__hl(null); window.__dim(['gpu', 'c0', 'c1'], false); window.__cam(null, {to: 1.0, ms: 1200}); }")
 
     GPU = {"sel": "#gpu"}
-    return [dict(cam=GPU, camo=dict(max=1.9, pad=70), co="Deployed architecture", act=e1),
-            dict(cam=[GPU, {"sel": "#r2"}], camo=dict(max=1.3, pad=50), co="Speech + safety", act=e3),
-            dict(cam={"sel": "#frame"}, camo=dict(max=1.18, pad=10), co="Evaluation", act=e5)]
+    return [dict(cam=GPU, camo=dict(max=1.9, pad=70), act=e1),
+            dict(cam={"rect": [130, 380, 1660, 640]}, camo=dict(max=1.3, pad=40), act=e3),      # the two lower rows and their names
+            dict(cam={"sel": "#frame"}, camo=dict(max=1.18, pad=10), act=e5)]
 
 
 def scene_V():
@@ -1145,7 +1148,7 @@ def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
 PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
           ("V", "V", None), ("E", "E", None), ("I", "G", None), ("F", "F", None)]
 LIVE = "ACD"
-BRIDGE_BEFORE = "ABCD"       # ease problem -> dashboard -> process slide -> Technician Update -> Manager Assistant instead of cutting
+BRIDGE_BEFORE = "ABCDVEIF"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
 
 
 def main():
@@ -1195,7 +1198,7 @@ def main():
         (WORK / "value.html").write_text(value_html(subs))
         (WORK / "comp.html").write_text(architecture_html())
         (WORK / "observ.html").write_text(observ_html())
-        (WORK / "end.html").write_text(end_html())
+        (WORK / "end.html").write_text(end_html(subs))
         local = {"P": ((WORK / "problem.html").as_uri(), scene_P()),
                  "O": ((WORK / "intro.html").as_uri(), scene_O()),
                  "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
