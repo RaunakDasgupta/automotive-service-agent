@@ -465,7 +465,7 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
 #l0{left:300px}#l0 i{background:#76B900}#l1{left:760px}#l1 i{background:#E5352B}
 #fin{position:absolute;left:0;right:0;top:830px;text-align:center;font:800 78px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#fin u{text-decoration:none;color:#FF5A4D}
 #hub{position:absolute;left:810px;top:450px;width:300px;height:300px;border-radius:50%;box-sizing:border-box;background:rgba(229,53,43,.16);border:5px solid #FF5A4D;text-align:center;font:800 44px/1.2 Arial;padding-top:98px;opacity:0}
-#sectors .nd{border-color:rgba(118,185,0,.55);background:#1a3b2a}#bdg{position:absolute;padding:6px 20px;border-radius:20px;background:#76B900;color:#0d201b;font:800 24px Arial;letter-spacing:2px;opacity:0}
+#sectors .nd{border-color:rgba(118,185,0,.55);background:#1a3b2a}
 #sl{position:absolute;left:0;right:0;top:990px;text-align:center;font:800 40px Arial;white-space:nowrap;opacity:0}#sl u{text-decoration:none;color:#76B900}
 </style><div class=grid></div>
 <div id=title class=layer><div id=dl><img src="@DL@"></div><h1>Service Operations <u>Agent</u></h1><div id=bar></div>
@@ -489,7 +489,7 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
 
 <div id=sectors class=layer><div class="tag ok">THE SAME PATTERN, ACROSS SERVICE</div><h2 class=hd>Many sectors, <em>one example</em></h2>
  <svg class=wr viewBox="0 0 1920 1080">@SCW@</svg>@SCN@
- <div id=hub>The same<br>problem</div><div id=bdg>SHOWN IN THIS DEMO</div>
+ <div id=hub>The same<br>problem</div>
  <div id=sl>One agent for any service operation. <u>Starting with automotive service.</u></div></div>
 <script>const $=id=>document.getElementById(id);
 {const h=location.hash.slice(1);if(h&&$(h)){$('title').style.opacity=0;$(h).style.opacity=1;}}
@@ -511,8 +511,7 @@ window.__chase=()=>{let n=0;SEG.forEach((s,i)=>{if(!s[1])return;const e=$('sg'+i
  e.firstChild.animate([{opacity:0},{opacity:1}],{duration:300,delay:d+200,fill:'forwards'});});};
 window.__pick=()=>{for(let i=1;i<6;i++) $('s'+i).animate([{opacity:1},{opacity:.4}],{duration:520,fill:'forwards'});
  for(let i=1;i<6;i++) $('sw'+i).animate([{opacity:.65},{opacity:.1}],{duration:520,fill:'forwards'});
- $('s0').animate([{transform:'none',borderColor:'rgba(118,185,0,.55)',boxShadow:'none'},{transform:'scale(1.14)',borderColor:'#76B900',boxShadow:'0 0 60px 10px rgba(118,185,0,.55)'}],{duration:620,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});
- const n=$('s0'),b=$('bdg');b.style.left=(n.offsetLeft+n.offsetWidth/2-100)+'px';b.style.top=(n.offsetTop-22)+'px';b.style.opacity=0;b.animate([{opacity:0},{opacity:1}],{duration:400,delay:300,fill:'forwards'});};
+ $('s0').animate([{transform:'none',borderColor:'rgba(118,185,0,.55)',boxShadow:'none'},{transform:'scale(1.14)',borderColor:'#76B900',boxShadow:'0 0 60px 10px rgba(118,185,0,.55)'}],{duration:620,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});};
 </script>""".replace("@DL@", logo("deloitte")).replace("@CHW@", chase_p).replace("@CHN@", chase_n).replace("@SCW@", sect_p).replace("@SCN@", sect_n)
 
 
