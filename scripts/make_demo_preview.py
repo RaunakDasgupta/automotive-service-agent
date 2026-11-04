@@ -30,7 +30,7 @@ runs along the bottom. Soft dissolves ease the three changes of screen (dashboar
 """
 from __future__ import annotations
 
-import argparse, json, os, re, shutil, sys, tempfile, time, wave, zipfile
+import argparse, json, os, re, shutil, subprocess, sys, tempfile, time, wave, zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -704,6 +704,57 @@ def mux(video: Path, wav: Path | None, total: float, out: Path):
         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", "%.2f" % total, out)
 
 
+MUSIC_DIR = Path.home() / ".cache" / "asoia-demo-music"      # the music bed is the client's own file: kept here, not committed
+MUSIC_BELOW = 11.0               # dB: the bed's average level under the narration's
+DUCK = dict(threshold=0.02, ratio=4, attack=25, release=500)   # the bed dips while the voice speaks and swells back in the gaps
+
+
+def music_file(arg: str | None) -> Path | None:
+    f = Path(arg).expanduser() if arg else next(iter(sorted(MUSIC_DIR.glob("bed.*"))), None)
+    return f if f and f.exists() else None
+
+
+def mean_db(src: Path, af: str = "anull", map_: str = "0:a:0") -> float:
+    r = subprocess.run([str(ffmpeg()), "-hide_banner", "-i", str(src), "-map", map_, "-af", af + ",volumedetect", "-vn", "-f", "null", "-"],
+                       capture_output=True, text=True)
+    return float(re.search(r"mean_volume: (-?[\d.]+) dB", r.stderr).group(1))
+
+
+def duration(f: Path) -> float:
+    m = re.search(r"Duration: (\d+):(\d+):([\d.]+)", subprocess.run([str(ffmpeg()), "-i", str(f)], capture_output=True, text=True).stderr)
+    return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
+
+
+LOOP_XFADE, FADE_IN, FADE_OUT = 3.0, 2.0, 4.0     # seconds: the overlap where one pass of the track melts into the next, and the ends
+
+
+def add_music(video: Path, music: Path, out: Path):
+    """Mix the music bed under the narration: repeated end to end with each pass cross-faded into the next (no gap and no
+    click at the join) to span the whole video, set MUSIC_BELOW dB under the voice, ducked by the voice itself (sidechain)
+    so it never competes with a word, faded in at the start and out at the end."""
+    total, dm = duration(video), duration(music)
+    x = min(LOOP_XFADE, dm / 3)
+    n = 1 if dm >= total else int(-(-(total - x) // (dm - x)))        # passes needed: n*dm - (n-1)*x >= total
+    gain = mean_db(video) - MUSIC_BELOW - mean_db(music)
+    chain = ""
+    fmt = "aformat=sample_fmts=fltp:channel_layouts=stereo,aresample=%d" % RATE
+    for i in range(n):
+        chain += "[%d:a]%s[m%d];" % (i + 1, fmt, i)
+    last = "[m0]"
+    for i in range(1, n):
+        chain += "%s[m%d]acrossfade=d=%.2f:c1=tri:c2=tri[x%d];" % (last, i, x, i); last = "[x%d]" % i
+    fc = (chain + "%svolume=%.1fdB,atrim=0:%.2f,afade=t=in:d=%.1f,afade=t=out:st=%.2f:d=%.1f[m];"
+          "[0:a]pan=stereo|c0=c0|c1=c0,asplit=2[n][k];"
+          "[m][k]sidechaincompress=threshold=%s:ratio=%s:attack=%s:release=%s[md];"
+          "[n][md]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]"
+          % (last, gain, total, FADE_IN, total - FADE_OUT, FADE_OUT, DUCK["threshold"], DUCK["ratio"], DUCK["attack"], DUCK["release"]))
+    ins = ["-i", video]
+    for _ in range(n):
+        ins += ["-i", music]
+    run(ffmpeg(), "-y", *ins, "-filter_complex", fc, "-map", "0:v", "-map", "[a]", "-c:v", "copy",
+        "-c:a", "aac", "-b:a", "192k", "-t", "%.2f" % total, "-movflags", "+faststart", out)
+
+
 def concat(parts, out: Path):
     lst = WORK / "list.txt"
     lst.write_text("".join("file '%s'\n" % p for p in parts))
@@ -1190,6 +1241,7 @@ def main():
     ap = argparse.ArgumentParser(description="Build the client demo video.")
     ap.add_argument("--slide-only", action="store_true", help="only the process-slide clip")
     ap.add_argument("--scene", help="build only these pieces, e.g. O or OE (for iteration)")
+    ap.add_argument("--music", help="a music bed to mix under the narration (default: bed.* in ~/.cache/asoia-demo-music, if there is one)")
     ap.add_argument("--keep", help="copy each piece's mp4 into this directory")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -1277,7 +1329,11 @@ def main():
                 Path(args.keep).mkdir(parents=True, exist_ok=True); shutil.copy(m, Path(args.keep) / ("piece_%s.mp4" % name))
         if not args.scene:
             final = OUT / "demo-preview.mp4"
-            concat(parts, final)
+            bed = music_file(args.music)
+            concat(parts, WORK / "nomusic.mp4" if bed else final)
+            if bed:
+                add_music(WORK / "nomusic.mp4", bed, final)
+            print("music bed: %s" % (bed or "none (put one at %s/bed.<ext> or pass --music)" % MUSIC_DIR))
             print("demo-preview.mp4: %.0f s total, %.1f MB" % (total, final.stat().st_size / 1e6))
 
 if __name__ == "__main__":
