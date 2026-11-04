@@ -441,7 +441,6 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 .hd{position:absolute;left:590px;right:40px;top:88px;text-align:left;margin:0;font:800 66px Arial;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.6)}.hd em{font-style:normal;color:#FF5A4D}
 .tag{position:absolute;left:590px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}#sectors .tag,#sectors .hd{left:110px}.tag.ok{background:#76B900;color:#0d201b}
 #sectors .hd em{color:#76B900}
-#kinds{position:absolute;left:0;right:0;top:900px;text-align:center}#kinds span{display:inline-block;margin:0 16px;padding:0 34px;height:76px;border-radius:38px;border:3px solid rgba(118,185,0,.8);background:rgba(255,255,255,.08);font:700 40px/70px Arial;opacity:0}
 .panel{position:absolute;top:210px;width:790px;height:610px;border-radius:22px;background:rgba(255,255,255,.06);border:2px solid rgba(118,185,0,.35);opacity:0}
 .panel b{position:absolute;left:36px;top:26px;font:800 40px Arial;letter-spacing:3px;color:#76B900}.panel i{position:absolute;left:36px;top:80px;font:30px Arial;color:#BFD6B0;font-style:normal}
 #day{left:110px}#night{left:1020px}
@@ -469,11 +468,10 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
 #sl{position:absolute;left:0;right:0;top:990px;text-align:center;font:800 40px Arial;white-space:nowrap;opacity:0}#sl u{text-decoration:none;color:#76B900}
 </style><div class=grid></div>
 <div id=title class=layer><div id=dl><img src="@DL@"></div><h1>Service Operations <u>Agent</u></h1><div id=bar></div>
- <p>From first update to final answer: one connected view of service operations</p>
- <div id=kinds><span id=k0>Vehicles</span><span id=k1>Equipment</span><span id=k2>Facilities</span></div></div>
+ <p>From first update to final answer: one connected view of service operations</p></div>
 
-<div id=shift class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Every handover <em>loses detail</em></h2>
- <div class=panel id=day><b>DAY SHIFT</b><i>the technician who did the work</i></div><div class=panel id=night><b>NIGHT SHIFT</b><i>the technician who picks it up</i></div>
+<div id=shift class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Information <em>gets lost</em></h2>
+ <div class=panel id=day><b>WHAT IS KNOWN</b><i>everything the technician found</i></div><div class=panel id=night><b>WHAT IS PASSED ON</b><i>what reaches the next person</i></div>
  <div class=note id=sn1>Reading 21.9<br>spec min 23?<br>told Dave, parts</div>
  <div class=note id=sn2><span>Reading 21.9</span><br><span class=lost>spec min 23?</span><br><span class=lost>told Dave, parts</span></div>
  <div id=q>?</div><div id=qt>The detail that mattered is gone</div></div>
@@ -931,8 +929,7 @@ def scene_P():
         return f
     call = lambda fn, *a: "window.%s(%s)" % (fn, ",".join("'%s'" % x for x in a))
     nodes = tuple((0.10 + 0.10 * i, "window.__node('n',%d)" % i) for i in range(6))
-    return [dict(cam=None, camo=dict(to=1.05),                                                     # the title card is already on screen
-                 act=go("title", (0.30, call("__pop", "k0")), (0.50, call("__pop", "k1")), (0.70, call("__pop", "k2")))),
+    return [dict(cam=None, camo=dict(to=1.05)),                                                    # the title card is already on screen, nothing added to it
             dict(cam=None, camo=dict(to=1.0), co="Detail lost",
                  act=go("shift", (0.04, call("__fade", "day") + ";" + call("__fade", "night")), (0.28, call("__pop", "sn1", "rotate(-3deg)")),
                         (0.60, "window.__handover()"))),

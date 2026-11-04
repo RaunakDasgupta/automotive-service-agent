@@ -1,132 +1,132 @@
 1
-00:00:00,000 --> 00:00:04,174
-Vehicles, equipment, facilities: all run on handovers.
+00:00:00,000 --> 00:00:02,033
+Service work runs on information.
 
 2
-00:00:04,394 --> 00:00:07,825
-At every shift change, the detail that matters is lost.
+00:00:02,253 --> 00:00:05,911
+But the detail that matters gets lost on its way to whoever needs it.
 
 3
-00:00:08,045 --> 00:00:11,477
+00:00:06,131 --> 00:00:09,564
 Answers end up scattered, and managers chase them by hand.
 
 4
-00:00:11,697 --> 00:00:14,612
+00:00:09,784 --> 00:00:12,698
 Every chase costs hours that never reach the work.
 
 5
-00:00:14,832 --> 00:00:19,289
+00:00:12,918 --> 00:00:17,375
 Critical issues stay buried until they cause delay, rework or harm.
 
 6
-00:00:20,009 --> 00:00:23,342
+00:00:18,095 --> 00:00:21,428
 Here is the solution, powered by Deloitte and NVIDIA.
 
 7
-00:00:24,062 --> 00:00:28,006
+00:00:22,148 --> 00:00:26,092
 This applies across service sectors. We show it in automotive.
 
 8
-00:00:28,726 --> 00:00:30,857
+00:00:26,812 --> 00:00:28,943
 Here is the Service Operations Agent.
 
 9
-00:00:31,077 --> 00:00:33,163
+00:00:29,163 --> 00:00:31,250
 One live view of every job.
 
 10
-00:00:33,383 --> 00:00:37,231
+00:00:31,470 --> 00:00:35,317
 Right now, 12 vehicles are flagged as unsafe to release.
 
 11
-00:00:38,251 --> 00:00:42,147
+00:00:36,337 --> 00:00:40,233
 Here is how it works: a technician speaks or types an update.
 
 12
-00:00:42,367 --> 00:00:46,586
+00:00:40,453 --> 00:00:44,672
 NVIDIA Riva transcribes it, and Nemotron extracts the facts.
 
 13
-00:00:46,806 --> 00:00:50,097
+00:00:44,892 --> 00:00:48,183
 Code verifies every fact. Nothing is guessed.
 
 14
-00:00:50,317 --> 00:00:52,356
+00:00:48,403 --> 00:00:50,443
 Each update joins an audit trail.
 
 15
-00:00:52,576 --> 00:00:55,727
+00:00:50,663 --> 00:00:53,814
 Managers simply ask, and receive cited answers.
 
 16
-00:00:56,747 --> 00:01:00,414
+00:00:54,834 --> 00:00:58,500
 Let us follow one update. A technician dictates it from the bay.
 
 17
-00:01:00,634 --> 00:01:03,272
+00:00:58,720 --> 00:01:01,358
 NVIDIA Riva turns the speech into text.
 
 18
-00:01:03,492 --> 00:01:07,482
+00:01:01,578 --> 00:01:05,569
 Nemotron extracts the facts: the measurement and the spec.
 
 19
-00:01:08,302 --> 00:01:13,034
+00:01:06,389 --> 00:01:11,120
 Code verifies it and flags the repair order unsafe to release, instantly.
 
 20
-00:01:14,354 --> 00:01:18,714
+00:01:12,440 --> 00:01:16,800
 A manager asks: which vehicles cannot be released on safety grounds?
 
 21
-00:01:18,934 --> 00:01:23,805
+00:01:17,020 --> 00:01:21,891
 13 vehicles, each one cited, in a tenth of a second.
 
 22
-00:01:24,425 --> 00:01:28,781
+00:01:22,511 --> 00:01:26,867
 An open question: has anyone seen a whistling noise on a Passat?
 
 23
-00:01:29,001 --> 00:01:33,818
+00:01:27,087 --> 00:01:31,904
 Search, reranking and a cited answer, in seconds, on one GPU.
 
 24
-00:01:35,038 --> 00:01:38,608
+00:01:33,124 --> 00:01:36,695
 Business impact: unsafe vehicles surface immediately.
 
 25
-00:01:38,828 --> 00:01:41,283
+00:01:36,915 --> 00:01:39,370
 Managers get answers in a tenth of a second.
 
 26
-00:01:41,503 --> 00:01:45,539
+00:01:39,590 --> 00:01:43,625
 Every figure traces to a real record, and one update feeds it all.
 
 27
-00:01:46,259 --> 00:01:51,829
+00:01:44,345 --> 00:01:49,915
 Behind it, the architecture: three NVIDIA NIMs on one L40S.
 
 28
-00:01:52,449 --> 00:01:56,903
+00:01:50,535 --> 00:01:54,990
 Riva handles speech. NeMo Guardrails stops unsafe requests.
 
 29
-00:01:57,123 --> 00:02:00,739
+00:01:55,210 --> 00:01:58,825
 NeMo Evaluator scores every release: the whole stack.
 
 30
-00:02:01,959 --> 00:02:07,064
+00:02:00,045 --> 00:02:05,150
 It is all observable: DCGM and app metrics, live in Grafana.
 
 31
-00:02:08,084 --> 00:02:13,552
+00:02:06,170 --> 00:02:11,639
 In summary: safety first, with unsafe vehicles flagged as updates are logged.
 
 32
-00:02:13,772 --> 00:02:18,407
+00:02:11,859 --> 00:02:16,493
 Answers in a tenth of a second, traced to records, on one GPU you own.
 
 33
-00:02:18,627 --> 00:02:24,010
+00:02:16,713 --> 00:02:22,096
 Fast. Grounded. Yours to run. Shown in automotive, built for service operations.
 
