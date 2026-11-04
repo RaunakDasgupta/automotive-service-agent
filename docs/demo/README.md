@@ -65,9 +65,23 @@ good enough for clients is a judgement for your ears; the alternative in the pla
 
 ## Editing it by hand
 
-`docs/EDITING_GUIDE.md` explains how the video is edited (zooming in and out, highlights, callouts, subtitles, pacing) and how to rebuild it step by
-step in an online editor such as OpenReel. `python scripts/export_edit_sheet.py` writes `edit-sheet.md` (every beat with its start, camera, highlight and callout)
-and `demo-preview.srt` here, and with `--audio DIR` the narration per beat and in one file.
+`docs/EDITING_GUIDE.md` is a **generic** guide to editing a narrated product demo in this format (it names no product, tool or repository, and is written to be handed to an
+AI together with a filled-in brief and the footage). This section is the kit for **this** video.
+
+| asset | how to get it |
+|---|---|
+| Clean 4K recordings, nothing drawn on them | `docs/demo/footage/raw/{A,C,D,G}.mp4` (`C` is a 3000 px tall page) |
+| Every beat: start, length, narration, camera (zoom and page offset), highlight, callout, hold | `docs/demo/edit-sheet.md` (generated; the guide's edit decision list in table form) |
+| Subtitles, one per beat | `docs/demo/demo-preview.srt` |
+| Narration, one file per beat and one spaced file | `python scripts/export_edit_sheet.py --audio DIR` (`DIR/beats/<id>.wav`, `DIR/narration.wav`) |
+| The animated scenes as clips (title and problem, process, value, architecture, observability, recap) | `python scripts/make_demo_preview.py --keep DIR` (`DIR/piece_<X>.mp4`) |
+
+Regenerate the sheet and subtitles with `python scripts/export_edit_sheet.py` after any change to the script or timings; they come from the same camera plan the build uses.
+
+To redo it in an editor: put `narration.wav` on the audio track first and mark each beat's start from `edit-sheet.md`; place the `piece_<X>.mp4` clips for the animated scenes (muting their own
+audio); for the live scenes (A dashboard, C ingest, D assistant) place `footage/raw/<scene>.mp4`, trim to the beat, and apply each move of the sheet as Scale and Position keyframes (the
+guide's sections 6.3 and 6.4 turn a zoom and page offset into editor numbers); add the rings, callouts and badges at the listed times, the holds, a 0.5 s dissolve before the dashboard, the process slide,
+the ingest form and the assistant, and import the SRT. The observability shot is the Grafana recording (`G.mp4`) as a picture-in-picture (guide 6.5) inside its diagram piece.
 
 ## Rebuild
 
