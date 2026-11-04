@@ -39,7 +39,7 @@ drift from the words. Key visuals are **held still for a moment after they are s
 be read. Inside every other shot the camera is moving, a keyword callout lands as the word is spoken, a ring pulses on
 what is described, and no captions are burned in (`demo-preview.srt` carries them as a separate file). Soft dissolves between scenes.
 
-**Music.** If a bed is at `~/.cache/asoia-demo-music/bed.<ext>` (or passed as `--music FILE`) the build mixes it under the narration: the track is repeated with each pass cross-faded into the next so the loop has no seam, set about 11 dB under the voice, dipped a further ~8 dB by the voice itself (a sidechain compressor, so it never competes with a word and swells back in the gaps), faded in over 2 s and out over the last 4 s. The track is not committed (it is the client's file); without one the video has narration only.
+**Music.** If a bed is at `~/.cache/asoia-demo-music/bed.<ext>` (or passed as `--music FILE`) the build mixes it under the narration: the track is repeated with each pass cross-faded into the next so the loop has no seam, set about 9 dB under the voice, dipped a further ~8 dB by the voice itself (a sidechain compressor, so it never competes with a word and swells back in the gaps), faded in over 2 s and out over the last 4 s. The track is not committed (it is the client's file); without one the video has narration only.
 
 ## Capture once, edit as often as you like
 

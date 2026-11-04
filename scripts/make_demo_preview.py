@@ -705,7 +705,7 @@ def mux(video: Path, wav: Path | None, total: float, out: Path):
 
 
 MUSIC_DIR = Path.home() / ".cache" / "asoia-demo-music"      # the music bed is the client's own file: kept here, not committed
-MUSIC_BELOW = 11.0               # dB: the bed's average level under the narration's
+MUSIC_BELOW = 9.0                # dB: the bed's average level under the narration's
 DUCK = dict(threshold=0.02, ratio=4, attack=25, release=500)   # the bed dips while the voice speaks and swells back in the gaps
 
 
