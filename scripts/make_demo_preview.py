@@ -483,7 +483,7 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
  <div id=cnt>One question. <u>Six places to look.</u></div></div>
 
 <div id=lost class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Hours <em>lost</em>, shift after shift</h2>
- <div id=tr></div><div class=tm style="left:150px">START OF SHIFT</div><div class=tm style="right:150px">END OF SHIFT</div>
+ <div id=tr></div><div class=tm style="left:150px">START</div><div class=tm style="right:150px">END</div>
  <div class=lgd id=l0><i></i>Doing the work</div><div class=lgd id=l1><i></i>Asking, searching, re-typing</div>
  <div id=fin>Hours that never <u>reach the work.</u></div></div>
 
