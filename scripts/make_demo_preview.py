@@ -359,16 +359,21 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 @keyframes drift{to{transform:translate(120px,120px)}}
 .note{position:absolute;width:520px;padding:26px 30px;box-sizing:border-box;background:#F4F1E4;color:#262626;font:600 32px/1.3 'Courier New',monospace;border-radius:6px;box-shadow:0 20px 44px rgba(0,0,0,.5);opacity:0;transform:rotate(var(--r))}
 #stamp{position:absolute;left:1010px;top:110px;width:210px;height:210px;border:12px solid #E5352B;border-radius:50%;color:#E5352B;font:900 38px/186px Arial;text-align:center;transform:rotate(-14deg);opacity:0;letter-spacing:2px;background:rgba(244,241,228,.0)}
-#head{position:absolute;left:0;right:0;top:845px;text-align:center;font:700 86px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}
-#head u{text-decoration:none;color:#76B900}
+#head{position:absolute;left:0;right:0;top:770px;text-align:center;font:800 84px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}
+#head u{text-decoration:none;color:#FF5A4D}
+.tag{position:absolute;left:110px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.cc{position:absolute;top:925px;height:84px;padding:0 38px;border-radius:42px;border:4px solid #FF5A4D;background:rgba(229,53,43,.18);font:800 40px/76px Arial;letter-spacing:3px;color:#fff;opacity:0}
+#cc0{left:300px}#cc1{left:700px}#cc2{left:1090px}
 </style><div class=grid></div>@CARDS@<div id=stamp>SAFETY</div>
-<div id=head>The risk hides <u>between shifts.</u></div>
+<div class=tag>THE PROBLEM</div><div id=head>A buried note becomes <u>an incident.</u></div>
+<div class=cc id=cc0>DELAYS</div><div class=cc id=cc1>REWORK</div><div class=cc id=cc2>SAFETY INCIDENTS</div>
 <script>const $=id=>document.getElementById(id);
 const fly=(e,from,d,dur)=>e.animate([{opacity:0,transform:'translate('+from[0]+'px,'+from[1]+'px) rotate(var(--r)) scale(.9)'},{opacity:1,transform:'rotate(var(--r))'}],{duration:dur||520,delay:d,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});
 window.__go=ms=>{const F=[[-700,-200],[0,-600],[700,-300],[-600,500],[700,600]];
  for(let i=0;i<5;i++) fly($('n'+i),F[i],i*ms*0.08);
  $('head').animate([{opacity:0,transform:'translateY(60px)'},{opacity:1,transform:'none'}],{duration:620,delay:ms*0.30,fill:'forwards',easing:'cubic-bezier(.2,.8,.2,1)'});
  $('stamp').animate([{opacity:0,transform:'rotate(-14deg) scale(2.4)'},{opacity:1,transform:'rotate(-14deg) scale(1)'}],{duration:300,delay:ms*0.58,fill:'forwards',easing:'cubic-bezier(.3,1.4,.5,1)'});
+ [['cc0',.50],['cc1',.64],['cc2',.78]].forEach(([id,f])=>$(id).animate([{opacity:0,transform:'translateY(30px) scale(.9)'},{opacity:1,transform:'none'}],{duration:380,delay:ms*f,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'}));
  $('n1').animate([{boxShadow:'0 20px 44px rgba(0,0,0,.5)'},{boxShadow:'0 0 0 10px rgba(229,53,43,.8),0 0 60px rgba(229,53,43,.9)'}],{duration:500,delay:ms*0.58,fill:'forwards'});};
 </script>""".replace("@CARDS@", cards)
 
@@ -378,6 +383,9 @@ PI = {   # white pictograms for the problem scene
     "phone": '<svg viewBox="0 0 64 64"><path d="M16 8h10l5 14-7 4c3 7 8 12 15 15l4-7 14 5v10c0 3-2 6-6 6C27 55 9 37 10 14c0-4 3-6 6-6z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/></svg>',
     "monitor": '<svg viewBox="0 0 64 64"><rect x="6" y="10" width="52" height="34" rx="4" fill="none" stroke="#fff" stroke-width="4"/><path d="M22 54h20M32 44v10" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M14 36l10-10 8 6 12-14" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
     "person": '<svg viewBox="0 0 64 64"><circle cx="32" cy="22" r="12" fill="none" stroke="#fff" stroke-width="4"/><path d="M8 58c2-14 12-20 24-20s22 6 24 20" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>',
+    "car": '<svg viewBox="0 0 64 64"><path d="M8 40l5-15a4 4 0 0 1 4-3h30a4 4 0 0 1 4 3l5 15v11h-7v-5H15v5H8z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><circle cx="19" cy="37" r="3.2" fill="#fff"/><circle cx="45" cy="37" r="3.2" fill="#fff"/><path d="M16 29h32" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/></svg>',
+    "gear": '<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="11" fill="none" stroke="#fff" stroke-width="4"/><path d="M32 6v9M32 49v9M6 32h9M49 32h9M13.6 13.6l6.4 6.4M44 44l6.4 6.4M13.6 50.4l6.4-6.4M44 20l6.4-6.4" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/></svg>',
+    "building": '<svg viewBox="0 0 64 64"><path d="M12 58V8h28v50M40 24h13v34M6 58h52" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><path d="M21 19h10M21 30h10M21 41h10" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>',
     "clock": '<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="#76B900" stroke-width="3.5"/><path class=hh d="M32 32V17" stroke="#fff" stroke-width="4" stroke-linecap="round" style="transform-origin:32px 32px"/><path class=mh d="M32 32V10" stroke="#76B900" stroke-width="3" stroke-linecap="round" style="transform-origin:32px 32px"/><circle cx="32" cy="32" r="3" fill="#fff"/></svg>',
 }
 
@@ -396,7 +404,14 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 #title h1{margin:64px 0 0;text-align:center;font:800 118px/1.08 Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}#title h1 u{text-decoration:none;color:#76B900}
 #bar{width:420px;height:8px;border-radius:4px;background:#76B900;margin:38px 0 26px;box-shadow:0 0 24px rgba(118,185,0,.7)}
 #title p{margin:0;font:40px Arial;color:#BFD6B0;text-align:center}
-.hd{position:absolute;left:0;right:0;top:70px;text-align:center;margin:0;font:700 56px Arial;color:#C8D6BE}
+.hd{position:absolute;left:590px;right:40px;top:88px;text-align:left;margin:0;font:800 66px Arial;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.6)}.hd em{font-style:normal;color:#FF5A4D}
+.tag{position:absolute;left:590px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}#usecase .tag,#usecase .hd{left:110px}.tag.ok{background:#76B900;color:#0d201b}
+#kinds{position:absolute;left:0;right:0;top:900px;text-align:center}#kinds span{display:inline-block;margin:0 16px;padding:0 34px;height:76px;border-radius:38px;border:3px solid rgba(118,185,0,.8);background:rgba(255,255,255,.08);font:700 40px/70px Arial;opacity:0}
+.ucs{position:absolute;top:300px;width:470px;height:400px;border-radius:26px;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.28);text-align:center;opacity:0}
+.ucs .pi{width:150px;height:150px;margin:62px auto 18px}.ucs b{display:block;font:800 54px Arial}
+#u0{left:130px}#u1{left:725px}#u2{left:1320px}
+#ul{position:absolute;left:0;right:0;top:770px;text-align:center;opacity:0}#ul b{display:block;font:800 92px Arial;color:#76B900;text-shadow:0 6px 30px rgba(0,0,0,.6)}#ul i{display:block;font:40px Arial;color:#BFD6B0;font-style:normal;margin-top:10px}
+#uh{opacity:0}
 .panel{position:absolute;top:210px;width:790px;height:610px;border-radius:22px;background:rgba(255,255,255,.06);border:2px solid rgba(118,185,0,.35);opacity:0}
 .panel b{position:absolute;left:36px;top:26px;font:800 40px Arial;letter-spacing:3px;color:#76B900}.panel i{position:absolute;left:36px;top:80px;font:30px Arial;color:#BFD6B0;font-style:normal}
 #day{left:110px}#night{left:1020px}
@@ -418,18 +433,20 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 .chip{position:absolute;left:800px;width:960px;height:130px;border-radius:24px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.26);font:700 52px/126px Arial;padding-left:150px;box-sizing:border-box;opacity:0}
 .chip .pi{position:absolute;left:34px;top:26px;width:76px;height:76px}
 #c0{top:260px}#c1{top:430px}#c2{top:600px}
+#c0,#c1,#c2{border-color:rgba(255,90,77,.7);background:rgba(229,53,43,.12)}
 #fin{position:absolute;left:0;right:0;top:870px;text-align:center;font:800 78px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#fin u{text-decoration:none;color:#76B900}
 </style><div class=grid></div>
 <div id=title class=layer><div id=dl><img src="@DL@"></div><h1>Service Operations <u>Agent</u></h1><div id=bar></div>
- <p>From first update to final answer: one connected view of service operations</p></div>
+ <p>From first update to final answer: one connected view of service operations</p>
+ <div id=kinds><span id=k0>Vehicles</span><span id=k1>Equipment</span><span id=k2>Facilities</span></div></div>
 
-<div id=shift class=layer><h2 class=hd>Every shift change</h2>
+<div id=shift class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Every handover <em>loses detail</em></h2>
  <div class=panel id=day><b>DAY SHIFT</b><i>the technician who did the work</i></div><div class=panel id=night><b>NIGHT SHIFT</b><i>the technician who picks it up</i></div>
  <div class=note id=sn1>Reading 21.9<br>spec min 23?<br>told Dave, parts</div>
  <div class=note id=sn2><span>Reading 21.9</span><br><span class=lost>spec min 23?</span><br><span class=lost>told Dave, parts</span></div>
  <div id=q>?</div><div id=qt>The detail that mattered is gone</div></div>
 
-<div id=chase class=layer><h2 class=hd style="padding-left:460px">A manager hunting for an answer</h2>
+<div id=chase class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Managers <em>chasing answers</em></h2>
  <div class=src id=s0><div class=pi>@DOC@</div><b>Notes</b><i>paper and chat threads</i></div>
  <div class=src id=s1><div class=pi>@PHONE@</div><b>Calls</b><i>"has anyone seen&hellip;?"</i></div>
  <div class=src id=s2><div class=pi>@MON@</div><b>Screens</b><i>one system per question</i></div>
@@ -439,13 +456,17 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
  <div class=bub id=b1 style="left:1230px;top:580px">Is it safe to sign off?</div>
  <div class=bub id=b2 style="left:690px;top:900px;background:#76B900;color:#0d201b">Who worked on it?</div></div>
 
-<div id=lost class=layer><h2 class=hd>Where the time goes</h2>
+<div id=lost class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Hours <em>lost</em>, shift after shift</h2>
  <div id=clk>@CLOCK@</div>
  <div class=chip id=c0><div class=pi>@SEARCH@</div>Asking again</div>
  <div class=chip id=c1><div class=pi>@DOC@</div>Searching old notes</div>
  <div class=chip id=c2><div class=pi>@DOC@</div>Re-typing updates</div>
  <div id=fin>Less time <u>doing the work.</u></div></div>
+<div id=usecase class=layer><div class=tag>THE SAME PROBLEM, EVERYWHERE</div><h2 class=hd>Every service operation, <em style="color:#76B900">one example</em></h2>
+ <div class=ucs id=u0><div class=pi>@CAR@</div><b>Vehicles</b></div><div class=ucs id=u1><div class=pi>@GEAR@</div><b>Equipment</b></div><div class=ucs id=u2><div class=pi>@BLD@</div><b>Facilities</b></div>
+ <div id=ul><b>Example use case: automotive service</b><i>the solution, shown on vehicles</i></div></div>
 <script>const $=id=>document.getElementById(id);
+if(location.hash==='#usecase'){document.getElementById('title').style.opacity=0;document.getElementById('usecase').style.opacity=1;}
 const pop=(e,d,y,rot)=>{const r=rot||'rotate(0deg)';e.animate([{opacity:0,transform:r+' translateY('+(y===undefined?40:y)+'px) scale(.92)'},{opacity:1,transform:r}],{duration:d||460,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});};
 const show=(e,d)=>{e.animate([{opacity:0},{opacity:1}],{duration:d||360,fill:'forwards'});};
 window.__layer=id=>{for(const l of document.querySelectorAll('.layer')){const on=l.id===id;l.animate([{opacity:getComputedStyle(l).opacity},{opacity:on?1:0}],{duration:420,fill:'forwards'});}};
@@ -453,11 +474,13 @@ window.__pop=(id,rot)=>pop($(id),460,40,rot);
 window.__fade=id=>show($(id));
 window.__handover=()=>{$('sn1').animate([{transform:'rotate(-3deg)',opacity:1},{transform:'translate(910px,0) rotate(2deg)',opacity:0}],{duration:900,fill:'forwards',easing:'cubic-bezier(.5,0,.3,1)'});
  setTimeout(()=>pop($('sn2'),420,0,'rotate(2deg)'),700);setTimeout(()=>{pop($('q'),380,0);show($('qt'),500)},1250);};
+window.__pick=()=>{for(const i of [1,2]) $('u'+i).animate([{opacity:1,transform:'none'},{opacity:.22,transform:'scale(.94)'}],{duration:520,fill:'forwards'});
+ $('u0').animate([{transform:'none',borderColor:'rgba(255,255,255,.28)',boxShadow:'none'},{transform:'scale(1.07)',borderColor:'#76B900',boxShadow:'0 0 60px 10px rgba(118,185,0,.55)'}],{duration:620,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});};
 window.__link=i=>{const s=$('s'+i),m=$('mgr'),d=$('d'+i);
  const x1=s.offsetLeft+s.offsetWidth/2,y1=s.offsetTop+s.offsetHeight,x2=m.offsetLeft+m.offsetWidth/2,y2=m.offsetTop+20;
  const len=Math.hypot(x2-x1,y2-y1),ang=Math.atan2(x2-x1,y2-y1);
  Object.assign(d.style,{left:x1+'px',top:y1+'px',height:len+'px',transformOrigin:'0 0',transform:'rotate('+(-ang)+'rad)'});show(d,500);};
-</script>""".replace("@DL@", logo("deloitte")).replace("@DOC@", PI["doc"]).replace("@PHONE@", PI["phone"]).replace("@MON@", PI["monitor"]) \
+</script>""".replace("@DL@", logo("deloitte")).replace("@CAR@", PI["car"]).replace("@GEAR@", PI["gear"]).replace("@BLD@", PI["building"]).replace("@DOC@", PI["doc"]).replace("@PHONE@", PI["phone"]).replace("@MON@", PI["monitor"]) \
         .replace("@PERSON@", PI["person"]).replace("@CLOCK@", PI["clock"]).replace("@SEARCH@", IC["search"])
 
 
@@ -874,17 +897,27 @@ def scene_P():
                 page.evaluate("() => { %s }" % js)
         return f
     call = lambda fn, *a: "window.%s(%s)" % (fn, ",".join("'%s'" % x for x in a))
-    return [dict(cam=None, camo=dict(to=1.05)),                                                    # the title card is already on screen
-            dict(cam=None, camo=dict(to=1.0), co="Handover",
+    return [dict(cam=None, camo=dict(to=1.05),                                                     # the title card is already on screen
+                 act=go("title", (0.30, call("__pop", "k0")), (0.50, call("__pop", "k1")), (0.70, call("__pop", "k2")))),
+            dict(cam=None, camo=dict(to=1.0), co="Detail lost",
                  act=go("shift", (0.04, call("__fade", "day") + ";" + call("__fade", "night")), (0.28, call("__pop", "sn1", "rotate(-3deg)")),
                         (0.60, "window.__handover()"))),
-            dict(cam=None, camo=dict(to=1.05), co="Chasing answers",
+            dict(cam=None, camo=dict(to=1.05), co="Answers scattered",
                  act=go("chase", (0.04, call("__fade", "mgr")), (0.22, call("__pop", "b0") + ";" + call("__pop", "b1")),
                         (0.50, call("__fade", "s0") + ";window.__link(0)"), (0.64, call("__fade", "s1") + ";window.__link(1)"),
                         (0.78, call("__fade", "s2") + ";window.__link(2);" + call("__pop", "b2")))),
-            dict(cam=None, camo=dict(to=1.0), co="Lost time",
+            dict(cam=None, camo=dict(to=1.0), co="Time lost",
                  act=go("lost", (0.04, call("__fade", "clk")), (0.26, call("__pop", "c0")), (0.44, call("__pop", "c1")), (0.60, call("__pop", "c2")),
                         (0.80, call("__fade", "fin"))))]
+
+
+def scene_U():
+    def f(page, d):                       # the page opens on this layer (#usecase); the tiles come in with the words
+        at = 0.0
+        for frac, js in ((0.06, "window.__pop('u0')"), (0.14, "window.__pop('u1')"), (0.22, "window.__pop('u2')"), (0.50, "window.__pick()"), (0.66, "window.__fade('ul')")):
+            page.wait_for_timeout(int((frac - at) * d * 1000)); at = frac
+            page.evaluate("() => { %s }" % js)
+    return [dict(cam=None, camo=dict(to=1.04), act=f)]
 
 
 def scene_I():
@@ -1302,10 +1335,10 @@ def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
 
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
-PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("H", "H", None), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
+PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("U", "P", ["P6"]), ("H", "H", None), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
           ("V", "V", None), ("E", "E", None), ("I", "G", None), ("F", "F", None), ("K", "K", None)]
 LIVE = "ACD"
-BRIDGE_BEFORE = "AHBCDVEIFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
+BRIDGE_BEFORE = "UAHBCDVEIFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
 
 
 def main():
@@ -1361,6 +1394,7 @@ def main():
         (WORK / "brand_close.html").write_text(brand_html(True))
         local = {"P": ((WORK / "problem.html").as_uri(), scene_P()),
                  "O": ((WORK / "intro.html").as_uri(), scene_O()),
+                 "U": ((WORK / "problem.html").as_uri() + "#usecase", scene_U()),
                  "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
                  "V": ((WORK / "value.html").as_uri(), scene_V()),
                  "E": ((WORK / "comp.html").as_uri(), scene_E()),
