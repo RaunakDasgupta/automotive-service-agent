@@ -1,11 +1,11 @@
 # Client demo video — plan, script and tooling
 
-**Target length: about 2:47** (the 2:15 demo, a 25-second problem opening, and the Deloitte and NVIDIA preface and closing cards). **Audience:** a prospective client evaluating an
+**Target length: about 2:33** (the 2:15 demo, a 25-second problem opening, and the Deloitte and NVIDIA preface and closing cards). **Audience:** a prospective client evaluating an
 AI assistant for a service department. **One idea:** *fast, grounded answers, running on your own GPU.*
 
 ## 1. Script — written to be cut, not read
 
-**Target 2:47.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
+**Target 2:33.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
 changes on every beat and something on screen is always moving**, except during those holds. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
@@ -17,39 +17,38 @@ or product shot at the open and the close; nothing held still. Narration there r
 
 | beat | narration (read aloud) | on screen |
 |---|---|---|
-| P1 | Vehicles, equipment, facilities: every service operation runs on handovers. | **Title card, the first frame and the thumbnail:** the Deloitte logo above the app name, the grid drifting behind it, a slow push-in |
-| P2 | A technician records a finding, then the shift changes, and the detail is lost. | Day and night shift panels; a note appears on the day side and is carried across; on the night side half of it has gone and a red **?** lands; callout **Handover** |
+| P1 | Vehicles, equipment, facilities: service runs on handovers. | **Title card, the first frame and the thumbnail:** the Deloitte logo above the app name, the grid drifting behind it, a slow push-in |
+| P2 | A shift changes, and the technician's finding is lost. | Day and night shift panels; a note appears on the day side and is carried across; on the night side half of it has gone and a red **?** lands; callout **Handover** |
 | P3 | Managers chase answers across notes, calls and systems. | A service-manager figure; three questions pop up (*Where is the job? Is it safe to sign off? Who worked on it?*) and Notes, Calls and Screens link in one by one; callout **Chasing answers** |
 | P4 | Hours go to asking, searching and re-keying, not doing the work. | A clock spins; three chips (*Asking again, Searching old notes, Re-typing updates*) land; then *Less time doing the work.*; callout **Lost time** |
-| P5 | So critical issues stay buried until they cause delays, rework or safety incidents. | **The opening visual:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
+| P5 | So critical issues stay buried until they cause delays, rework or harm. | **The opening visual:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
 | H1 | Here is the solution, powered by Deloitte and NVIDIA. | **Brand preface:** a soft dissolve from the stamped notes to a white panel with the **Deloitte** and **NVIDIA** logos side by side, a divider growing between them, *The solution, powered by* above and *Service Operations Agent* below |
 | A1 | This is where the Service Operations Agent comes in. | A soft dissolve from the stamped notes to the **live dashboard**, shown as the solution: a slow push-in on the whole screen; callout **Service Operations Agent** |
-| A2 | One live view of every job, shown here in automotive service. | Camera moves to the first table row, ring on it: the dashboard as one live view built from the updates, introduced as the **automotive showcase** of a general service-operations problem; callout **Automotive showcase** |
+| A2 | One live view of every job, shown in automotive service. | Camera moves to the first table row, ring on it: the dashboard as one live view built from the updates, introduced as the **automotive showcase** of a general service-operations problem; callout **Automotive showcase** |
 | A4 | Right now, {safety} vehicles are flagged as unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} flagged**; held a moment |
-| B1 | Here is how it is built. A technician speaks or types an update. | Dissolve from the dashboard to the process slide: stage 1 builds, camera on it; callout **Capture** |
+| B1 | Here is how it works. A technician speaks or types an update. | Dissolve from the dashboard to the process slide: stage 1 builds, camera on it; callout **Capture** |
 | B2 | NVIDIA Riva transcribes it, and Nemotron extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
 | B3 | Code verifies every fact. Nothing is guessed. | Stage 3; callout **Verify** |
 | B4 | Each update joins an audit trail. | Stage 4; callout **Record** |
 | B5 | Managers simply ask, and receive cited answers. | Stage 5, then the camera pulls back to the whole five-stage flow; callout **Decide** |
-| C1 | Let us follow one update live. A technician dictates it from the bay. | Dissolve from the process slide to Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
+| C1 | Let us follow one update. A technician dictates it from the bay. | Dissolve from the process slide to Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
 | C2 | NVIDIA Riva turns the speech into text. | Transcribe is clicked; the transcript fills; callout **Riva ASR** |
-| C3 | Nemotron extracts the facts: the measurement and the specification. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |
-| C4 | Code verifies it, and flags the repair order unsafe to release, instantly. | Zoom on the *What changed* card and the out-of-spec line, ring; callout **Flagged unsafe**; held |
-| D1 | With the update recorded, a manager asks the question that matters. | Manager Assistant (a soft dissolve from the form), camera on the question box |
+| C3 | Nemotron extracts the facts: the measurement and the spec. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |
+| C4 | Code verifies it and flags the repair order unsafe to release, instantly. | Zoom on the *What changed* card and the out-of-spec line, ring; callout **Flagged unsafe**; held |
+| D1 | A manager now asks the question that matters. | Manager Assistant (a soft dissolve from the form), camera on the question box |
 | D2 | Which vehicles cannot be released on safety grounds? | The question types out at speaking pace, then is asked |
 | D3 | {ask_n} vehicles, each one cited, in a tenth of a second. | Zoom on the answer; callout **Cited · no model call**; held |
-| D5 | Then an open question: has anyone seen a whistling noise on a Passat? | The second question types out and is asked |
-| D6 | Search, reranking and a cited answer, in seconds, on the same GPU. | Camera on the answer and its update citations; callout **Search + rerank**; held |
-| V1 | The business impact: unsafe vehicles surface immediately. | **Business value:** four cards; card 1 *{safety} of {open}* unsafe vehicles found at once |
+| D5 | An open question: has anyone seen a whistling noise on a Passat? | The second question types out and is asked |
+| D6 | Search, reranking and a cited answer, in seconds, on one GPU. | Camera on the answer and its update citations; callout **Search + rerank**; held |
+| V1 | Business impact: unsafe vehicles surface immediately. | **Business value:** four cards; card 1 *{safety} of {open}* unsafe vehicles found at once |
 | V2 | Managers get answers in a tenth of a second. | Card 2: *0.1 s* to answer a manager's question |
-| V3 | Every figure traces back to a real record. | Card 3: *905 / 905* answers traced to a real record |
-| V4 | And one update feeds the record, the handover and the dashboard. | Card 4: *1 update* feeds the whole shop; pull back to all four cards; footnote |
-| E1 | Behind it, the deployed architecture: three NVIDIA NIMs on one L40S. | **Deployed architecture:** a layered diagram in one frame (*Service Operations Agent*), with the row names in a left gutter. The camera drops to the bottom layer, the L40S chip with its three NIM tiles (chat, search, rank) pulsing in turn and a memory bar filling to about 30 of 46 GB; the layer glows (no ring on its own border) |
+| V3 | Every figure traces to a real record, and one update feeds it all. | Card 3: *905 / 905* answers traced to a real record; half way through, card 4 (*1 update* feeds the whole shop) arrives and the camera pulls back to all four cards; footnote |
+| E1 | Behind it, the architecture: three NVIDIA NIMs on one L40S. | **Deployed architecture:** a layered diagram in one frame (*Service Operations Agent*), with the row names in a left gutter. The camera drops to the bottom layer, the L40S chip with its three NIM tiles (chat, search, rank) pulsing in turn and a memory bar filling to about 30 of 46 GB; the layer glows (no ring on its own border) |
 | E3 | Riva handles speech. NeMo Guardrails stops unsafe requests. | The GPU layer shrinks back, dimmed but still on screen; the speech-and-safety layer appears above it, the Riva card then the NeMo Guardrails card, each glowing in turn; arrows show the flow: Riva's *transcript* down to the language model, a *checked question* down through the rail and a *checked answer* back up |
 | E5 | NeMo Evaluator scores every release. That is the whole stack. | The quality layer appears on top and glows with the others dimmed, with arrows for *test questions* in and *answers scored* back; then the camera pulls all the way out to show the whole architecture, held |
-| G1 | And it is all observable: DCGM and the app's metrics, live in Grafana. | **Infographic with the live dashboard inset:** the DCGM exporter (*19* GPU series) and the app (*13*) feed Prometheus, which feeds Grafana; the live dashboard plays small in a frame, and rings light up its primary figures (the four stat tiles), then the two DCGM graphs (GPU load, GPU power), each with a legend chip; callout **Observability** |
-| F1 | In summary, safety comes first: unsafe vehicles are flagged as updates are logged. | Title *Summary* and card 1 (*Safety first*, with the flagged-vehicle figure) fly in |
-| F2 | Answers in a tenth of a second, every figure traced to a record, all on one GPU you own. | Cards 2, 3 and 4 (*Instant answers*, *Grounded in records*, *Yours to run*, each with one supporting figure) fly in one after another |
+| G1 | It is all observable: DCGM and app metrics, live in Grafana. | **Infographic with the live dashboard inset:** the DCGM exporter (*19* GPU series) and the app (*13*) feed Prometheus, which feeds Grafana; the live dashboard plays small in a frame, and rings light up its primary figures (the four stat tiles), then the two DCGM graphs (GPU load, GPU power), each with a legend chip; callout **Observability** |
+| F1 | In summary: safety first. Unsafe vehicles are flagged as updates are logged. | Title *Summary* and card 1 (*Safety first*, with the flagged-vehicle figure) fly in |
+| F2 | Answers in a tenth of a second, traced to records, on one GPU you own. | Cards 2, 3 and 4 (*Instant answers*, *Grounded in records*, *Yours to run*, each with one supporting figure) fly in one after another |
 | F4 | Fast. Grounded. Yours to run. Shown in automotive, built for service operations. | Large type, with *Service Operations Agent* beneath it |
 | K1 | Service Operations Agent, powered by Deloitte and NVIDIA. | **Closing:** the supplied Deloitte outro clip (`~/.cache/asoia-demo-outro/outro.<ext>`, a phone screen recording): the stretch where the wordmark animates in (the legal text after it is left out), cropped to the Deloitte frame, with its own sound 2 dB down and no narration, the crisp vector logo swapped in once it settles, the last frame held and faded out; a soft dissolve from the summary. **Only if there is no clip** the video closes on a card with this line over the Deloitte and NVIDIA panel |
 

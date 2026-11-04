@@ -39,13 +39,13 @@ sys.path[:0] = [str(ROOT / "scripts"), str(ROOT)]
 from demo_footage import FOOT, FPS, H, K, TTS_CACHE, W, check, ffmpeg, load_timeline, run
 OUT = ROOT / "docs" / "demo"
 WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
-GAP = 0.30                       # silence after each beat's voice
+GAP = 0.22                       # silence after each beat's voice
 F_TAIL = 0.4                     # seconds the closing card stays after the last word
 CAPTIONS = False                 # burned-in captions: off. demo-preview.srt (scripts/export_edit_sheet.py) carries them as a separate file
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.3, "B5": 0.3, "C3": 0.6, "C4": 0.6, "D3": 0.4, "D4": 0.6, "D6": 0.5,
-        "E1": 0.4, "E5": 1.0, "G1": 0.3, "V4": 0.0, "F4": 0.4, "H1": 0.0, "K1": 0.5}
+        "E1": 0.4, "E5": 0.5, "G1": 0.3, "F4": 0.3, "H1": 0.0, "K1": 0.5}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -954,11 +954,17 @@ def scene_V():
                 page.wait_for_timeout(int(d * 500))
                 page.evaluate("() => window.__note()")
         return f
+    def show_then(first, second):                    # card 3 on the first words, card 4 and the pull-back half way
+        def f(page, d):
+            page.evaluate("i => window.__show(i)", first)
+            page.wait_for_timeout(int(d * 500))
+            page.evaluate("i => window.__show(i)", second)
+            page.evaluate("() => window.__note()")
+        return f
     V = lambda i: {"sel": "#v%d" % i}
     return [dict(cam=V(0), camo=dict(max=1.55, pad=160), co="Safety", act=show("v0")),
             dict(cam=[V(0), V(1)], camo=dict(max=1.5, pad=120), co="Speed", act=show("v1")),
-            dict(cam=[V(1), V(2)], camo=dict(max=1.5, pad=120), co="Trust", act=show("v2")),
-            dict(cam=None, camo=dict(to=1.0), co="One source", act=show("v3", note=True))]
+            dict(cam=None, camo=dict(to=1.0), co="Trust", act=show_then("v2", "v3"))]
 
 
 def scene_brand():
