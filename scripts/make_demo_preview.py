@@ -40,6 +40,7 @@ from demo_footage import FOOT, FPS, H, K, TTS_CACHE, W, check, ffmpeg, load_time
 OUT = ROOT / "docs" / "demo"
 WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
 GAP = 0.30                       # silence after each beat's voice
+F_TAIL = 0.6                     # seconds the closing card stays after the last word
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.6, "B5": 0.3, "C3": 0.8, "C4": 0.8, "D3": 0.5, "D4": 0.6, "D6": 0.8,
@@ -970,35 +971,11 @@ def time_map(st: dict, v: float, freeze: bool):
     return kept, sp, play, out_t
 
 
-def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int, nd: float, hold: float, caption: str, subs: dict, state: tuple, out: Path) -> tuple:
-    """One shot of a live scene, in a single ffmpeg pass: the captured footage re-timed to this beat's length, a ring and
-    (only for a click) a cursor drawn in page space, the camera, then callout, badge and caption in screen space."""
-    v = nd - hold
-    freeze = plan.get("freeze", False)
-    segs, sp, play, out_t = time_map(st, v, freeze)
-    rect = lambda name, late=True: (st["rects1"].get(name) or st["rects0"].get(name)) if late else (st["rects0"].get(name) or st["rects1"].get(name))
+def camera_plan(bid: str, plan: dict, st: dict, v: float, nd: float, out_t, page_h: int, subs: dict, state: tuple) -> tuple:
+    """A live beat's camera moves [(start, duration, (scale, tx, ty))], ring cues [(start, target, pad)], callouts [(start, text)] and the
+    camera state it ends in. Shared by the edit and by scripts/export_edit_sheet.py, so the sheet is the edit."""
+    rect = lambda name: st["rects1"].get(name) or st["rects0"].get(name)
     fill = lambda t: t.format(**{k.strip("{}"): x for k, x in subs.items()}) if t else t
-    ins, fc, i = [], [], 0
-
-    def add(path: Path, loop: float = 0.0) -> int:
-        nonlocal i
-        ins.extend((["-loop", "1", "-framerate", str(FPS), "-t", "%.3f" % loop] if loop else []) + ["-i", path]); i += 1
-        return i - 1
-
-    # base: the footage
-    if freeze:
-        still = WORK / ("still_%s.jpg" % bid)
-        run(ffmpeg(), "-y", "-ss", "%.3f" % max(0.0, st["t1"] - 0.15), "-i", raw, "-frames:v", "1", "-q:v", "2", still)
-        add(still, nd); fc.append("[0:v]format=yuv444p[base]")
-    else:
-        add(raw)
-        parts = ["[0:v]trim=start=%.3f:end=%.3f,setpts=(PTS-STARTPTS)/%.4f,fps=%d[s%d]" % (a, b, sp, FPS, k) for k, (a, b) in enumerate(segs)]
-        fc += parts
-        fc.append("%sconcat=n=%d:v=1:a=0,tpad=stop_mode=clone:stop_duration=%.3f,format=yuv444p[base]"
-                  % ("".join("[s%d]" % k for k in range(len(segs))), len(segs), max(0.0, nd - play)))
-    last = "[base]"
-
-    # camera path and the ring / callout segments
     moves, rings, cos = [], [], []
     cur = state
     steps = [dict(at=0.0, cam=plan.get("cam"), camo=plan.get("camo", {}), dur=max(0.6, v - 0.04), ring=plan.get("ring"), ringpad=plan.get("ringpad", 10),
@@ -1025,7 +1002,37 @@ def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int
             rings.append((at, m.get("ring"), m.get("ringpad", plan.get("ringpad", 10))))
         if m["has_co"]:
             cos.append((at, fill(m.get("co"))))
-    end_state = cur
+    return moves, rings, cos, cur
+
+
+def beat_clip(pngs: Pngs, bid: str, plan: dict, st: dict, raw: Path, page_h: int, nd: float, hold: float, caption: str, subs: dict, state: tuple, out: Path) -> tuple:
+    """One shot of a live scene, in a single ffmpeg pass: the captured footage re-timed to this beat's length, a ring and
+    (only for a click) a cursor drawn in page space, the camera, then callout, badge and caption in screen space."""
+    v = nd - hold
+    freeze = plan.get("freeze", False)
+    segs, sp, play, out_t = time_map(st, v, freeze)
+    ins, fc, i = [], [], 0
+
+    def add(path: Path, loop: float = 0.0) -> int:
+        nonlocal i
+        ins.extend((["-loop", "1", "-framerate", str(FPS), "-t", "%.3f" % loop] if loop else []) + ["-i", path]); i += 1
+        return i - 1
+
+    # base: the footage
+    if freeze:
+        still = WORK / ("still_%s.jpg" % bid)
+        run(ffmpeg(), "-y", "-ss", "%.3f" % max(0.0, st["t1"] - 0.15), "-i", raw, "-frames:v", "1", "-q:v", "2", still)
+        add(still, nd); fc.append("[0:v]format=yuv444p[base]")
+    else:
+        add(raw)
+        parts = ["[0:v]trim=start=%.3f:end=%.3f,setpts=(PTS-STARTPTS)/%.4f,fps=%d[s%d]" % (a, b, sp, FPS, k) for k, (a, b) in enumerate(segs)]
+        fc += parts
+        fc.append("%sconcat=n=%d:v=1:a=0,tpad=stop_mode=clone:stop_duration=%.3f,format=yuv444p[base]"
+                  % ("".join("[s%d]" % k for k in range(len(segs))), len(segs), max(0.0, nd - play)))
+    last = "[base]"
+
+    moves, rings, cos, end_state = camera_plan(bid, plan, st, v, nd, out_t, page_h, subs, state)
+    rect = lambda name: st["rects1"].get(name) or st["rects0"].get(name)
 
     # page-space overlays: rings (pulsing), then the cursor
     for k, (ts, name, pad) in enumerate(rings):
@@ -1202,7 +1209,7 @@ def main():
             files, vdur = zip(*[voice(fill(t)) for _, t in rows])
             holds = [HOLD.get(i, 0.0) for i, _ in rows]
             durs = [v + h for v, h in zip(vdur, holds)]
-            tail = 0.6 if name == "F" else 0.0
+            tail = F_TAIL if name == "F" else 0.0
             texts = [fill(t) for _, t in rows]
             if name in LIVE:
                 shown = live_piece(pngs, name, rows, durs, holds, texts, tl, subs, WORK / (name + "_v.mp4"))

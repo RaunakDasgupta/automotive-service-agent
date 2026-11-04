@@ -5,7 +5,7 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:28): 35 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:28): 33 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
@@ -62,6 +62,12 @@ Narrated by **NVIDIA Riva Magpie TTS** (voice `Magpie-Multilingual.EN-US.Sofia`)
 at natural speed with beats padded by 0.3 s. Results are cached in `~/.cache/asoia-demo-tts`. The narration is read
 straight from `docs/DEMO_VIDEO.md`, so editing the script and re-running regenerates the video. Whether this voice is
 good enough for clients is a judgement for your ears; the alternative in the plan is ElevenLabs.
+
+## Editing it by hand
+
+`docs/EDITING_GUIDE.md` explains how the video is edited (zooming in and out, highlights, callouts, subtitles, pacing) and how to rebuild it step by
+step in an online editor such as OpenReel. `python scripts/export_edit_sheet.py` writes `edit-sheet.md` (every beat with its start, camera, highlight and callout)
+and `demo-preview.srt` here, and with `--audio DIR` the narration per beat and in one file.
 
 ## Rebuild
 

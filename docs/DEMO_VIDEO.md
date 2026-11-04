@@ -65,6 +65,8 @@ EOF
 
 ## 2. Production workflow
 
+To edit by hand in an online editor instead, follow `docs/EDITING_GUIDE.md`; `docs/demo/edit-sheet.md` has every beat's timing and camera.
+
 1. **Lock the script, generate the voice first.** Timing then follows the audio, not the other way round.
 2. **Pre-flight the box** (§3), then record **one clip per row** — not one long take.
 3. **Assemble** the clips against the voiceover; hold each live action on screen until its result lands.
