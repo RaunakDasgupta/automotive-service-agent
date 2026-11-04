@@ -705,9 +705,12 @@ def mux(video: Path, wav: Path | None, total: float, out: Path):
 
 
 OUTRO_DIR = Path.home() / ".cache" / "asoia-demo-outro"      # the client's Deloitte outro clip (a phone screen recording): kept here, not committed
-OUTRO_CUTS = [(0.30, 3.60), (6.00, 7.55)]    # seconds of the recording that are the clip playing (3.6-6.0 is the player paused)
+OUTRO_CUTS = [(0.30, 3.60)]                  # seconds of the recording to use: the wordmark animating in with its sound, and nothing after it (the legal text comes later)
 OUTRO_CROP = (980, 551, 100, 822)            # w, h, x, y of the Deloitte frame inside the 1180 x 2556 recording: wordmark and legal text, no player controls
-OUTRO_HOLD = 1.5                             # the last frame stays this long
+OUTRO_WM = (739, 262, 443)                   # x, y, width of the clip's wordmark once placed on the 1920 x 1080 frame (measured)
+OUTRO_SETTLE = 2.20                          # seconds into the outro when the animation has finished: the crisp vector wordmark swaps in over it
+OUTRO_HOLD = 1.5                             # the last frame stays this long, then fades to black
+OUTRO_DB = -2.0                              # the clip's own sound, relative to how it was recorded
 
 
 def outro_file() -> Path | None:
@@ -718,18 +721,52 @@ def outro_len() -> float:
     return sum(b - a for a, b in OUTRO_CUTS) + OUTRO_HOLD
 
 
-def build_outro(src: Path, out: Path):
-    """The Deloitte outro, from the recording: the two stretches where it plays joined (the pause between them dropped),
-    cropped to the frame itself, scaled to 1920 x 1080, the last frame held; its own sound, as mono to join the rest."""
+def wordmark_png(pw, out: Path) -> tuple[int, int]:
+    """The Deloitte wordmark as a crisp vector, white on black, sized to land exactly over the clip's own (OUTRO_WM). The
+    recording is a phone's capture of a small video, so its wordmark is soft; once the animation settles this replaces it.
+    Returns where the picture goes on the frame."""
+    logo("deloitte")                                              # makes sure the file is cached
+    uri = "data:image/svg+xml;base64," + __import__("base64").b64encode((LOGO_CACHE / "deloitte.svg").read_bytes().replace(b"#000000", b"#FFFFFF")).decode()
+    x0, y0, w = OUTRO_WM
+    pad = 16
+    br = pw.chromium.launch(); pg = br.new_page(viewport={"width": 1400, "height": 400})
+    minx, miny, maxx, maxy, W0 = pg.evaluate("""async uri => { const im = new Image(); im.src = uri; await im.decode();
+      const W = 1200, H = Math.round(W * im.naturalHeight / im.naturalWidth), c = document.createElement('canvas'); c.width = W; c.height = H;
+      const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, W, H); x.drawImage(im, 0, 0, W, H);
+      const d = x.getImageData(0, 0, W, H).data; let a = W, b = H, e = 0, f = 0;
+      for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { const k = (j * W + i) * 4; if (Math.max(d[k], d[k + 1], d[k + 2]) > 60) { a = Math.min(a, i); e = Math.max(e, i); b = Math.min(b, j); f = Math.max(f, j); } }
+      return [a, b, e, f, W]; }""", uri)
+    sc = w / (maxx - minx + 1)
+    gh = round((maxy - miny + 1) * sc)
+    pw_, ph = w + 2 * pad, gh + 2 * pad
+    pg.set_viewport_size({"width": pw_, "height": ph})
+    pg.set_content('<body style="margin:0;background:#000"><img src="%s" style="position:absolute;left:%.2fpx;top:%.2fpx;width:%.2fpx">'
+                   % (uri, pad - minx * sc, pad - miny * sc, W0 * sc))
+    pg.wait_for_timeout(300)
+    pg.screenshot(path=str(out))
+    br.close()
+    return x0 - pad - 1, round(y0 + 42 - ph / 2) + 1                    # the clip's wordmark is about 85 px tall; centre ours on it
+
+
+def build_outro(pw, src: Path, out: Path):
+    """The Deloitte outro, from the recording: the stretch where it plays, cropped to the frame itself, denoised and sharpened,
+    scaled to 1920 x 1080; when its animation settles the soft wordmark gives way to the crisp vector one; the last frame is
+    held and fades out. Its own sound, as mono to join the rest."""
     n = len(OUTRO_CUTS)
+    png = WORK / "wordmark.png"
+    ox, oy = wordmark_png(pw, png)
     v = "".join("[0:v]trim=%.2f:%.2f,setpts=PTS-STARTPTS[v%d];" % (a, b, i) for i, (a, b) in enumerate(OUTRO_CUTS))
     au = "".join("[0:a]atrim=%.2f:%.2f,asetpts=PTS-STARTPTS,afade=t=in:d=0.04,afade=t=out:st=%.2f:d=0.08[a%d];" % (a, b, b - a - 0.08, i) for i, (a, b) in enumerate(OUTRO_CUTS))
     w, h, x, y = OUTRO_CROP
-    fc = (v + au + "".join("[v%d]" % i for i in range(n)) + "concat=n=%d:v=1:a=0,crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos:in_range=pc:out_range=tv,fps=%d,tpad=stop_mode=clone:stop_duration=%.2f,format=yuv420p[v];"
+    L = outro_len()
+    fc = (v + au + "".join("[v%d]" % i for i in range(n))
+          + "concat=n=%d:v=1:a=0,hqdn3d=1.5:1.5:3:3,crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos:in_range=pc:out_range=tv,fps=%d,unsharp=5:5:0.6:5:5:0,tpad=stop_mode=clone:stop_duration=%.2f,format=yuv420p[b];"
           % (n, w, h, x, y, W, H, FPS, OUTRO_HOLD)
-          + "".join("[a%d]" % i for i in range(n)) + "concat=n=%d:v=0:a=1,aformat=channel_layouts=mono,aresample=%d,apad[a]" % (n, RATE))
-    run(ffmpeg(), "-y", "-i", src, "-filter_complex", fc, "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
-        "-c:a", "aac", "-b:a", "160k", "-t", "%.2f" % outro_len(), out)
+          + "[1:v]format=yuva420p,fade=t=in:st=%.2f:d=0.12:alpha=1[wm];[b][wm]overlay=%d:%d:format=yuv444,fade=t=out:st=%.2f:d=0.6,format=yuv420p[v];"
+          % (OUTRO_SETTLE, ox, oy, L - 0.6)
+          + "".join("[a%d]" % i for i in range(n)) + "concat=n=%d:v=0:a=1,volume=%.1fdB,aformat=channel_layouts=mono,aresample=%d,apad[a]" % (n, OUTRO_DB, RATE))
+    run(ffmpeg(), "-y", "-i", src, "-loop", "1", "-framerate", str(FPS), "-t", "%.2f" % L, "-i", png, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
+        "-c:v", "libx264", "-crf", "18", "-preset", "veryfast", "-c:a", "aac", "-b:a", "160k", "-t", "%.2f" % L, out)
 
 
 MUSIC_DIR = Path.home() / ".cache" / "asoia-demo-music"      # the music bed is the client's own file: kept here, not committed
@@ -1332,7 +1369,7 @@ def main():
             if name not in want:
                 continue
             if name == "K" and outro_file():            # the supplied Deloitte outro replaces the closing card
-                m = WORK / "m_K.mp4"; build_outro(outro_file(), m)
+                m = WORK / "m_K.mp4"; build_outro(pw, outro_file(), m)
                 if parts:
                     br_clip = WORK / "bridge_K.mp4"; bridge(parts[-1], m, br_clip); parts.append(br_clip); total += 0.5
                 parts.append(m); total += outro_len()

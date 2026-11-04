@@ -5,7 +5,7 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:39): 34 voiced beats and the Deloitte outro from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:37): 34 voiced beats and the Deloitte outro from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
@@ -22,7 +22,7 @@ Two files, both recorded from the real application:
 | E Deployed architecture | a layered diagram in one frame: the L40S chip with the three NIM tiles and a memory bar (about 30 of 46 GB), speech (Riva) and safety (NeMo Guardrails) above it, quality (NeMo Evaluator) on top. Row names sit in a left gutter and the part being shown glows (no ring on its own border). Each layer is shown in turn with arrows for its data flow (the transcript to the language model, a checked question in and a checked answer out through the rails, test questions in and scored answers back for the evaluator), then shrinks back, dimmed but still on screen, as the next is shown; at the end the camera pulls out to the whole frame |
 | G Observability | an infographic, the DCGM exporter (19 GPU series) and the app (13 series) feeding Prometheus and Grafana, with the **live** Grafana dashboard playing small in a frame beside it (after real traffic through `/ask`). Rings light up its primary figures, then the two DCGM graphs (GPU load and power), each with a legend chip |
 | F Summary | the application's strengths as four cards (*Safety first*, *Instant answers*, *Grounded in records*, *Yours to run*), each with one supporting figure, ending on *Fast. Grounded. Yours to run.* with the product name beneath it |
-| K Deloitte outro | after the summary, a soft dissolve to the supplied Deloitte outro clip (the wordmark animating in with its sound, then the legal text), cropped from the phone recording to the frame itself, with no narration, the last frame held (the video ends here). Without the clip, a card with the product name over the Deloitte and NVIDIA panel |
+| K Deloitte outro | after the summary, a soft dissolve to the supplied Deloitte outro clip (the wordmark animating in with its sound, ending before the legal text that follows it in the original), cropped from the phone recording to the frame itself, lightly denoised and sharpened, with the crisp vector logo swapped in once the animation settles, its sound 2 dB down, no narration, the last frame held then faded out (the video ends here). Without the clip, a card with the product name over the Deloitte and NVIDIA panel |
 
 Logo badges (NVIDIA, Grafana) are laid over the live shots as each product is named. There is no cursor on screen except
 for the four clicks that start something (Transcribe, Extract and apply, and Ask twice).

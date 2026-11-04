@@ -1,11 +1,11 @@
 # Client demo video — plan, script and tooling
 
-**Target length: about 2:40** (the 2:15 demo, a 15-second problem opening, and the Deloitte and NVIDIA preface and closing cards). **Audience:** a prospective client evaluating an
+**Target length: about 2:37** (the 2:15 demo, a 15-second problem opening, and the Deloitte and NVIDIA preface and closing cards). **Audience:** a prospective client evaluating an
 AI assistant for a service department. **One idea:** *fast, grounded answers, running on your own GPU.*
 
 ## 1. Script — written to be cut, not read
 
-**Target 2:40.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
+**Target 2:37.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
 changes on every beat and something on screen is always moving**, except during those holds. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
@@ -51,7 +51,7 @@ or product shot at the open and the close; nothing held still. Narration there r
 | F1 | In summary, safety comes first: unsafe vehicles are flagged as updates are logged. | Title *Summary* and card 1 (*Safety first*, with the flagged-vehicle figure) fly in |
 | F2 | Answers in a tenth of a second, every figure traced to a record, all on one GPU you own. | Cards 2, 3 and 4 (*Instant answers*, *Grounded in records*, *Yours to run*, each with one supporting figure) fly in one after another |
 | F4 | Fast. Grounded. Yours to run. That is the Service Operations Agent. | Large type, with *Service Operations Agent* beneath it |
-| K1 | Service Operations Agent, powered by Deloitte and NVIDIA. | **Closing:** the supplied Deloitte outro clip (`~/.cache/asoia-demo-outro/outro.<ext>`, a phone screen recording): its two playing stretches joined, cropped to the Deloitte frame, with its own sound and no narration, the last frame held; a soft dissolve from the summary. **Only if there is no clip** the video closes on a card with this line over the Deloitte and NVIDIA panel |
+| K1 | Service Operations Agent, powered by Deloitte and NVIDIA. | **Closing:** the supplied Deloitte outro clip (`~/.cache/asoia-demo-outro/outro.<ext>`, a phone screen recording): the stretch where the wordmark animates in (the legal text after it is left out), cropped to the Deloitte frame, with its own sound 2 dB down and no narration, the crisp vector logo swapped in once it settles, the last frame held and faded out; a soft dissolve from the summary. **Only if there is no clip** the video closes on a card with this line over the Deloitte and NVIDIA panel |
 
 ```bash
 # beats, words, and the speaking time they imply at 190 wpm
