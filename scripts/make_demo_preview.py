@@ -419,7 +419,7 @@ def _ring(cx, cy, rx, ry, items, pre, w, h, wire):
 
 def problem_html() -> str:
     """The opening: a title card (the first frame), then the problem as infographics: a handover that loses the detail, the places an
-    answer has to be chased through, a shift cut up by the chasing, then the chain from one break to its three costs, and the sector
+    answer has to be chased through, a shift cut up by the chasing, and, after the brand preface, the sector
     map that puts the automotive showcase among its siblings. (The stamped-note pile is intro_html.)"""
     chase_p, chase_n = _ring(960, 600, 650, 285, [(PI["doc"], "Notes"), (PI["phone"], "Calls"), (PI["chat"], "Chat threads"),
                                                   (PI["sheet"], "Spreadsheets"), (PI["monitor"], "Work-order system"), (PI["person"], "Someone's memory")],
@@ -427,11 +427,6 @@ def problem_html() -> str:
     sect_p, sect_n = _ring(960, 600, 690, 285, [(PI["car"], "Automotive service"), (PI["gear"], "Equipment maintenance"), (PI["building"], "Facilities management"),
                                                 (PI["bolt"], "Utilities and energy"), (PI["cross"], "Healthcare equipment"), (PI["plane"], "Aviation maintenance")],
                            "s", 350, 118, "w2")
-    chain = [("doc", "Detail lost", "at every handover"), ("chat", "Answers scattered", "across systems"), ("clock", "Hours lost", "asking, searching, re-typing"),
-             ("warn", "Risk buried", "found too late"), ("warn", "Delay, rework, harm", "the cost")]
-    chain_h = "".join('<div class="cd%s" id=cd%d style="left:%dpx"><div class=pi>%s</div><b>%s</b><i>%s</i></div>%s'
-                      % (" last" if i == 4 else "", i, 90 + i * 360, PI[ic], t, s, '<div class=ar id=ar%d style="left:%dpx"><svg viewBox="0 0 40 40" width=54 height=54><path d="M6 20h26M22 9l12 11-12 11" stroke="#FF8A4C" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' % (i, 90 + i * 360 + 306) if i < 4 else "")
-                      for i, (ic, t, s) in enumerate(chain))
     return """<!doctype html><meta charset=utf-8><style>
 body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;
  background:radial-gradient(circle at 30% 20%,#1d4d3f 0%,#0d201b 70%)}
@@ -444,7 +439,7 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 #bar{width:420px;height:8px;border-radius:4px;background:#76B900;margin:38px 0 26px;box-shadow:0 0 24px rgba(118,185,0,.7)}
 #title p{margin:0;font:40px Arial;color:#BFD6B0;text-align:center}
 .hd{position:absolute;left:590px;right:40px;top:88px;text-align:left;margin:0;font:800 66px Arial;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.6)}.hd em{font-style:normal;color:#FF5A4D}
-.tag{position:absolute;left:590px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}#sectors .tag,#chain .tag{left:110px}#sectors .hd,#chain .hd{left:110px}.tag.ok{background:#76B900;color:#0d201b}
+.tag{position:absolute;left:590px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}#sectors .tag,#sectors .hd{left:110px}.tag.ok{background:#76B900;color:#0d201b}
 #sectors .hd em{color:#76B900}
 #kinds{position:absolute;left:0;right:0;top:900px;text-align:center}#kinds span{display:inline-block;margin:0 16px;padding:0 34px;height:76px;border-radius:38px;border:3px solid rgba(118,185,0,.8);background:rgba(255,255,255,.08);font:700 40px/70px Arial;opacity:0}
 .panel{position:absolute;top:210px;width:790px;height:610px;border-radius:22px;background:rgba(255,255,255,.06);border:2px solid rgba(118,185,0,.35);opacity:0}
@@ -469,12 +464,6 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
 .lgd{position:absolute;top:670px;height:76px;padding:0 34px 0 22px;border-radius:38px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.3);font:700 38px/72px Arial;opacity:0}.lgd i{display:inline-block;width:30px;height:30px;border-radius:8px;margin-right:16px;vertical-align:-3px}
 #l0{left:300px}#l0 i{background:#76B900}#l1{left:760px}#l1 i{background:#E5352B}
 #fin{position:absolute;left:0;right:0;top:830px;text-align:center;font:800 78px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#fin u{text-decoration:none;color:#FF5A4D}
-.cd{position:absolute;top:330px;width:306px;height:330px;box-sizing:border-box;border-radius:26px;background:rgba(255,255,255,.07);border:3px solid rgba(255,138,76,.75);padding:34px 22px;text-align:center;opacity:0}
-.cd .pi{width:104px;height:104px;margin:0 auto 20px}.cd b{display:block;font:800 40px/1.12 Arial}.cd i{display:block;font:28px/1.25 Arial;color:#E3C9C4;font-style:normal;margin-top:12px}
-.cd.last{background:#E5352B;border-color:#FF8F86;box-shadow:0 0 60px rgba(229,53,43,.6)}.cd.last i{color:#fff}
-.ar{position:absolute;top:470px;width:54px;text-align:center;font:800 52px Arial;color:#FF8A4C;opacity:0}
-#br{position:absolute;left:452px;top:702px;width:1022px;height:40px;border:5px solid #FF5A4D;border-top:none;border-radius:0 0 20px 20px;opacity:0}
-#brt{position:absolute;left:452px;width:1022px;top:760px;text-align:center;font:800 56px Arial;color:#FF5A4D;opacity:0}
 #hub{position:absolute;left:810px;top:450px;width:300px;height:300px;border-radius:50%;box-sizing:border-box;background:rgba(229,53,43,.16);border:5px solid #FF5A4D;text-align:center;font:800 44px/1.2 Arial;padding-top:98px;opacity:0}
 #sectors .nd{border-color:rgba(118,185,0,.55)}#bdg{position:absolute;padding:6px 20px;border-radius:20px;background:#76B900;color:#0d201b;font:800 24px Arial;letter-spacing:2px;opacity:0}
 #sl{position:absolute;left:0;right:0;top:990px;text-align:center;font:800 40px Arial;white-space:nowrap;opacity:0}#sl u{text-decoration:none;color:#76B900}
@@ -498,9 +487,6 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
  <div id=tr></div><div class=tm style="left:150px">START OF SHIFT</div><div class=tm style="right:150px">END OF SHIFT</div>
  <div class=lgd id=l0><i></i>Doing the work</div><div class=lgd id=l1><i></i>Asking, searching, re-typing</div>
  <div id=fin>Hours that never <u>reach the work.</u></div></div>
-
-<div id=chain class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>One break, <em>three costs</em></h2>@CHAIN@
- <div id=br></div><div id=brt>three costs</div></div>
 
 <div id=sectors class=layer><div class="tag ok">THE SAME PATTERN, ACROSS SERVICE</div><h2 class=hd>Many sectors, <em>one example</em></h2>
  <svg class=wr viewBox="0 0 1920 1080">@SCW@</svg>@SCN@
@@ -528,7 +514,7 @@ window.__pick=()=>{for(let i=1;i<6;i++) $('s'+i).animate([{opacity:1},{opacity:.
  for(let i=1;i<6;i++) $('sw'+i).animate([{opacity:.65},{opacity:.1}],{duration:520,fill:'forwards'});
  $('s0').animate([{transform:'none',borderColor:'rgba(118,185,0,.55)',boxShadow:'none'},{transform:'scale(1.14)',borderColor:'#76B900',boxShadow:'0 0 60px 10px rgba(118,185,0,.55)'}],{duration:620,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});
  const n=$('s0'),b=$('bdg');b.style.left=(n.offsetLeft+n.offsetWidth/2-100)+'px';b.style.top=(n.offsetTop-22)+'px';b.style.opacity=0;b.animate([{opacity:0},{opacity:1}],{duration:400,delay:300,fill:'forwards'});};
-</script>""".replace("@DL@", logo("deloitte")).replace("@CHW@", chase_p).replace("@CHN@", chase_n).replace("@SCW@", sect_p).replace("@SCN@", sect_n).replace("@CHAIN@", chain_h)
+</script>""".replace("@DL@", logo("deloitte")).replace("@CHW@", chase_p).replace("@CHN@", chase_n).replace("@SCW@", sect_p).replace("@SCN@", sect_n)
 
 
 def observ_html() -> str:
@@ -944,34 +930,27 @@ def scene_P():
                 page.evaluate("() => { %s }" % js)
         return f
     call = lambda fn, *a: "window.%s(%s)" % (fn, ",".join("'%s'" % x for x in a))
-    nodes = tuple((0.16 + 0.105 * i, "window.__node('n',%d)" % i) for i in range(6))
+    nodes = tuple((0.10 + 0.10 * i, "window.__node('n',%d)" % i) for i in range(6))
     return [dict(cam=None, camo=dict(to=1.05),                                                     # the title card is already on screen
                  act=go("title", (0.30, call("__pop", "k0")), (0.50, call("__pop", "k1")), (0.70, call("__pop", "k2")))),
             dict(cam=None, camo=dict(to=1.0), co="Detail lost",
                  act=go("shift", (0.04, call("__fade", "day") + ";" + call("__fade", "night")), (0.28, call("__pop", "sn1", "rotate(-3deg)")),
                         (0.60, "window.__handover()"))),
             dict(cam=None, camo=dict(to=1.04), co="Answers scattered",
-                 act=go("chase", (0.03, call("__pop", "qb")), *nodes, (0.84, call("__fade", "cnt")))),
+                 act=go("chase", (0.03, call("__pop", "qb")), *nodes, (0.78, call("__fade", "cnt")))),
             dict(cam=None, camo=dict(to=1.0), co="Time lost",
                  act=go("lost", (0.02, "window.__fill()"), (0.30, "window.__chase()"), (0.34, call("__fade", "l0")), (0.52, call("__fade", "l1")),
                         (0.78, call("__fade", "fin"))))]
 
 
 def scene_U():
-    def go(layer, *steps):
-        def f(page, d):
-            page.evaluate("l => window.__layer(l)", layer)
-            at = 0.0
-            for frac, js in steps:
-                page.wait_for_timeout(max(0, int((frac - at) * d * 1000))); at = frac
-                page.evaluate("() => { %s }" % js)
-        return f
-    pop = lambda i: "window.__pop('%s')" % i
-    chain = [(0.04, pop("cd0")), (0.14, pop("ar0")), (0.34, pop("cd1")), (0.40, pop("ar1")), (0.48, pop("cd2")), (0.54, pop("ar2")),
-             (0.62, pop("cd3")), (0.68, pop("br") + ";" + pop("brt")), (0.72, pop("ar3")), (0.78, pop("cd4"))]
-    sect = [(0.03, pop("hub"))] + [(0.06 + 0.06 * i, "window.__node('s',%d)" % i) for i in range(6)] + [(0.56, "window.__pick()"), (0.74, "window.__fade('sl')")]
-    return [dict(cam=None, camo=dict(to=1.03), act=go("chain", *chain)),                         # the page opens on the chain layer (#chain)
-            dict(cam=None, camo=dict(to=1.04), act=go("sectors", *sect))]
+    def f(page, d):                       # the page opens on the sector layer (#sectors); the sectors come in with the words, then automotive lifts
+        steps = [(0.03, "window.__pop('hub')")] + [(0.06 + 0.07 * i, "window.__node('s',%d)" % i) for i in range(6)] + [(0.58, "window.__pick()"), (0.76, "window.__fade('sl')")]
+        at = 0.0
+        for frac, js in steps:
+            page.wait_for_timeout(int((frac - at) * d * 1000)); at = frac
+            page.evaluate("() => { %s }" % js)
+    return [dict(cam=None, camo=dict(to=1.04), act=f)]
 
 
 def scene_I():
@@ -1389,7 +1368,7 @@ def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
 
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
-PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("U", "P", ["P6", "P7"]), ("H", "H", None), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
+PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("H", "H", None), ("U", "P", ["P7"]), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
           ("V", "V", None), ("E", "E", None), ("I", "G", None), ("F", "F", None), ("K", "K", None)]
 LIVE = "ACD"
 BRIDGE_BEFORE = "UAHBCDVEIFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
@@ -1448,7 +1427,7 @@ def main():
         (WORK / "brand_close.html").write_text(brand_html(True))
         local = {"P": ((WORK / "problem.html").as_uri(), scene_P()),
                  "O": ((WORK / "intro.html").as_uri(), scene_O()),
-                 "U": ((WORK / "problem.html").as_uri() + "#chain", scene_U()),
+                 "U": ((WORK / "problem.html").as_uri() + "#sectors", scene_U()),
                  "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
                  "V": ((WORK / "value.html").as_uri(), scene_V()),
                  "E": ((WORK / "comp.html").as_uri(), scene_E()),
