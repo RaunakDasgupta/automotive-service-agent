@@ -706,8 +706,8 @@ def mux(video: Path, wav: Path | None, total: float, out: Path):
 
 OUTRO_DIR = Path.home() / ".cache" / "asoia-demo-outro"      # the client's Deloitte outro clip (a phone screen recording): kept here, not committed
 OUTRO_CUTS = [(0.30, 3.60)]                  # seconds of the recording to use: the wordmark animating in with its sound, and nothing after it (the legal text comes later)
-OUTRO_CROP = (980, 551, 100, 822)            # w, h, x, y of the Deloitte frame inside the 1180 x 2556 recording: wordmark and legal text, no player controls
-OUTRO_WM = (739, 262, 443)                   # x, y, width of the clip's wordmark once placed on the 1920 x 1080 frame (measured)
+OUTRO_CROP = (980, 551, 100, 703)            # w, h, x, y of the Deloitte frame inside the 1180 x 2556 recording, placed so the wordmark is in the middle of the picture; no player controls
+OUTRO_WM = (739, 498, 443)                   # x, y, width of the clip's wordmark once placed on the 1920 x 1080 frame (measured)
 OUTRO_SETTLE = 1.75                          # seconds into the outro when the animation has finished: the crisp vector wordmark swaps in over it
 OUTRO_HOLD = 2.5                             # the last frame stays this long, then fades to black
 OUTRO_DB = -2.0                              # the clip's own sound, relative to how it was recorded
@@ -760,7 +760,7 @@ def build_outro(pw, src: Path, out: Path):
     w, h, x, y = OUTRO_CROP
     L = outro_len()
     fc = (v + au + "".join("[v%d]" % i for i in range(n))
-          + "concat=n=%d:v=1:a=0,hqdn3d=1.5:1.5:3:3,crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos:in_range=pc:out_range=tv,fps=%d,unsharp=5:5:0.6:5:5:0,tpad=stop_mode=clone:stop_duration=%.2f,format=yuv420p[b];"
+          + "concat=n=%d:v=1:a=0,hqdn3d=1.5:1.5:3:3,crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos:in_range=pc:out_range=tv,fps=%d,unsharp=7:7:1.6:7:7:0,tpad=stop_mode=clone:stop_duration=%.2f,format=yuv420p[b];"
           % (n, w, h, x, y, W, H, FPS, OUTRO_HOLD)
           + "[1:v]format=yuva420p,fade=t=in:st=%.2f:d=0.12:alpha=1[wm];[b][wm]overlay=%d:%d:format=yuv444,fade=t=out:st=%.2f:d=0.6,format=yuv420p[v];"
           % (OUTRO_SETTLE, ox, oy, L - 0.6)
