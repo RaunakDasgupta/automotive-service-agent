@@ -45,7 +45,7 @@ CAPTIONS = False                 # burned-in captions: off. demo-preview.srt (sc
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.3, "B5": 0.3, "C3": 0.6, "C4": 0.6, "D3": 0.4, "D4": 0.6, "D6": 0.5,
-        "E1": 0.4, "E5": 1.0, "G1": 0.3, "V4": 0.0, "F4": 0.4}
+        "E1": 0.4, "E5": 1.0, "G1": 0.3, "V4": 0.0, "F4": 0.4, "H1": 0.0, "K1": 0.5}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -60,7 +60,7 @@ def beats():
         m = re.match(r"\| ([A-V])(\d) \| (.+?) \| (.+) \|$", line)
         if m:
             out.setdefault(m.group(1), []).append((m.group(1) + m.group(2), m.group(3)))
-    assert sorted(out) == list("ABCDEFGPV"), "expected scenes A-G, P and V in docs/DEMO_VIDEO.md, found %s" % sorted(out)
+    assert sorted(out) == list("ABCDEFGHKPV"), "expected scenes A-H, K, P and V in docs/DEMO_VIDEO.md, found %s" % sorted(out)
     return out
 
 
@@ -573,6 +573,37 @@ window.__flow=ids=>ids.forEach(i=>{const f=$('f'+i),n=$('n'+i);f.style.opacity=1
 </script>""".replace("@NV@", logo("nvidia")).replace("@TILES@", t_html).replace("@CARDS@", c_html.replace("@NV@", logo("nvidia")))
 
 
+def brand_html(closing: bool) -> str:
+    """The Deloitte and NVIDIA card. As the preface (before the solution is shown) the label sits above the logos and the
+    product name below; as the closing card the name leads, then the logos, then the line beneath."""
+    return """<!doctype html><meta charset=utf-8><style>
+body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;
+ background:radial-gradient(circle at 30% 20%,#1d4d3f 0%,#0d201b 70%)}
+.grid{position:absolute;inset:-120px;background-image:linear-gradient(rgba(118,185,0,.10) 2px,transparent 2px),linear-gradient(90deg,rgba(118,185,0,.10) 2px,transparent 2px);background-size:120px 120px;animation:drift 6s linear infinite}
+@keyframes drift{to{transform:translate(120px,120px)}}
+#w{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#lab{order:1;font:700 42px Arial;letter-spacing:9px;color:#76B900;opacity:0;text-transform:uppercase}
+#lock{order:2;margin:52px 0 0;background:#fff;border-radius:30px;padding:64px 104px;display:flex;align-items:center;gap:96px;box-shadow:0 24px 70px rgba(0,0,0,.5);opacity:0}
+#lock img{display:block;opacity:0}#d{height:112px}#n{height:176px}
+#vr{width:4px;height:150px;border-radius:2px;background:#CFCFCF;transform:scaleY(0)}
+#nm{order:3;margin:64px 0 0;text-align:center;font:800 @NM@px/1.08 Arial;text-shadow:0 6px 30px rgba(0,0,0,.55);opacity:0}#nm u{text-decoration:none;color:#76B900}
+#sub{order:4;margin:30px 0 0;font:600 46px Arial;color:#C8D6BE;opacity:0}
+body.closing #nm{order:1;margin:0 0 56px}body.closing #lock{order:2;margin:0}body.closing #sub{order:3}body.closing #lab{display:none}
+body:not(.closing) #sub{display:none}
+</style><body class="@CLS@"><div class=grid></div><div id=w>
+ <div id=lab>The solution, powered by</div>
+ <div id=nm>Service Operations <u>Agent</u></div>
+ <div id=lock><img id=d src="@DL@"><div id=vr></div><img id=n src="@NV@"></div>
+ <div id=sub>Powered by Deloitte and NVIDIA</div></div>
+<script>const $=id=>document.getElementById(id);
+const up=(e,d,t)=>e.animate([{opacity:0,transform:'translateY(40px) scale(.97)'},{opacity:1,transform:'none'}],{duration:t||620,delay:d,fill:'forwards',easing:'cubic-bezier(.2,.8,.2,1)'});
+const fd=(e,d)=>e.animate([{opacity:0},{opacity:1}],{duration:520,delay:d,fill:'forwards'});
+window.__go=ms=>{const c=document.body.classList.contains('closing');
+ if(c){up($('nm'),0);up($('lock'),ms*.20);fd($('d'),ms*.28);$('vr').animate([{transform:'scaleY(0)'},{transform:'scaleY(1)'}],{duration:520,delay:ms*.36,fill:'forwards',easing:'ease-out'});fd($('n'),ms*.44);up($('sub'),ms*.62);}
+ else{fd($('lab'),0);up($('lock'),ms*.10);fd($('d'),ms*.20);$('vr').animate([{transform:'scaleY(0)'},{transform:'scaleY(1)'}],{duration:520,delay:ms*.34,fill:'forwards',easing:'ease-out'});fd($('n'),ms*.42);up($('nm'),ms*.62);}};
+</script>""".replace("@DL@", logo("deloitte")).replace("@NV@", logo("nvidia")).replace("@NM@", "104" if closing else "88").replace("@CLS@", "closing" if closing else "")
+
+
 def end_html(subs: dict) -> str:
     """The summary: the application's strengths, each with one supporting figure, then the tagline."""
     cards = [("shield", "Safety first", "Safety-critical findings are flagged the moment an update is logged.", "%s of %s vehicles flagged" % (subs["{safety}"], subs["{open}"])),
@@ -812,6 +843,10 @@ def scene_V():
             dict(cam=[V(0), V(1)], camo=dict(max=1.5, pad=120), co="Speed", act=show("v1")),
             dict(cam=[V(1), V(2)], camo=dict(max=1.5, pad=120), co="Trust", act=show("v2")),
             dict(cam=None, camo=dict(to=1.0), co="One source", act=show("v3", note=True))]
+
+
+def scene_brand():
+    return [dict(cam=None, camo=dict(to=1.04), act=lambda page, d: page.evaluate("ms => window.__go(ms)", int(d * 1000)))]
 
 
 def scene_F():
@@ -1145,10 +1180,10 @@ def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
 
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
-PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
-          ("V", "V", None), ("E", "E", None), ("I", "G", None), ("F", "F", None)]
+PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("H", "H", None), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
+          ("V", "V", None), ("E", "E", None), ("I", "G", None), ("F", "F", None), ("K", "K", None)]
 LIVE = "ACD"
-BRIDGE_BEFORE = "ABCDVEIF"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
+BRIDGE_BEFORE = "AHBCDVEIFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
 
 
 def main():
@@ -1199,13 +1234,17 @@ def main():
         (WORK / "comp.html").write_text(architecture_html())
         (WORK / "observ.html").write_text(observ_html())
         (WORK / "end.html").write_text(end_html(subs))
+        (WORK / "brand_open.html").write_text(brand_html(False))
+        (WORK / "brand_close.html").write_text(brand_html(True))
         local = {"P": ((WORK / "problem.html").as_uri(), scene_P()),
                  "O": ((WORK / "intro.html").as_uri(), scene_O()),
                  "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
                  "V": ((WORK / "value.html").as_uri(), scene_V()),
                  "E": ((WORK / "comp.html").as_uri(), scene_E()),
                  "I": ((WORK / "observ.html").as_uri(), scene_I()),
-                 "F": ((WORK / "end.html").as_uri(), scene_F())}
+                 "F": ((WORK / "end.html").as_uri(), scene_F()),
+                 "H": ((WORK / "brand_open.html").as_uri(), scene_brand()),
+                 "K": ((WORK / "brand_close.html").as_uri(), scene_brand())}
         want = list(args.scene) if args.scene else [p[0] for p in PIECES]
         pngs = Pngs(pw)
         parts, total = [], 0.0

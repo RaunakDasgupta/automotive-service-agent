@@ -5,7 +5,7 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:28): 33 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `demo-preview.mp4` | The whole demo (2:37): 35 voiced beats from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
@@ -13,6 +13,7 @@ Two files, both recorded from the real application:
 | scene | what you see |
 |---|---|
 | Title and problem | the first frame is a title card, the **Deloitte logo** above the title *Service Operations Agent* and the line *From first update to final answer: one connected view of service operations* (it is the thumbnail). Then the problem in three pictures: a shift handover that loses the detail, a manager chasing answers across notes, calls and screens, and the time that goes on it. It ends on shift notes flying onto a moving grid, one stamped SAFETY, and a soft dissolve into the live dashboard |
+| H Brand preface | a soft dissolve from the stamped notes to a white panel with the **Deloitte** and **NVIDIA** logos side by side, *The solution, powered by* above and *Service Operations Agent* below (*Here is the solution, powered by Deloitte and NVIDIA.*) |
 | A Solution: the live view | the **live** dashboard, introduced as part of the solution (*This is where the Service Operations Agent comes in*) and shown as one live view built from every update, with the flagged-vehicles tile ringed; entered by a soft dissolve from the stamped notes |
 | B Process | a soft dissolve from the dashboard, then the process slide, **rendered from the deck's own XML** and built stage by stage as each is spoken, ending on the whole five-stage flow (not PowerPoint, so fonts differ slightly). The deck slide itself is process only now (no business figures); they have their own segment |
 | C Ingest | **live**, entered by a soft dissolve from the process slide: a spoken update is uploaded, Riva transcribes it, Nemotron extracts the measurement, the rules flag the repair order `SAFETY_RELATED` |
@@ -21,6 +22,7 @@ Two files, both recorded from the real application:
 | E Deployed architecture | a layered diagram in one frame: the L40S chip with the three NIM tiles and a memory bar (about 30 of 46 GB), speech (Riva) and safety (NeMo Guardrails) above it, quality (NeMo Evaluator) on top. Row names sit in a left gutter and the part being shown glows (no ring on its own border). Each layer is shown in turn with arrows for its data flow (the transcript to the language model, a checked question in and a checked answer out through the rails, test questions in and scored answers back for the evaluator), then shrinks back, dimmed but still on screen, as the next is shown; at the end the camera pulls out to the whole frame |
 | G Observability | an infographic, the DCGM exporter (19 GPU series) and the app (13 series) feeding Prometheus and Grafana, with the **live** Grafana dashboard playing small in a frame beside it (after real traffic through `/ask`). Rings light up its primary figures, then the two DCGM graphs (GPU load and power), each with a legend chip |
 | F Summary | the application's strengths as four cards (*Safety first*, *Instant answers*, *Grounded in records*, *Yours to run*), each with one supporting figure, ending on *Fast. Grounded. Yours to run.* with the product name beneath it |
+| K Closing card | after the summary, a soft dissolve to the product name over the same Deloitte and NVIDIA panel with *Powered by Deloitte and NVIDIA* beneath, held a moment (the video ends here) |
 
 Logo badges (NVIDIA, Grafana) are laid over the live shots as each product is named. There is no cursor on screen except
 for the four clicks that start something (Transcribe, Extract and apply, and Ask twice).

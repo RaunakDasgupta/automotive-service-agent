@@ -1,11 +1,11 @@
 # Client demo video — plan, script and tooling
 
-**Target length: under 2:30** (the 2:15 demo plus a 15-second problem opening). **Audience:** a prospective client evaluating an
+**Target length: about 2:35** (the 2:15 demo, a 15-second problem opening, and the Deloitte and NVIDIA preface and closing cards). **Audience:** a prospective client evaluating an
 AI assistant for a service department. **One idea:** *fast, grounded answers, running on your own GPU.*
 
 ## 1. Script — written to be cut, not read
 
-**Target 2:30.** ~370 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
+**Target 2:35.** ~380 spoken words at the voice's natural pace, each beat followed by a short breath, and key visuals **held still for a moment after they are spoken** so they can be read (the `HOLD` table in `scripts/make_demo_preview.py`). **The picture
 changes on every beat and something on screen is always moving**, except during those holds. Each beat is one short sentence; the
 generator voices it, then drives the camera, the keyword callout and the highlight from that sentence's exact
 length, so words and pictures cannot drift apart. `{safety}` and `{ask_n}` are read from the live run.
@@ -22,6 +22,7 @@ or product shot at the open and the close; nothing held still. Narration there r
 | P3 | Managers chase answers across notes, calls and systems. | A service-manager figure; three questions pop up (*Where is the Passat? Is it safe to release? Who worked on it?*) and Notes, Calls and Screens link in one by one; callout **Chasing answers** |
 | P4 | Time is lost asking, searching and re-keying. | A clock spins; three chips (*Asking again, Searching old notes, Re-typing updates*) land; then *Less time fixing cars.*; callout **Lost time** |
 | P5 | And critical details slip between shifts. | **The opening visual:** handwritten shift notes fly onto a moving grid and one is stamped SAFETY |
+| H1 | Here is the solution, powered by Deloitte and NVIDIA. | **Brand preface:** a soft dissolve from the stamped notes to a white panel with the **Deloitte** and **NVIDIA** logos side by side, a divider growing between them, *The solution, powered by* above and *Service Operations Agent* below |
 | A1 | This is where the Service Operations Agent comes in. | A soft dissolve from the stamped notes to the **live dashboard**, shown as the solution: a slow push-in on the whole screen; callout **Service Operations Agent** |
 | A2 | It turns every update into one live view of the floor. | Camera moves to the first table row, ring on it: the dashboard as one live view built from the updates; callout **Live view** |
 | A4 | Right now, {safety} vehicles are flagged as unsafe to release. | Zoom on the *Safety - do not release* tile, ring pulses; callout **{safety} flagged**; held a moment |
@@ -49,7 +50,8 @@ or product shot at the open and the close; nothing held still. Narration there r
 | G1 | And it is all observable: DCGM and the app's metrics, live in Grafana. | **Infographic with the live dashboard inset:** the DCGM exporter (*19* GPU series) and the app (*13*) feed Prometheus, which feeds Grafana; the live dashboard plays small in a frame, and rings light up its primary figures (the four stat tiles), then the two DCGM graphs (GPU load, GPU power), each with a legend chip; callout **Observability** |
 | F1 | In summary, safety comes first: unsafe vehicles are flagged as updates are logged. | Title *Summary* and card 1 (*Safety first*, with the flagged-vehicle figure) fly in |
 | F2 | Answers in a tenth of a second, every figure traced to a record, all on one GPU you own. | Cards 2, 3 and 4 (*Instant answers*, *Grounded in records*, *Yours to run*, each with one supporting figure) fly in one after another |
-| F4 | Fast. Grounded. Yours to run. That is the Service Operations Agent. | Large type, with *Service Operations Agent* beneath it; the video ends here |
+| F4 | Fast. Grounded. Yours to run. That is the Service Operations Agent. | Large type, with *Service Operations Agent* beneath it |
+| K1 | Service Operations Agent, powered by Deloitte and NVIDIA. | **Closing brand card:** a soft dissolve to the product name over the same Deloitte and NVIDIA panel, with *Powered by Deloitte and NVIDIA* beneath; held for a moment; the video ends here |
 
 ```bash
 # beats, words, and the speaking time they imply at 190 wpm
