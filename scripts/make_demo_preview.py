@@ -346,9 +346,9 @@ IC = {
 
 
 def intro_html() -> str:
-    notes = [("C/S grinding from the front under braking", 150, 200, -4, "0"),
-             ("Front pads 1.8 mm. Spec min 3.0.", 760, 150, 3, "1"),
-             ("Waiting on parts: 45022-K4A-B80", 1290, 240, -2, "2"),
+    notes = [("Odd noise during the test run", 150, 200, -4, "0"),
+             ("Reading 1.8 mm. Spec min 3.0.", 760, 150, 3, "1"),
+             ("Waiting on parts: PO 45022", 1290, 240, -2, "2"),
              ("Promised 17:00. Customer ringing again.", 330, 520, 2, "3"),
              ("Handover: see notes on the bench", 980, 570, -3, "4")]
     cards = "".join('<div class=note id=n%s style="left:%dpx;top:%dpx;--r:%ddeg">%s</div>' % (i, x, y, r, t) for t, x, y, r, i in notes)
@@ -425,18 +425,18 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 
 <div id=shift class=layer><h2 class=hd>Every shift change</h2>
  <div class=panel id=day><b>DAY SHIFT</b><i>the technician who did the work</i></div><div class=panel id=night><b>NIGHT SHIFT</b><i>the technician who picks it up</i></div>
- <div class=note id=sn1>Rotor 21.9 mm<br>spec min 23?<br>told Dave, parts</div>
- <div class=note id=sn2><span>Rotor 21.9 mm</span><br><span class=lost>spec min 23?</span><br><span class=lost>told Dave, parts</span></div>
+ <div class=note id=sn1>Reading 21.9<br>spec min 23?<br>told Dave, parts</div>
+ <div class=note id=sn2><span>Reading 21.9</span><br><span class=lost>spec min 23?</span><br><span class=lost>told Dave, parts</span></div>
  <div id=q>?</div><div id=qt>The detail that mattered is gone</div></div>
 
-<div id=chase class=layer><h2 class=hd>A manager hunting for an answer</h2>
+<div id=chase class=layer><h2 class=hd style="padding-left:460px">A manager hunting for an answer</h2>
  <div class=src id=s0><div class=pi>@DOC@</div><b>Notes</b><i>paper and chat threads</i></div>
  <div class=src id=s1><div class=pi>@PHONE@</div><b>Calls</b><i>"has anyone seen&hellip;?"</i></div>
  <div class=src id=s2><div class=pi>@MON@</div><b>Screens</b><i>one system per question</i></div>
  <div class=dash id=d0></div><div class=dash id=d1></div><div class=dash id=d2></div>
  <div id=mgr><div class=pi>@PERSON@</div><b>Service manager</b></div>
- <div class=bub id=b0 style="left:200px;top:580px">Where is the Passat?</div>
- <div class=bub id=b1 style="left:1230px;top:580px">Is it safe to release?</div>
+ <div class=bub id=b0 style="left:200px;top:580px">Where is the job?</div>
+ <div class=bub id=b1 style="left:1230px;top:580px">Is it safe to sign off?</div>
  <div class=bub id=b2 style="left:690px;top:900px;background:#76B900;color:#0d201b">Who worked on it?</div></div>
 
 <div id=lost class=layer><h2 class=hd>Where the time goes</h2>
@@ -444,7 +444,7 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
  <div class=chip id=c0><div class=pi>@SEARCH@</div>Asking again</div>
  <div class=chip id=c1><div class=pi>@DOC@</div>Searching old notes</div>
  <div class=chip id=c2><div class=pi>@DOC@</div>Re-typing updates</div>
- <div id=fin>Less time <u>fixing cars.</u></div></div>
+ <div id=fin>Less time <u>doing the work.</u></div></div>
 <script>const $=id=>document.getElementById(id);
 const pop=(e,d,y,rot)=>{const r=rot||'rotate(0deg)';e.animate([{opacity:0,transform:r+' translateY('+(y===undefined?40:y)+'px) scale(.92)'},{opacity:1,transform:r}],{duration:d||460,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});};
 const show=(e,d)=>{e.animate([{opacity:0},{opacity:1}],{duration:d||360,fill:'forwards'});};
@@ -990,7 +990,7 @@ def scene_F():
 # later moves: `at` is a fraction of the beat, or "done+0.9" = 0.9 s after the step's result appeared on screen.
 LIVE_PLAN = {
     "A1": dict(src="A", freeze=True, cam=None, camo=dict(to=1.04), co="Service Operations Agent"),
-    "A2": dict(src="A", freeze=True, cam="ROW", camo=dict(max=1.7, pad=70), ring="ROW", co="Live view"),
+    "A2": dict(src="A", freeze=True, cam="ROW", camo=dict(max=1.7, pad=70), ring="ROW", co="Automotive showcase"),
     "A4": dict(src="A", freeze=True, cam="TILE", camo=dict(max=2.3, pad=200), ring="TILE", co="{safety} flagged"),
     "C1": dict(src="C1", cam="VOICE", camo=dict(max=1.55, pad=100), co="Voice in"),
     "C2": dict(src="C2", cam="TRANS", camo=dict(max=1.6, pad=100), co="Riva ASR", badge="C2"),
