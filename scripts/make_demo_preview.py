@@ -347,17 +347,17 @@ IC = {
 
 def intro_html() -> str:
     """The stakes: a pile of shift notes with one stamped SAFETY at the bottom of it, and the ladder it climbs: delay, rework, safety incident."""
-    notes = [("Odd noise during the test run", 110, 230, -4, "0", 2), ("Reading 1.8 mm. Spec min 3.0.", 300, 380, 3, "1", 1),
-             ("Waiting on parts: PO 45022", 560, 260, -2, "2", 3), ("Promised 17:00. Customer ringing again.", 140, 520, 2, "3", 3),
-             ("Handover: see notes on the bench", 520, 520, -3, "4", 4)]
-    cards = "".join('<div class=note id=n%s style="left:%dpx;top:%dpx;--r:%ddeg;z-index:%d">%s</div>' % (i, x, y, r, z, t) for t, x, y, r, i, z in notes)
+    notes = [("Unusual noise on the last run", 110, 200, -3, "0", 2, 440), ("Reading below the limit. Check before sign-off.", 110, 400, 2, "1", 1, 400),
+             ("Waiting on a part: order 45022", 660, 230, 2, "2", 3, 440), ("Promised for 17:00. Client chasing again.", 660, 430, -2, "3", 3, 440),
+             ("Handover: see notes at the desk", 110, 610, -2, "4", 4, 440)]
+    cards = "".join('<div class=note id=n%s style="left:%dpx;top:%dpx;--r:%ddeg;z-index:%d;width:%dpx">%s</div>' % (i, x, y, r, z, w, t) for t, x, y, r, i, z, w in notes)
     return """<!doctype html><meta charset=utf-8><style>
 body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;
  background:radial-gradient(circle at 30% 20%,#1d4d3f 0%,#0d201b 70%)}
 .grid{position:absolute;inset:-120px;background-image:linear-gradient(rgba(118,185,0,.10) 2px,transparent 2px),linear-gradient(90deg,rgba(118,185,0,.10) 2px,transparent 2px);background-size:120px 120px;animation:drift 6s linear infinite}
 @keyframes drift{to{transform:translate(120px,120px)}}
 .note{position:absolute;width:440px;padding:24px 28px;box-sizing:border-box;background:#F4F1E4;color:#262626;font:600 30px/1.3 'Courier New',monospace;border-radius:6px;box-shadow:0 20px 44px rgba(0,0,0,.5);opacity:0;transform:rotate(var(--r))}
-#stamp{position:absolute;z-index:10;left:620px;top:330px;width:210px;height:210px;border:12px solid #E5352B;border-radius:50%;color:#E5352B;font:900 38px/186px Arial;text-align:center;transform:rotate(-14deg);opacity:0;letter-spacing:2px;background:rgba(244,241,228,.0)}
+#stamp{position:absolute;z-index:10;left:492px;top:350px;width:150px;height:150px;border:9px solid #E5352B;border-radius:50%;box-sizing:border-box;color:#E5352B;font:900 21px/132px Arial;text-align:center;transform:rotate(-14deg);opacity:0;letter-spacing:1px;background:rgba(244,241,228,.0)}
 #head{position:absolute;left:0;right:0;top:800px;text-align:center;font:800 84px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}
 #head u{text-decoration:none;color:#FF5A4D}
 .tag{position:absolute;left:110px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
@@ -411,6 +411,7 @@ def _ring(cx, cy, rx, ry, items, pre, w, h, wire):
     for i, (ic, label) in enumerate(items):
         a = math.radians(-90 + i * 60)
         x, y = cx + rx * math.cos(a), cy + ry * math.sin(a)
+        w = 134 + 19 * len(label)                       # icon, padding and the label at 34 px bold, on one line
         paths.append('<path class=%s id=%sw%d pathLength=1 d="M%d %d L%d %d"/>' % (wire, pre, i, cx, cy, x, y))
         nodes.append('<div class=nd id=%s%d style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><div class=pi>%s</div><b>%s</b></div>'
                      % (pre, i, x - w / 2, y - h / 2, w, h, ic, label))
@@ -449,9 +450,9 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 #sn2 .lost{filter:blur(4px);opacity:.35}
 #q{position:absolute;left:1520px;top:330px;width:120px;height:120px;border-radius:50%;background:#E5352B;font:900 90px/120px Arial;text-align:center;opacity:0;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 #qt{position:absolute;left:1020px;width:790px;top:700px;text-align:center;font:700 40px Arial;color:#fff;opacity:0}
-.nd{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:20px;padding:0 24px;border-radius:24px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.3);opacity:0}
-.nd .pi{flex:0 0 66px;height:66px}.nd b{font:800 34px/1.15 Arial}
-#chase .nd{border-color:rgba(255,90,77,.7);background:rgba(229,53,43,.10)}
+.nd{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:20px;padding:0 24px;border-radius:24px;background:#1c3a32;border:2px solid rgba(255,255,255,.3);opacity:0}
+.nd .pi{flex:0 0 66px;height:66px}.nd b{font:800 34px/1.15 Arial;white-space:nowrap}
+#chase .nd{border-color:rgba(255,90,77,.7);background:#3a2623}
 #qb{position:absolute;left:690px;top:530px;width:540px;height:120px;border-radius:60px;background:#fff;color:#142019;font:800 44px/120px Arial;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.5);opacity:0}#qb u{text-decoration:none;color:#E5352B}
 svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
 .w{fill:none;stroke:#FF5A4D;stroke-width:5;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
@@ -464,7 +465,7 @@ svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
 #l0{left:300px}#l0 i{background:#76B900}#l1{left:760px}#l1 i{background:#E5352B}
 #fin{position:absolute;left:0;right:0;top:830px;text-align:center;font:800 78px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#fin u{text-decoration:none;color:#FF5A4D}
 #hub{position:absolute;left:810px;top:450px;width:300px;height:300px;border-radius:50%;box-sizing:border-box;background:rgba(229,53,43,.16);border:5px solid #FF5A4D;text-align:center;font:800 44px/1.2 Arial;padding-top:98px;opacity:0}
-#sectors .nd{border-color:rgba(118,185,0,.55)}#bdg{position:absolute;padding:6px 20px;border-radius:20px;background:#76B900;color:#0d201b;font:800 24px Arial;letter-spacing:2px;opacity:0}
+#sectors .nd{border-color:rgba(118,185,0,.55);background:#1a3b2a}#bdg{position:absolute;padding:6px 20px;border-radius:20px;background:#76B900;color:#0d201b;font:800 24px Arial;letter-spacing:2px;opacity:0}
 #sl{position:absolute;left:0;right:0;top:990px;text-align:center;font:800 40px Arial;white-space:nowrap;opacity:0}#sl u{text-decoration:none;color:#76B900}
 </style><div class=grid></div>
 <div id=title class=layer><div id=dl><img src="@DL@"></div><h1>Service Operations <u>Agent</u></h1><div id=bar></div>
