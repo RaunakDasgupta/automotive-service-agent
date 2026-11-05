@@ -127,6 +127,6 @@ In summary: safety first, with unsafe vehicles flagged as updates are logged.
 Answers in a tenth of a second, traced to records, on one GPU you own.
 
 33
-00:02:18,302 --> 00:02:23,685
-Fast. Grounded. Yours to run. Shown in automotive, built for service operations.
+00:02:18,302 --> 00:02:20,803
+Fast. Grounded. Yours to run.
 

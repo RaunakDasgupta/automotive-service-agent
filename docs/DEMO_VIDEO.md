@@ -49,7 +49,7 @@ or product shot at the open and the close; nothing held still. Narration there r
 | G1 | It is all observable: DCGM and app metrics, live in Grafana. | **Infographic with the live dashboard inset:** the DCGM exporter (*19* GPU series) and the app (*13*) feed Prometheus, which feeds Grafana; the live dashboard plays small in a frame, and rings light up its primary figures (the four stat tiles), then the two DCGM graphs (GPU load, GPU power), each with a legend chip; callout **Observability** |
 | F1 | In summary: safety first, with unsafe vehicles flagged as updates are logged. | Title *Summary* and card 1 (*Safety first*, with the flagged-vehicle figure) fly in |
 | F2 | Answers in a tenth of a second, traced to records, on one GPU you own. | Cards 2, 3 and 4 (*Instant answers*, *Grounded in records*, *Yours to run*, each with one supporting figure) fly in one after another |
-| F4 | Fast. Grounded. Yours to run. Shown in automotive, built for service operations. | Large type, with *Service Operations Agent* beneath it |
+| F4 | Fast. Grounded. Yours to run. | Large type, with *Service Operations Agent* beneath it |
 | K1 | Service Operations Agent, powered by Deloitte and NVIDIA. | **Closing:** the supplied Deloitte outro clip (`~/.cache/asoia-demo-outro/outro.<ext>`, a phone screen recording): the stretch where the wordmark animates in (the legal text after it is left out), cropped to the Deloitte frame, with its own sound 2 dB down and no narration, the crisp vector logo swapped in once it settles, the last frame held and faded out; a soft dissolve from the summary. **Only if there is no clip** the video closes on a card with this line over the Deloitte and NVIDIA panel |
 
 ```bash
