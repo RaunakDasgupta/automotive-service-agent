@@ -57,8 +57,9 @@ CAPTURE = {
     "ro_rule": "first repair order in PARTS_HOLD with no safety flag yet", "technician": 1,
     "q1": "Which vehicles cannot be released on safety grounds?",
     "q2": "Has anyone seen a whistling noise on a Passat?",
+    "q3": "Which parts are holding up more than one job?",
     "type_ms": 80, "viewport": [W, H], "scale": K,
-    "page_height": {"A": H, "C": 3000, "D": H, "G": H},     # the Technician Update page is ~2.8k px tall: all of it is captured
+    "page_height": {"A": 1200, "C": 3000, "D": H, "G": H},     # the Technician Update page is ~2.8k px tall: all of it is captured
 }
 _P = lambda t: {"text": t, "up": ".react-grid-item"}
 _CARD = "()=>[...document.querySelectorAll('textarea')].find(t=>t.value.includes('SAFETY_RELATED'))"
@@ -72,6 +73,7 @@ TARGETS = {
           "CARD": {"fn": _CARD, "top": 172}},                                                  # the what-changed text: first line to the last
     "D": {"Q": {"fn": "()=>[...document.querySelectorAll('textarea')].find(t=>t.offsetParent)"},
           "ANS": {"text": "repair orders cannot be released"},
+          "ANS2": {"text": "order once, clear several", "grow": [40, 20, 700, 90]},
           "LAST": {"fn": "()=>[...document.querySelectorAll('*')].filter(e=>e.children.length==0&&e.textContent.includes('whistling')).pop()",
                    "grow": [30, 40, 900, 230]}},
     "G": {"GPU": _P("GPU utilisation and framebuffer"), "POWER": _P("GPU power, temperature and clock")},
@@ -461,6 +463,15 @@ def cap_D(pw, url):
         answer_to_top(s)
         shown["n"] = s.page.evaluate("() => { const m = ((document.querySelector('[role=log]') || {}).innerText || '').match(/(\\d+) repair orders? cannot/); return m && m[1]; }")
     t.step("D3", d3, settle=1.6)
+    t.step("D7", ask(CAPTURE["q3"], to_bottom=True), settle=0.2)      # parts holding more than one job: no model call, composed in Python
+
+    def d8(s):                                             # the answer, then the chat scrolled to where it starts
+        s.until("() => document.body.innerText.includes('order once, clear several')", 30000)
+        s.page.wait_for_timeout(900)
+        s.page.evaluate("() => { const e = document.querySelector('[role=log]'); if (!e) return; const w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT); let n, hit = null;"
+                        " while ((n = w.nextNode())) if (n.textContent.includes('order once, clear several')) hit = n.parentElement;"
+                        " if (hit) { const r = hit.getBoundingClientRect(), b = e.getBoundingClientRect(); e.scrollTop += r.top - b.top - 40; } }")
+    t.step("D8", d8, settle=1.6)
     t.step("D5", ask(CAPTURE["q2"], to_bottom=True), settle=0.2)
     t.step("D6", lambda s: s.until("() => (document.body.innerText.match(/whistling/g) || []).length > 1", 60000, stable=1.5), settle=1.2)
     scene = t.finish()

@@ -432,7 +432,7 @@ why this is `restart` and not `up`.
 | index built but API sees nothing | built into Milvus Lite, not the server | `build_index.py --check` — if it says `(embedded)`, `.env` was not read |
 | row count 0 on a freshly built index | Milvus counts only sealed segments | harmless; `build()` flushes, and `query` returns rows regardless |
 | reranker won't start | VRAM | `LLM_GPU_FRAC=0.20`, or the 1B reranker |
-| `No module named pytest` | base install only | `uv pip install --python .venv -e ".[dev]"` |
+| `No module named pytest` | base install only | `uv pip install --python .venv -e ".[dev,voice]"` |
 | `No module named gradio` in a notebook's first cell | Brev's JupyterLab kernel is `~/.venv`, not the project's | register the `asoia` kernel (phase 1b) and select it |
 | `Cannot operate on a closed database` | fixed in `ca47b79`; `db.connect()` used to cache a closed handle after the dataset was generated | update the code |
 | thousands of `LIBARCHIVE.xattr` lines on extract, broken git | the tarball was made with plain `tar` on macOS | `bash scripts/make_tarball.sh` |

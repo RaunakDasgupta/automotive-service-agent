@@ -110,7 +110,7 @@ cp .env.example .env && chmod 600 .env && $EDITOR .env    # key; NIM_MODE=local
 bash scripts/brev_bootstrap.sh            # 1. pulls FIRST - 30-90 min
 
 curl -LsSf https://astral.sh/uv/install.sh | sh          # 2. while it downloads
-uv venv --python 3.11 .venv && uv pip install --python .venv -e ".[dev]"
+uv venv --python 3.11 .venv && uv pip install --python .venv -e ".[dev,voice]"
 .venv/bin/python -m app.data.generate
 .venv/bin/python -m pytest tests/ -q
 
@@ -382,7 +382,7 @@ Stated up front because each is measured.
 | [`docs/OPERATING.md`](docs/OPERATING.md) | restart, refresh, reboot behaviour, the model's real speed |
 | [`docs/EXAMPLES.md`](docs/EXAMPLES.md) | what it actually answers, captured from a live run on an L40S |
 | [`docs/screenshots/`](docs/screenshots/README.md) | the running stack, and how each frame was taken |
-| [`docs/DEMO_VIDEO.md`](docs/DEMO_VIDEO.md), [`docs/demo/`](docs/demo/README.md) | the client demo video: plan, narration script, and a voiced preview |
+| [`docs/DEMO_VIDEO.md`](docs/DEMO_VIDEO.md), [`docs/demo/`](docs/demo/README.md) | the client demo video: the revised script (`docs/DEMO_VIDEO_REVISED.md`), the current video (`docs/demo/demo-revised.mp4`), and the old final demo in `docs/demo/v1-final/` |
 | [`docs/VOICE-UPDATE-FORMAT.md`](docs/VOICE-UPDATE-FORMAT.md) | what to say so a spoken update is captured accurately |
 | [`docs/PASS_INDEX.md`](docs/PASS_INDEX.md) | the 61 numbered passes: what each addressed, and where it is recorded |
 | [`ENGINEERING.md`](ENGINEERING.md) | the history behind every decision |

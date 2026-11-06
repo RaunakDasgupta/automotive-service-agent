@@ -38,6 +38,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT / "scripts"), str(ROOT)]
 from demo_footage import FOOT, FPS, H, K, TTS_CACHE, W, check, ffmpeg, load_timeline, run
 OUT = ROOT / "docs" / "demo"
+SCRIPT = ROOT / "docs" / "DEMO_VIDEO_REVISED.md"      # the beat table the revised video is built from (the old final demo is docs/demo/v1-final)
+VIDEO = "demo-revised"                                  # docs/demo/demo-revised.mp4, .srt and edit-sheet-revised.md
 WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
 GAP = 0.22                       # silence after each beat's voice
 F_TAIL = 0.4                     # seconds the closing card stays after the last word
@@ -45,7 +47,7 @@ CAPTIONS = False                 # burned-in captions: off. demo-preview.srt (sc
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.3, "B5": 0.3, "C3": 0.6, "C4": 0.6, "D3": 0.4, "D4": 0.6, "D6": 0.5,
-        "E1": 0.4, "E5": 0.5, "G1": 0.3, "F4": 0.3, "H1": 0.0, "K1": 0.5}
+        "E1": 0.4, "E5": 0.5, "P2": 0.6, "D8": 0.5, "G1": 0.3, "F4": 0.3, "H1": 0.0, "K1": 0.5}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -54,13 +56,13 @@ NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
 
 # ------------------------------------------------------------------ the script
 def beats():
-    """{scene letter: [(beat id, narration)]} from the beat table in docs/DEMO_VIDEO.md."""
+    """{scene letter: [(beat id, narration)]} from the beat table in docs/DEMO_VIDEO_REVISED.md."""
     out: dict[str, list] = {}
-    for line in (ROOT / "docs" / "DEMO_VIDEO.md").read_text().splitlines():
+    for line in SCRIPT.read_text().splitlines():
         m = re.match(r"\| ([A-V])(\d) \| (.+?) \| (.+) \|$", line)
         if m:
             out.setdefault(m.group(1), []).append((m.group(1) + m.group(2), m.group(3)))
-    assert sorted(out) == list("ABCDEFGHKPV"), "expected scenes A-H, K, P and V in docs/DEMO_VIDEO.md, found %s" % sorted(out)
+    assert sorted(out) == list("ABCDEFGHKPV"), "expected scenes A-H, K, P and V in %s, found %%s" % SCRIPT.name % sorted(out)
     return out
 
 
@@ -345,42 +347,6 @@ IC = {
 }
 
 
-def intro_html() -> str:
-    """The stakes: a pile of shift notes with one stamped SAFETY at the bottom of it, and the ladder it climbs: delay, rework, safety incident."""
-    notes = [("Unusual noise on the last run", 110, 200, -3, "0", 2, 440), ("Reading below the limit. Check before sign-off.", 110, 400, 2, "1", 1, 400),
-             ("Waiting on a part: order 45022", 660, 230, 2, "2", 3, 440), ("Promised for 17:00. Client chasing again.", 660, 430, -2, "3", 3, 440),
-             ("Handover: see notes at the desk", 110, 610, -2, "4", 4, 440)]
-    cards = "".join('<div class=note id=n%s style="left:%dpx;top:%dpx;--r:%ddeg;z-index:%d;width:%dpx">%s</div>' % (i, x, y, r, z, w, t) for t, x, y, r, i, z, w in notes)
-    return """<!doctype html><meta charset=utf-8><style>
-body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;
- background:radial-gradient(circle at 30% 20%,#1d4d3f 0%,#0d201b 70%)}
-.grid{position:absolute;inset:-120px;background-image:linear-gradient(rgba(118,185,0,.10) 2px,transparent 2px),linear-gradient(90deg,rgba(118,185,0,.10) 2px,transparent 2px);background-size:120px 120px;animation:drift 6s linear infinite}
-@keyframes drift{to{transform:translate(120px,120px)}}
-.note{position:absolute;width:440px;padding:24px 28px;box-sizing:border-box;background:#F4F1E4;color:#262626;font:600 30px/1.3 'Courier New',monospace;border-radius:6px;box-shadow:0 20px 44px rgba(0,0,0,.5);opacity:0;transform:rotate(var(--r))}
-#stamp{position:absolute;z-index:10;left:492px;top:350px;width:150px;height:150px;border:9px solid #E5352B;border-radius:50%;box-sizing:border-box;color:#E5352B;font:900 21px/132px Arial;text-align:center;transform:rotate(-14deg);opacity:0;letter-spacing:1px;background:rgba(244,241,228,.0)}
-#head{position:absolute;left:0;right:0;top:800px;text-align:center;font:800 84px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}
-#head u{text-decoration:none;color:#FF5A4D}
-.tag{position:absolute;left:110px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
-.lad{position:absolute;left:1190px;width:640px;height:130px;border-radius:22px;box-sizing:border-box;padding-left:44px;font:800 52px/130px Arial;letter-spacing:2px;color:#fff;opacity:0;box-shadow:0 14px 36px rgba(0,0,0,.45)}
-#ld0{top:560px;background:#B8741A}#ld1{top:400px;background:#D4521F}#ld2{top:240px;background:#E5352B}
-#arr{position:absolute;left:1124px;top:236px;width:10px;height:454px;border-radius:5px;background:linear-gradient(#E5352B,#B8741A);transform-origin:bottom;transform:scaleY(0)}
-#arh{position:absolute;left:1111px;top:206px;width:0;height:0;border:18px solid transparent;border-bottom:34px solid #E5352B;border-top:none;opacity:0}
-</style><div class=grid></div>@CARDS@<div id=stamp>SAFETY</div>
-<div class=tag>THE PROBLEM</div><div id=head>A buried note becomes <u>an incident.</u></div>
-<div id=arr></div><div id=arh></div><div class=lad id=ld0>DELAY</div><div class=lad id=ld1>REWORK</div><div class=lad id=ld2>SAFETY INCIDENT</div>
-<script>const $=id=>document.getElementById(id);
-const fly=(e,from,d,dur)=>e.animate([{opacity:0,transform:'translate('+from[0]+'px,'+from[1]+'px) rotate(var(--r)) scale(.9)'},{opacity:1,transform:'rotate(var(--r))'}],{duration:dur||520,delay:d,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});
-window.__go=ms=>{const F=[[-700,-200],[0,-600],[700,-300],[-600,500],[700,600]];
- for(let i=0;i<5;i++) fly($('n'+i),F[i],i*ms*0.07);
- $('head').animate([{opacity:0,transform:'translateY(60px)'},{opacity:1,transform:'none'}],{duration:620,delay:ms*0.22,fill:'forwards',easing:'cubic-bezier(.2,.8,.2,1)'});
- $('stamp').animate([{opacity:0,transform:'rotate(-14deg) scale(2.4)'},{opacity:1,transform:'rotate(-14deg) scale(1)'}],{duration:300,delay:ms*0.40,fill:'forwards',easing:'cubic-bezier(.3,1.4,.5,1)'});
- $('arr').animate([{transform:'scaleY(0)'},{transform:'scaleY(1)'}],{duration:ms*0.34,delay:ms*0.56,fill:'forwards',easing:'ease-in-out'});
- $('arh').animate([{opacity:0},{opacity:1}],{duration:200,delay:ms*0.88,fill:'forwards'});
- [['ld0',.60],['ld1',.74],['ld2',.88]].forEach(([id,f])=>$(id).animate([{opacity:0,transform:'translateX(60px)'},{opacity:1,transform:'none'}],{duration:380,delay:ms*f,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'}));
- $('n1').animate([{boxShadow:'0 20px 44px rgba(0,0,0,.5)'},{boxShadow:'0 0 0 10px rgba(229,53,43,.8),0 0 60px rgba(229,53,43,.9)'}],{duration:500,delay:ms*0.40,fill:'forwards'});};
-</script>""".replace("@CARDS@", cards)
-
-
 PI = {   # white pictograms for the problem scene
     "doc": '<svg viewBox="0 0 64 64"><path d="M14 6h26l12 12v40H14z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><path d="M40 6v12h12M22 30h24M22 40h24M22 50h14" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/></svg>',
     "phone": '<svg viewBox="0 0 64 64"><path d="M16 8h10l5 14-7 4c3 7 8 12 15 15l4-7 14 5v10c0 3-2 6-6 6C27 55 9 37 10 14c0-4 3-6 6-6z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/></svg>',
@@ -419,15 +385,24 @@ def _ring(cx, cy, rx, ry, items, pre, w, h, wire):
 
 
 def problem_html() -> str:
-    """The opening: a title card (the first frame), then the problem as infographics: a handover that loses the detail, the places an
-    answer has to be chased through, a shift cut up by the chasing, and, after the brand preface, the sector
-    map that puts the automotive showcase among its siblings. (The stamped-note pile is intro_html.)"""
-    chase_p, chase_n = _ring(960, 600, 650, 285, [(PI["doc"], "Notes"), (PI["phone"], "Calls"), (PI["chat"], "Chat threads"),
-                                                  (PI["sheet"], "Spreadsheets"), (PI["monitor"], "Work-order system"), (PI["person"], "Someone's memory")],
-                             "n", 300, 118, "w")
+    """The opening problem, as infographics about moving information and finding it again: the title card, the sources it lives in, the
+    two halves of the challenge (transfer, retrieval), what it costs in time and in over-committed resources, the way out, and the
+    supervisor who can then ask. The sector map (after the brand preface) is on the same page, opened with #sectors."""
     sect_p, sect_n = _ring(960, 600, 690, 285, [(PI["car"], "Automotive service"), (PI["gear"], "Equipment maintenance"), (PI["building"], "Facilities management"),
                                                 (PI["bolt"], "Utilities and energy"), (PI["cross"], "Healthcare equipment"), (PI["plane"], "Aviation maintenance")],
                            "s", 350, 118, "w2")
+    srcs = [("doc", "Notes", 230, 330), ("phone", "Calls", 1160, 290), ("chat", "Messages", 640, 560), ("sheet", "Spreadsheets", 1120, 650), ("monitor", "Systems", 190, 740)]
+    sources_h = "".join('<div class=nd id=src%d style="left:%dpx;top:%dpx;width:%dpx;height:110px"><div class=pi>%s</div><b>%s</b></div>' % (i, x, y, 134 + 19 * len(t), PI[ic], t)
+                        for i, (ic, t, x, y) in enumerate(srcs))
+    mini = [("Notes", 380), ("Calls", 480), ("Messages", 580), ("Sheets", 680), ("Systems", 780)]
+    mini_h = "".join('<div class=mc id=mc%d style="top:%dpx">%s</div>' % (i, y, t) for i, (t, y) in enumerate(mini))
+    mini_w = "".join('<path class=w2 id=mw%d pathLength=1 d="M1165 605 L1520 %d"/>' % (i, y + 35) for i, (t, y) in enumerate(mini))
+    rows = [("doc", "Notes", "ASKED AGAIN"), ("chat", "Messages", "SEARCHED"), ("sheet", "Spreadsheet", "RE-TYPED")]
+    rows_h = "".join('<div class=row id=rw%d style="top:%dpx"><div class=rs><div class=pi>%s</div>%s</div><div class=rn>Reading 21.9<br>spec min 23</div><div class=rt>%s</div></div>'
+                     % (i, 250 + i * 190, PI[ic], t, tag) for i, (ic, t, tag) in enumerate(rows))
+    doms = [("car", "Vehicles"), ("gear", "Equipment"), ("building", "Facilities"), ("plane", "Aircraft")]
+    doms_h = "".join('<div class=nd id=dm%d style="left:150px;top:%dpx;width:340px;height:110px"><div class=pi>%s</div><b>%s</b></div>' % (i, 250 + i * 150, PI[ic], t) for i, (ic, t) in enumerate(doms))
+    doms_w = "".join('<path class=w2 id=dw%d pathLength=1 d="M490 %d C 700 %d 760 %d 980 %d"/>' % (i, 305 + i * 150, 305 + i * 150, 540, 540) for i in range(4))
     return """<!doctype html><meta charset=utf-8><style>
 body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;
  background:radial-gradient(circle at 30% 20%,#1d4d3f 0%,#0d201b 70%)}
@@ -439,53 +414,81 @@ body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-
 #title h1{margin:64px 0 0;text-align:center;font:800 118px/1.08 Arial;text-shadow:0 6px 30px rgba(0,0,0,.55)}#title h1 u{text-decoration:none;color:#76B900}
 #bar{width:420px;height:8px;border-radius:4px;background:#76B900;margin:38px 0 26px;box-shadow:0 0 24px rgba(118,185,0,.7)}
 #title p{margin:0;font:40px Arial;color:#BFD6B0;text-align:center}
-.hd{position:absolute;left:590px;right:40px;top:88px;text-align:left;margin:0;font:800 66px Arial;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.6)}.hd em{font-style:normal;color:#FF5A4D}
-.tag{position:absolute;left:590px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}#sectors .tag,#sectors .hd{left:110px}.tag.ok{background:#76B900;color:#0d201b}
-#sectors .hd em{color:#76B900}
-.panel{position:absolute;top:210px;width:790px;height:610px;border-radius:22px;background:rgba(255,255,255,.06);border:2px solid rgba(118,185,0,.35);opacity:0}
-.panel b{position:absolute;left:36px;top:26px;font:800 40px Arial;letter-spacing:3px;color:#76B900}.panel i{position:absolute;left:36px;top:80px;font:30px Arial;color:#BFD6B0;font-style:normal}
-#day{left:110px}#night{left:1020px}
-.note{position:absolute;width:560px;padding:26px 30px;box-sizing:border-box;background:#F4F1E4;color:#262626;font:600 34px/1.45 'Courier New',monospace;border-radius:6px;box-shadow:0 20px 44px rgba(0,0,0,.5);opacity:0}
-#sn1{left:225px;top:400px}#sn2{left:1135px;top:400px}
-#sn2 .lost{filter:blur(4px);opacity:.35}
-#q{position:absolute;left:1520px;top:330px;width:120px;height:120px;border-radius:50%;background:#E5352B;font:900 90px/120px Arial;text-align:center;opacity:0;box-shadow:0 10px 30px rgba(0,0,0,.45)}
-#qt{position:absolute;left:1020px;width:790px;top:700px;text-align:center;font:700 40px Arial;color:#fff;opacity:0}
+.hd{position:absolute;left:110px;right:40px;top:88px;text-align:left;margin:0;font:800 66px Arial;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.6)}.hd em{font-style:normal;color:#FF5A4D}.hd em.g{color:#76B900}
+.tag{position:absolute;left:110px;top:34px;padding:8px 26px;border-radius:26px;background:#E5352B;font:800 26px Arial;letter-spacing:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}.tag.ok{background:#76B900;color:#0d201b}
+#time .tag,#time .hd,#over .tag,#over .hd{left:590px}
 .nd{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:20px;padding:0 24px;border-radius:24px;background:#1c3a32;border:2px solid rgba(255,255,255,.3);opacity:0}
 .nd .pi{flex:0 0 66px;height:66px}.nd b{font:800 34px/1.15 Arial;white-space:nowrap}
-#chase .nd{border-color:rgba(255,90,77,.7);background:#3a2623}
-#qb{position:absolute;left:690px;top:530px;width:540px;height:120px;border-radius:60px;background:#fff;color:#142019;font:800 44px/120px Arial;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.5);opacity:0}#qb u{text-decoration:none;color:#E5352B}
 svg.wr{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
 .w{fill:none;stroke:#FF5A4D;stroke-width:5;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
-.w2{fill:none;stroke:rgba(118,185,0,.65);stroke-width:4;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
-#cnt{position:absolute;left:0;right:0;top:985px;text-align:center;font:800 54px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#cnt u{text-decoration:none;color:#FF5A4D}
-#tr{position:absolute;left:150px;top:400px;width:1620px;height:150px;border-radius:20px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.2);box-sizing:content-box}
-.sg{position:absolute;top:0;height:150px;box-sizing:border-box;border:3px solid #0d201b;background:#76B900;transform-origin:left;transform:scaleX(0);text-align:center;font:800 24px/144px Arial;color:#fff}.sg span{opacity:0}
-.tm{position:absolute;top:578px;font:700 28px Arial;letter-spacing:3px;color:#BFD6B0}
-.lgd{position:absolute;top:670px;height:76px;padding:0 34px 0 22px;border-radius:38px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.3);font:700 38px/72px Arial;opacity:0}.lgd i{display:inline-block;width:30px;height:30px;border-radius:8px;margin-right:16px;vertical-align:-3px}
-#l0{left:300px}#l0 i{background:#76B900}#l1{left:760px}#l1 i{background:#E5352B}
-#fin{position:absolute;left:0;right:0;top:830px;text-align:center;font:800 78px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#fin u{text-decoration:none;color:#FF5A4D}
-#hub{position:absolute;left:810px;top:450px;width:300px;height:300px;border-radius:50%;box-sizing:border-box;background:rgba(229,53,43,.16);border:5px solid #FF5A4D;text-align:center;font:800 44px/1.2 Arial;padding-top:98px;opacity:0}
+.w2{fill:none;stroke:rgba(118,185,0,.75);stroke-width:5;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
+.col{position:absolute;top:150px;width:800px}.col .big{font:800 124px/1 Arial;color:#76B900;text-shadow:0 6px 30px rgba(0,0,0,.6);opacity:0}.col .sb{font:40px Arial;color:#BFD6B0;margin-top:14px;opacity:0}
+#cl{left:110px}#cr{left:990px}
+.sc{position:absolute;width:240px;height:100px;border-radius:20px;background:#1c3a32;border:2px solid rgba(255,255,255,.3);font:800 34px/96px Arial;padding-left:96px;box-sizing:border-box;opacity:0}.sc .pi{position:absolute;left:20px;top:18px;width:58px;height:58px}
+.pp{position:absolute;width:170px;height:170px;border-radius:50%;background:rgba(118,185,0,.18);border:3px solid #76B900;padding:34px;box-sizing:border-box;opacity:0}
+.ch{position:absolute;padding:8px 22px;border-radius:22px;font:800 30px Arial;opacity:0}.ch.bad{background:rgba(229,53,43,.2);border:3px solid #FF5A4D;color:#FFB4AD}.ch.gap{border:3px dashed #FF5A4D;color:#FF8F86}
+.mc{position:absolute;left:1520px;width:270px;height:70px;border-radius:16px;background:#1c3a32;border:2px solid rgba(255,255,255,.3);font:700 30px/66px Arial;text-align:center;opacity:0}
+#ans{position:absolute;left:990px;top:800px;width:520px;height:150px;border-radius:20px;border:3px solid rgba(255,255,255,.35);background:#16302a;padding:22px 26px;box-sizing:border-box;opacity:0}
+#ans i{display:block;height:16px;border-radius:8px;background:#fff;margin-bottom:14px}#ans i.h{width:50%;background:transparent;border:3px dashed #FF8F86;height:16px}
+#ans b{position:absolute;right:20px;bottom:12px;font:800 28px Arial;color:#FF8F86}
+.row{position:absolute;left:150px;width:1300px;height:150px;opacity:0}
+.rs{position:absolute;left:0;top:25px;width:330px;height:100px;border-radius:22px;background:#1c3a32;border:2px solid rgba(255,255,255,.3);font:800 34px/96px Arial;padding-left:100px;box-sizing:border-box}.rs .pi{position:absolute;left:22px;top:18px;width:60px;height:60px}
+.rn{position:absolute;left:370px;top:10px;width:520px;height:130px;background:#F4F1E4;color:#262626;font:600 32px/1.4 'Courier New',monospace;padding:20px 28px;box-sizing:border-box;border-radius:6px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.rt{position:absolute;left:930px;top:34px;padding:0 28px;height:82px;border-radius:41px;background:rgba(229,53,43,.2);border:3px solid #FF5A4D;font:800 34px/76px Arial;color:#FFB4AD;letter-spacing:2px}
+#clk{position:absolute;left:1530px;top:340px;width:300px;height:300px;opacity:0}#clk svg{width:100%;height:100%}
+.mh{animation:spin 1.6s linear infinite}.hh{animation:spin 19.2s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+#tfin{position:absolute;left:0;right:0;top:880px;text-align:center;font:800 70px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#tfin u{text-decoration:none;color:#FF5A4D}
+.pn{position:absolute;top:240px;width:800px;height:620px;border-radius:24px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.25);opacity:0}.pn b{position:absolute;left:36px;top:26px;font:800 38px Arial;letter-spacing:3px;color:#BFD6B0}
+#pl{left:110px}#pr{left:990px}
+.slot{position:absolute;left:60px;top:150px;width:680px;height:110px;border-radius:18px;background:#1c3a32;border:2px solid rgba(255,255,255,.35);font:700 40px/106px Arial;padding-left:34px;box-sizing:border-box;opacity:0}
+.who{position:absolute;width:260px;height:78px;border-radius:39px;font:800 36px/74px Arial;text-align:center;opacity:0}#wa{left:80px;top:290px;background:#2f6a4a;border:3px solid #76B900}#wb{left:290px;top:340px;background:#7a3128;border:3px solid #FF5A4D;box-shadow:0 0 36px rgba(229,53,43,.6)}
+.po{position:absolute;left:50px;width:700px;height:100px;border-radius:18px;background:#F4F1E4;color:#262626;font:600 32px/96px 'Courier New',monospace;padding-left:30px;box-sizing:border-box;box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0}
+#xb{position:absolute;right:30px;top:90px;width:120px;height:120px;border-radius:50%;background:#E5352B;font:900 52px/120px Arial;text-align:center;opacity:0;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.lb{position:absolute;left:0;right:0;text-align:center;font:800 44px Arial;color:#FF8F86;opacity:0}
+#rec{position:absolute;left:1000px;top:250px;width:700px;height:520px;border-radius:26px;background:#F4F1E4;color:#142019;opacity:0;box-shadow:0 22px 60px rgba(0,0,0,.5);padding:40px 46px;box-sizing:border-box}
+#rec b{display:block;font:800 40px Arial;letter-spacing:2px;color:#2f5f00;margin-bottom:28px}#rec i{display:block;height:22px;border-radius:11px;background:#B9C7AE;margin-bottom:26px}#rec i:nth-of-type(2){width:80%}#rec i:nth-of-type(3){width:92%}#rec i:nth-of-type(4){width:64%}
+#rec u{position:absolute;right:40px;bottom:30px;text-decoration:none;font:900 90px Arial;color:#76B900}
+#flast,#alast{position:absolute;left:0;right:0;top:900px;text-align:center;font:800 54px Arial;opacity:0;text-shadow:0 6px 30px rgba(0,0,0,.6)}#flast u,#alast u{text-decoration:none;color:#76B900}
+#sup{position:absolute;left:150px;top:340px;width:200px;height:200px;border-radius:50%;background:rgba(118,185,0,.18);border:3px solid #76B900;padding:38px;box-sizing:border-box;opacity:0}
+#sb2{position:absolute;left:420px;top:340px;width:1300px;height:120px;border-radius:60px;background:#fff;color:#142019;font:700 48px/120px Arial;padding-left:70px;box-sizing:border-box;box-shadow:0 18px 44px rgba(0,0,0,.5);opacity:0}
+#ac{position:absolute;left:420px;top:500px;width:1300px;height:340px;border-radius:26px;background:#16302a;border:3px solid rgba(118,185,0,.6);opacity:0;padding:30px 50px;box-sizing:border-box}
+#ac div{height:80px;font:700 44px/80px Arial;border-bottom:2px solid rgba(255,255,255,.14);opacity:0}#ac div:last-of-type{border:none}#ac div span{float:right;color:#76B900;font-weight:900}
+#ill{position:absolute;right:50px;top:1020px;font:24px Arial;color:#8FA68A;opacity:0}
 #sectors .nd{border-color:rgba(118,185,0,.55);background:#1a3b2a}
+#hub{position:absolute;left:810px;top:450px;width:300px;height:300px;border-radius:50%;box-sizing:border-box;background:rgba(229,53,43,.16);border:5px solid #FF5A4D;text-align:center;font:800 44px/1.2 Arial;padding-top:98px;opacity:0}
 #sl{position:absolute;left:0;right:0;top:990px;text-align:center;font:800 40px Arial;white-space:nowrap;opacity:0}#sl u{text-decoration:none;color:#76B900}
+#sectors .hd em{color:#76B900}
 </style><div class=grid></div>
 <div id=title class=layer><div id=dl><img src="@DL@"></div><h1>Service Operations <u>Agent</u></h1><div id=bar></div>
  <p>From first update to final answer: one connected view of service operations</p></div>
 
-<div id=shift class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Information <em>gets lost</em></h2>
- <div class=panel id=day><b>WHAT IS KNOWN</b><i>everything the technician found</i></div><div class=panel id=night><b>WHAT IS PASSED ON</b><i>what reaches the next person</i></div>
- <div class=note id=sn1>Reading 21.9<br>spec min 23?<br>told Dave, parts</div>
- <div class=note id=sn2><span>Reading 21.9</span><br><span class=lost>spec min 23?</span><br><span class=lost>told Dave, parts</span></div>
- <div id=q>?</div><div id=qt>The detail that mattered is gone</div></div>
+<div id=sources class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Updates from <em>many sources</em></h2>@SRC@</div>
 
-<div id=chase class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Managers <em>chasing answers</em></h2>
- <svg class=wr viewBox="0 0 1920 1080">@CHW@</svg>@CHN@
- <div id=qb>Is it safe to sign off<u>?</u></div>
- <div id=cnt>One question. <u>Six places to look.</u></div></div>
+<div id=focal class=layer><div class=tag>THE CHALLENGE</div>
+ <div class=col id=cl><div class=big id=bw1>Transfer</div><div class=sb id=bs1>moving information accurately</div></div>
+ <div class=col id=cr><div class=big id=bw2>Retrieval</div><div class=sb id=bs2>finding it again when it matters</div></div>
+ <svg class=wr viewBox="0 0 1920 1080"><path class=w2 id=ta pathLength=1 d="M350 480 C 480 480 560 545 700 575"/><path class=w id=tb pathLength=1 d="M350 660 C 470 660 560 650 700 640"/>@MW@</svg>
+ <div class=sc id=t0 style="left:110px;top:430px"><div class=pi>@DOC@</div>Notes</div><div class=sc id=t1 style="left:110px;top:610px"><div class=pi>@PHONE@</div>Calls</div>
+ <div class=pp id=p1 style="left:700px;top:520px">@PERSON@</div><div class="ch bad" id=cg style="left:420px;top:440px">Rdg 1.8 ??</div><div class="ch gap" id=cm style="left:440px;top:690px">missing</div>
+ <div class=pp id=p2 style="left:990px;top:520px">@PERSON@</div>@MC@
+ <div id=ans><i></i><i></i><i class=h></i><b>half an answer</b></div></div>
 
-<div id=lost class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Hours <em>lost</em>, from start to end</h2>
- <div id=tr></div><div class=tm style="left:150px">START</div><div class=tm style="right:150px">END</div>
- <div class=lgd id=l0><i></i>Doing the work</div><div class=lgd id=l1><i></i>Asking, searching, re-typing</div>
- <div id=fin>Hours that never <u>reach the work.</u></div></div>
+<div id=time class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Hours <em>lost</em> to one update</h2>@ROWS@<div id=clk>@CLOCK@</div>
+ <div id=tfin>Same update. <u>Three times.</u></div></div>
+
+<div id=over class=layer><div class=tag>THE PROBLEM</div><h2 class=hd>Resources <em>over-committed</em></h2>
+ <div class=pn id=pl><b>SCHEDULE</b><div class=slot id=sl1>Job 14 &middot; 09:00</div><div class=who id=wa>Alex</div><div class=who id=wb>Priya</div><div class=lb id=lb1 style="top:480px">double-booked</div></div>
+ <div class=pn id=pr><b>INVENTORY</b><div class=po id=po1 style="top:150px">PO 1042 &middot; part 45022</div><div class=po id=po2 style="top:280px">PO 1043 &middot; part 45022</div><div id=xb>x2</div><div class=lb id=lb2 style="top:480px">ordered twice</div></div></div>
+
+<div id=flow class=layer><div class="tag ok">A WAY OUT</div><h2 class=hd>Updates in, <em class=g>easily</em></h2>
+ <svg class=wr viewBox="0 0 1920 1080">@DW@</svg>@DOMS@
+ <div id=rec><b>ONE SHARED RECORD</b><i></i><i></i><i></i><i></i><u>&#10003;</u></div>
+ <div id=flast>Any operation. Any update. <u>One place.</u></div></div>
+
+<div id=ask class=layer><div class="tag ok">THEN</div><h2 class=hd>Look up. <em class=g>Ask.</em> Get answers.</h2>
+ <div id=sup>@PERSON@</div><div id=sb2></div>
+ <div id=ac><div id=a0>Jobs waiting on a part<span>3</span></div><div id=a1>Waiting on approval<span>1</span></div><div id=a2>Promise at risk<span>2</span></div></div>
+ <div id=alast>Every figure <u>cited.</u></div><div id=ill>Illustration</div></div>
 
 <div id=sectors class=layer><div class="tag ok">THE SAME PATTERN, ACROSS SERVICE</div><h2 class=hd>Many sectors, <em>one example</em></h2>
  <svg class=wr viewBox="0 0 1920 1080">@SCW@</svg>@SCN@
@@ -500,19 +503,14 @@ window.__pop=(id,rot)=>pop($(id),460,40,rot);
 window.__fade=id=>show($(id));
 window.__wire=id=>{const l=$(id);l.style.opacity=1;l.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:420,fill:'forwards',easing:'ease-out'});};
 window.__node=(pre,i)=>{window.__wire(pre+'w'+i);pop($(pre+i),460,30);};
-window.__handover=()=>{$('sn1').animate([{transform:'rotate(-3deg)',opacity:1},{transform:'translate(910px,0) rotate(2deg)',opacity:0}],{duration:900,fill:'forwards',easing:'cubic-bezier(.5,0,.3,1)'});
- setTimeout(()=>pop($('sn2'),420,0,'rotate(2deg)'),700);setTimeout(()=>{pop($('q'),380,0);show($('qt'),500)},1250);};
-const SEG=[[230,0],[150,1,'Asking'],[150,0],[170,1,'Searching'],[110,0],[140,1,'Re-typing'],[170,0],[160,1,'Asking'],[100,0],[130,1,'Searching'],[120,0]];
-{let x=0;const k=1620/SEG.reduce((a,s)=>a+s[0],0);SEG.forEach((s,i)=>{const e=document.createElement('div');e.className='sg';e.id='sg'+i;e.style.left=x+'px';e.style.width=s[0]*k+'px';
- if(s[1])e.innerHTML='<span>'+s[2]+'</span>';$('tr').appendChild(e);x+=s[0]*k;});}
-window.__fill=()=>SEG.forEach((s,i)=>$('sg'+i).animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:300,delay:i*60,fill:'forwards',easing:'ease-out'}));
-window.__chase=()=>{let n=0;SEG.forEach((s,i)=>{if(!s[1])return;const e=$('sg'+i),d=n++*230;
- e.animate([{background:'#76B900',transform:'scaleX(1)'},{background:'#E5352B',transform:'scale(1.06,1.18)'},{background:'#E5352B',transform:'scale(1)'}],{duration:520,delay:d,fill:'forwards'});
- e.firstChild.animate([{opacity:0},{opacity:1}],{duration:300,delay:d+200,fill:'forwards'});});};
+window.__flash=id=>$(id).animate([{boxShadow:'0 0 0 0 rgba(229,53,43,0)'},{boxShadow:'0 0 0 18px rgba(229,53,43,.55)'},{boxShadow:'0 0 36px rgba(229,53,43,.6)'}],{duration:700,fill:'forwards'});
+window.__type=(id,t,ms)=>{const e=$(id);e.style.opacity=1;const t0=performance.now();const tick=n=>{const k=Math.min(1,(n-t0)/ms);e.textContent=t.slice(0,Math.round(t.length*k));if(k<1)requestAnimationFrame(tick);};requestAnimationFrame(tick);};
 window.__pick=()=>{for(let i=1;i<6;i++) $('s'+i).animate([{opacity:1},{opacity:.4}],{duration:520,fill:'forwards'});
  for(let i=1;i<6;i++) $('sw'+i).animate([{opacity:.65},{opacity:.1}],{duration:520,fill:'forwards'});
  $('s0').animate([{transform:'none',borderColor:'rgba(118,185,0,.55)',boxShadow:'none'},{transform:'scale(1.14)',borderColor:'#76B900',boxShadow:'0 0 60px 10px rgba(118,185,0,.55)'}],{duration:620,fill:'forwards',easing:'cubic-bezier(.2,.9,.25,1.1)'});};
-</script>""".replace("@DL@", logo("deloitte")).replace("@CHW@", chase_p).replace("@CHN@", chase_n).replace("@SCW@", sect_p).replace("@SCN@", sect_n)
+</script>""".replace("@DL@", logo("deloitte")).replace("@SCW@", sect_p).replace("@SCN@", sect_n).replace("@SRC@", sources_h).replace("@MC@", mini_h).replace("@MW@", mini_w) \
+        .replace("@ROWS@", rows_h).replace("@DOMS@", doms_h).replace("@DW@", doms_w).replace("@DOC@", PI["doc"]).replace("@PHONE@", PI["phone"]) \
+        .replace("@PERSON@", PI["person"]).replace("@CLOCK@", PI["clock"])
 
 
 def observ_html() -> str:
@@ -661,7 +659,7 @@ window.__go=ms=>{const c=document.body.classList.contains('closing');
 def end_html(subs: dict) -> str:
     """The summary: the application's strengths, each with one supporting figure, then the tagline."""
     cards = [("shield", "Safety first", "Safety-critical findings are flagged the moment an update is logged.", "%s of %s vehicles flagged" % (subs["{safety}"], subs["{open}"])),
-             ("gauge", "Instant answers", "Managers get answers in a tenth of a second, with no model call.", "0.1 s per answer"),
+             ("gauge", "Instant answers", "Supervisors get answers in a tenth of a second, with no model call.", "0.1 s per answer"),
              ("search", "Grounded in records", "Every figure is checked and traced back to a real record.", "905 of 905 answers traced"),
              ("chip", "Yours to run", "Three NIMs on one GPU you own, with observability built in.", "30 of 46 GB used")]
     c_html = "".join('<div class=c style="left:%dpx"><div class=ic>%s</div><div class=l>%s</div><div class=d>%s</div><div class=m>%s</div></div>'
@@ -685,9 +683,9 @@ window.__big=()=>{up($('big'),600);setTimeout(()=>up($('nm'),600),900);};
 
 def value_html(subs: dict) -> str:
     cards = [("v0", "shield", "%s of %s" % (subs["{safety}"], subs["{open}"]), "unsafe vehicles surfaced at once", "not buried in a technician's note"),
-             ("v1", "gauge", "0.1 s", "to answer a manager's question", "from live state, with no model call"),
+             ("v1", "gauge", "0.1 s", "to answer a supervisor's question", "from live state, with no model call"),
              ("v2", "search", "905 / 905", "answers traced to a real record", "every cited figure is checked"),
-             ("v3", "chat", "1 update", "feeds the whole shop", "the record, the handover and the dashboard")]
+             ("v3", "chat", "1 update", "feeds the whole operation", "the record, the handover and the dashboard")]
     c_html = "".join('<div class=v id=%s><div class=ic>%s</div><div class=big>%s</div><div class=lab>%s</div><div class=sub>%s</div></div>'
                      % (i, IC[ic], big, lab, sub) for i, ic, big, lab, sub in cards)
     return """<!doctype html><meta charset=utf-8><style>
@@ -701,8 +699,8 @@ p.sub2{position:absolute;left:0;right:0;top:166px;text-align:center;margin:0;fon
 .v .lab{font:700 38px/1.22 Arial}.v .sub{font:28px/1.32 Arial;color:#4b5b50;margin-top:18px}
 #v0{left:72px}#v1{left:527px}#v2{left:982px}#v3{left:1437px}
 #note{position:absolute;left:0;right:0;bottom:70px;text-align:center;font:26px Arial;color:#9FB59A;opacity:0}
-</style><h1>What it changes for the shop</h1><p class=sub2>Measured on the demo dataset</p>@CARDS@
-<div id=note>Figures are from this demo dataset. Your shop's results will vary.</div>
+</style><h1>What it changes for the operation</h1><p class=sub2>Measured on the demo dataset</p>@CARDS@
+<div id=note>Figures are from this demo dataset. Your results will vary.</div>
 <script>const $=id=>document.getElementById(id);
 const show=(e,d)=>e.animate([{opacity:0,transform:'translateY(50px) scale(.95)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
 window.__show=id=>show($(id));window.__note=()=>$('note').animate([{opacity:0},{opacity:1}],{duration:600,fill:'forwards'});
@@ -927,17 +925,27 @@ def scene_P():
                 page.wait_for_timeout(max(0, int((frac - at) * d * 1000))); at = frac
                 page.evaluate("() => { %s }" % js)
         return f
-    call = lambda fn, *a: "window.%s(%s)" % (fn, ",".join("'%s'" % x for x in a))
-    nodes = tuple((0.10 + 0.10 * i, "window.__node('n',%d)" % i) for i in range(6))
-    return [dict(cam=None, camo=dict(to=1.05)),                                                    # the title card is already on screen, nothing added to it
-            dict(cam=None, camo=dict(to=1.0), co="Detail lost",
-                 act=go("shift", (0.04, call("__fade", "day") + ";" + call("__fade", "night")), (0.28, call("__pop", "sn1", "rotate(-3deg)")),
-                        (0.60, "window.__handover()"))),
-            dict(cam=None, camo=dict(to=1.04), co="Answers scattered",
-                 act=go("chase", (0.03, call("__pop", "qb")), *nodes, (0.78, call("__fade", "cnt")))),
-            dict(cam=None, camo=dict(to=1.0), co="Time lost",
-                 act=go("lost", (0.02, "window.__fill()"), (0.30, "window.__chase()"), (0.34, call("__fade", "l0")), (0.52, call("__fade", "l1")),
-                        (0.78, call("__fade", "fin"))))]
+    pop = lambda i: "window.__pop('%s')" % i
+    fade = lambda i: "window.__fade('%s')" % i
+    wire = lambda i: "window.__wire('%s')" % i
+    p1 = [(0.40, "window.__layer('sources')")] + [(0.46 + 0.10 * i, pop("src%d" % i)) for i in range(5)]
+    p2 = [(0.03, fade("bw1")), (0.07, fade("bs1")), (0.12, pop("t0")), (0.18, pop("t1")), (0.24, pop("p1")), (0.30, wire("ta")), (0.36, pop("cg")),
+          (0.42, wire("tb")), (0.48, pop("cm")), (0.54, fade("bw2")), (0.58, fade("bs2")), (0.62, pop("p2"))] \
+         + [(0.64 + 0.04 * i, pop("mc%d" % i) + ";" + wire("mw%d" % i)) for i in range(5)] + [(0.86, pop("ans"))]
+    p3 = [(0.04, fade("clk"))] + [(0.10 + 0.20 * i, pop("rw%d" % i)) for i in range(3)] + [(0.78, fade("tfin"))]
+    p4 = [(0.03, fade("pl") + ";" + fade("pr")), (0.12, pop("sl1")), (0.24, pop("wa")), (0.36, pop("wb") + ";window.__flash('wb')"), (0.46, fade("lb1")),
+          (0.54, pop("po1")), (0.64, pop("po2")), (0.74, pop("xb")), (0.84, fade("lb2"))]
+    p5 = [(0.03 + 0.10 * i, "window.__node('dm',%d)" % i) for i in range(4)] + [(0.52, pop("rec")), (0.84, fade("flast"))]
+    p5 = [(f, js.replace("window.__node('dm',%d)" % i, pop("dm%d" % i) + ";" + wire("dw%d" % i))) for (f, js), i in zip(p5[:4], range(4))] + p5[4:]
+    q = "Which jobs are stuck, and why?"
+    p6 = [(0.04, pop("sup")), (0.12, fade("sb2")), (0.16, "window.__type('sb2','%s',1700)" % q), (0.58, fade("ac")),
+          (0.64, fade("a0")), (0.72, fade("a1")), (0.80, fade("a2")), (0.90, fade("alast")), (0.92, fade("ill"))]
+    return [dict(cam=None, camo=dict(to=1.04), act=go("title", *p1)),                              # the title card is the first frame
+            dict(cam=None, camo=dict(to=1.02), act=go("focal", *p2)),
+            dict(cam=None, camo=dict(to=1.03), co="Time lost", act=go("time", *p3)),
+            dict(cam=None, camo=dict(to=1.0), co="Over-committed", act=go("over", *p4)),
+            dict(cam=None, camo=dict(to=1.03), act=go("flow", *p5)),
+            dict(cam=None, camo=dict(to=1.02), act=go("ask", *p6))]
 
 
 def scene_U():
@@ -967,10 +975,6 @@ def scene_B():
     out[4]["cam"] = None                       # pull back: the whole five-stage flow, with nothing else on the slide
     out[4]["camo"] = dict(to=1.0)
     return out
-
-
-def scene_O():
-    return [dict(cam=None, camo=dict(to=1.07), act=lambda page, d: page.evaluate("ms => window.__go(ms)", int(d * 1000)))]
 
 
 def scene_E():
@@ -1070,6 +1074,9 @@ LIVE_PLAN = {
     "D2": dict(src="D2", cam="Q", camo=dict(max=1.75, pad=140), ring="Q"),
     "D3": dict(src="D3", cam=None, camo=dict(to=1.05),
                then=[dict(at=0.08, cam="ANS", camo=dict(max=1.45, pad=70), ring=None, co="Cited · no model call", dur=0.5)]),
+    "D7": dict(src="D7", cam="Q", camo=dict(max=1.75, pad=140), ring="Q"),
+    "D8": dict(src="D8", cam=None, camo=dict(to=1.05),
+               then=[dict(at=0.08, cam="ANS2", camo=dict(max=1.45, pad=70), ring=None, co="Order once", dur=0.5)]),
     "D5": dict(src="D5", cam="Q", camo=dict(max=1.75, pad=140), ring="Q"),
     "D6": dict(src="D6", cam=None, camo=dict(to=1.05), badge="D6",
                then=[dict(at="done+0.2", cam="LAST", camo=dict(max=1.6, pad=60), ring=None, co="Search + rerank", dur=0.45)]),
@@ -1365,10 +1372,10 @@ def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
 
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
-PIECES = [("P", "P", ["P1", "P2", "P3", "P4"]), ("O", "P", ["P5"]), ("H", "H", None), ("U", "P", ["P7"]), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
-          ("V", "V", None), ("E", "E", None), ("I", "G", None), ("F", "F", None), ("K", "K", None)]
+PIECES = [("P", "P", ["P1", "P2", "P3", "P4", "P5", "P6"]), ("H", "H", None), ("U", "P", ["P7"]), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
+          ("E", "E", None), ("I", "G", None), ("V", "V", None), ("F", "F", None), ("K", "K", None)]
 LIVE = "ACD"
-BRIDGE_BEFORE = "UAHBCDVEIFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
+BRIDGE_BEFORE = "HUABCDEIVFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
 
 
 def main():
@@ -1414,7 +1421,6 @@ def main():
             return t
         slide_driven, _ = slide_html(pptx, driven=True)
         (WORK / "slide_driven.html").write_text(slide_driven)
-        (WORK / "intro.html").write_text(intro_html())
         (WORK / "problem.html").write_text(problem_html())
         (WORK / "value.html").write_text(value_html(subs))
         (WORK / "comp.html").write_text(architecture_html())
@@ -1423,7 +1429,6 @@ def main():
         (WORK / "brand_open.html").write_text(brand_html(False))
         (WORK / "brand_close.html").write_text(brand_html(True))
         local = {"P": ((WORK / "problem.html").as_uri(), scene_P()),
-                 "O": ((WORK / "intro.html").as_uri(), scene_O()),
                  "U": ((WORK / "problem.html").as_uri() + "#sectors", scene_U()),
                  "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
                  "V": ((WORK / "value.html").as_uri(), scene_V()),
@@ -1472,13 +1477,13 @@ def main():
             if args.keep:
                 Path(args.keep).mkdir(parents=True, exist_ok=True); shutil.copy(m, Path(args.keep) / ("piece_%s.mp4" % name))
         if not args.scene:
-            final = OUT / "demo-preview.mp4"
+            final = OUT / (VIDEO + ".mp4")
             bed = music_file(args.music)
             concat(parts, WORK / "nomusic.mp4" if bed else final)
             if bed:
                 add_music(WORK / "nomusic.mp4", bed, final)
             print("music bed: %s" % (bed or "none (put one at %s/bed.<ext> or pass --music)" % MUSIC_DIR))
-            print("demo-preview.mp4: %.0f s total, %.1f MB" % (total, final.stat().st_size / 1e6))
+            print("%s.mp4: %.0f s total, %.1f MB" % (VIDEO, total, final.stat().st_size / 1e6))
 
 if __name__ == "__main__":
     try:
