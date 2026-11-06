@@ -223,6 +223,39 @@ def dictation() -> Path:
     return out
 
 
+BOX_FACTS = r"""
+cd /home/ubuntu/automotive-service-agent
+echo "VRAM $(nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits | tr -d ' ')"
+curl -s -m10 localhost:9090/api/v1/label/__name__/values | python3 -c "
+import sys, json
+n = json.load(sys.stdin)['data']
+print('SERIES', len([x for x in n if x.startswith('DCGM_')]), len([x for x in n if x.startswith('asoia_') and not x.endswith('_created')]))"
+.venv/bin/python scripts/evaluate.py 2>&1 | grep -m1 "traceability" | sed -E 's/.*\(([0-9]+)\/([0-9]+)\).*/TRACE \1 \2/'
+for q in "Which vehicles cannot be released on safety grounds?" "Which parts are holding up more than one job?"; do
+  s=$(date +%s.%N); curl -s -m60 localhost:8080/ask -H 'content-type: application/json' -d "{\"question\":\"$q\"}" >/dev/null; e=$(date +%s.%N)
+  echo "SECONDS $(echo "$e - $s" | bc)"
+done
+"""
+
+
+def box_facts(alias):
+    """Numbers the video quotes about the box itself, measured rather than written into the script."""
+    out = ssh(alias, BOX_FACTS)
+    f = {}
+    for line in out.splitlines():
+        k, *v = line.split()
+        f.setdefault(k, []).append(v)
+    used, total = (int(x) for x in f["VRAM"][0][0].split(","))
+    d, a = f["SERIES"][0]
+    ok, n = f["TRACE"][0]
+    secs = [float(v[0]) for v in f["SECONDS"]]
+    print("box facts: vram %d of %d MiB, series dcgm %s app %s, traceability %s/%s, answer seconds %s" % (used, total, d, a, ok, n, secs))
+    if max(secs) > 0.35:
+        print("  WARNING: a structured answer took %.2f s: the narration says about a tenth of a second" % max(secs))
+    # GB as the architecture slide has always written them: MiB / 1000
+    return {"{vram_used}": str(round(used / 1000)), "{vram_total}": str(round(total / 1000)), "{dcgm_n}": d, "{app_n}": a, "{trace_ok}": ok, "{trace_n}": n}
+
+
 def live_counts(pw, ask_url="http://127.0.0.1:8080/ask", dash="http://127.0.0.1:7871", api=True):
     """The numbers the narration quotes, read from the running app rather than written into the script."""
     n_ask = None
@@ -493,7 +526,7 @@ def main():
     ap = argparse.ArgumentParser(description="Capture the live app as raw footage.")
     ap.add_argument("--box", help="ssh alias of a running Brev instance (docs/BREV_RUNBOOK.md)")
     ap.add_argument("--local", action="store_true", help="use UIs already running on this machine (A on 7871, C 7872, D 7873)")
-    ap.add_argument("--scene", default="ACDG", help="which scenes to capture, e.g. C or AD")
+    ap.add_argument("--scene", default="CADG", help="which scenes to capture, in this order, e.g. C or AD. C first: it applies the technician's update, and A and D then show the state after it")
     ap.add_argument("--no-traffic", action="store_true", help="with --box: skip the warm-up traffic that fills Grafana")
     ap.add_argument("--check", action="store_true", help="say whether the footage still matches the app; touches nothing")
     ap.add_argument("--restamp", action="store_true", help="stamp the footage as current (the app changed, the screen did not)")
@@ -529,6 +562,8 @@ def main():
                     ssh(a.box, TRAFFIC % 100)
             n_safety, n_ask, n_open = live_counts(pw, api=bool(a.box))
             tl["subs"] = {"{safety}": str(n_safety), "{ask_n}": str(n_ask), "{open}": str(n_open)}
+            if a.box:
+                tl["subs"].update(box_facts(a.box))
             print("live numbers:", tl["subs"])
             graf = "http://127.0.0.1:3000/d/asoia/service-operations-agent?kiosk&from=now-30m&to=now&refresh=10s"
             jobs = {"A": lambda: cap_A(pw, "http://127.0.0.1:7871"), "C": lambda: cap_C(pw, "http://127.0.0.1:7872", dictation(), pick_ro(a.box)),
@@ -536,8 +571,15 @@ def main():
             for s in a.scene:
                 print("capturing scene %s" % s)
                 tl["scenes"][s] = jobs[s]()
+                if s == "C":                                   # the update is applied: the counts the narration quotes are now the ones after it
+                    n_safety, _, n_open = live_counts(pw, api=False)
+                    tl["subs"]["{safety}"], tl["subs"]["{open}"] = str(n_safety), str(n_open)
+                    print("after the update: %s unsafe, %s open" % (n_safety, n_open))
                 if "ask_n" in tl["scenes"][s]:
                     tl["subs"]["{ask_n}"] = tl["scenes"][s].pop("ask_n")
+                    if tl["subs"]["{ask_n}"] != tl["subs"]["{safety}"]:
+                        raise RuntimeError("the dashboard says %s vehicles are unsafe and the assistant says %s: capture C before A and D, on one database"
+                                           % (tl["subs"]["{safety}"], tl["subs"]["{ask_n}"]))
                 tl["size"] = [W * K, H * K]
                 tl["fps"] = FPS
                 (FOOT / "timeline.json").write_text(json.dumps(tl, indent=1))

@@ -1,128 +1,128 @@
 1
-00:00:00,000 --> 00:00:03,759
-Every service operation runs on updates from many different sources.
+00:00:00,000 --> 00:00:06,127
+Every service operation runs on a stream of updates: notes, calls, messages, systems.
 
 2
-00:00:03,979 --> 00:00:08,896
-The challenge is moving that information accurately, and finding it again when it matters.
+00:00:06,327 --> 00:00:11,293
+The hard part is moving that information accurately, and finding it again when it matters.
 
 3
-00:00:09,516 --> 00:00:14,387
-When that fails, time is lost asking again, searching, and re-keying.
+00:00:11,693 --> 00:00:17,078
+When that breaks down, time disappears: people ask again, search, and re-type.
 
 4
-00:00:14,607 --> 00:00:19,335
-Resources get over-committed: a job double-booked, a part ordered twice.
+00:00:17,278 --> 00:00:22,243
+Resources get over-committed: a job is double-booked, or a part is ordered twice.
 
 5
-00:00:19,555 --> 00:00:24,847
-It need not be. Feed updates in easily, from any operation, into one place.
+00:00:22,443 --> 00:00:27,960
+None of it is inevitable. Capture updates easily, from any operation, in one place.
 
 6
-00:00:25,067 --> 00:00:29,982
-Then supervisors can look up the state of operations, ask a question, and get an answer.
+00:00:28,160 --> 00:00:33,635
+Then supervisors can look up the state of operations, ask a question, and get a straight answer.
 
 7
-00:00:30,702 --> 00:00:35,899
-Our answer: the Service Operations Agent, powered by Deloitte and NVIDIA.
+00:00:34,335 --> 00:00:39,902
+That is our solution: the Service Operations Agent, powered by Deloitte and NVIDIA.
 
 8
-00:00:36,619 --> 00:00:40,332
-Built for any service operation, shown here in automotive.
+00:00:40,602 --> 00:00:44,776
+Built for any service operation, and shown today in automotive service.
 
 9
-00:00:41,052 --> 00:00:43,881
-Everyone sees the same live state of operations.
+00:00:45,476 --> 00:00:49,697
+Here is how it works. An update goes in once, spoken or typed.
 
 10
-00:00:44,101 --> 00:00:46,737
-Every job, with the reason it needs attention.
+00:00:49,897 --> 00:00:53,930
+Riva turns speech into text, and Nemotron extracts the facts.
 
 11
-00:00:46,957 --> 00:00:50,019
-Like the 17 vehicles flagged unsafe to release.
+00:00:54,130 --> 00:00:57,927
+Code checks every fact against the record, and keeps an audit trail.
 
 12
-00:00:51,039 --> 00:00:55,450
-Updates go in once, by voice or text, in the technician's own words.
+00:00:58,127 --> 00:01:02,025
+Supervisors then simply ask, and receive cited answers.
 
 13
-00:00:55,670 --> 00:00:59,889
-NVIDIA Riva transcribes it, and Nemotron extracts the facts.
+00:01:03,025 --> 00:01:07,009
+Let's follow one update, live. A technician dictates it.
 
 14
-00:01:00,109 --> 00:01:03,814
-Code checks every fact against the record and keeps an audit trail.
+00:01:07,209 --> 00:01:09,573
+NVIDIA Riva transcribes the speech.
 
 15
-00:01:04,034 --> 00:01:07,283
-Supervisors simply ask, and receive cited answers.
-
-16
-00:01:08,303 --> 00:01:11,781
-Follow one update. A technician dictates it from the bay.
-
-17
-00:01:12,001 --> 00:01:14,640
-NVIDIA Riva turns the speech into text.
-
-18
-00:01:14,860 --> 00:01:18,850
+00:01:09,773 --> 00:01:13,764
 Nemotron extracts the facts: the measurement and the spec.
 
+16
+00:01:14,264 --> 00:01:18,576
+Code verifies it and flags the repair order unsafe, immediately.
+
+17
+00:01:19,576 --> 00:01:22,031
+Now everyone sees the same live picture.
+
+18
+00:01:22,231 --> 00:01:24,867
+Every job, with the reason it needs attention.
+
 19
-00:01:19,370 --> 00:01:24,102
-Code verifies it and flags the repair order unsafe to release, instantly.
+00:01:25,067 --> 00:01:29,429
+18 vehicles flagged unsafe, including the one just logged.
 
 20
-00:01:25,122 --> 00:01:29,949
+00:01:30,429 --> 00:01:35,256
 A supervisor asks: which vehicles cannot be released on safety grounds?
 
 21
-00:01:30,169 --> 00:01:34,160
-18 vehicles, each one cited, in a tenth of a second.
+00:01:35,456 --> 00:01:39,447
+18 vehicles, each one cited, in about a tenth of a second.
 
 22
-00:01:34,680 --> 00:01:38,895
-Another question: which parts are holding up more than one job?
+00:01:39,947 --> 00:01:43,893
+Another question: which parts hold up more than one job?
 
 23
-00:01:39,115 --> 00:01:42,642
-Order once, and clear several jobs, in a tenth of a second.
+00:01:44,093 --> 00:01:47,611
+Order each part once, and clear several jobs at a time.
 
 24
-00:01:43,162 --> 00:01:47,518
-An open question: has anyone seen a whistling noise on a Passat?
+00:01:48,111 --> 00:01:52,653
+And an open question: has anyone seen a whistling noise on a Passat?
 
 25
-00:01:47,738 --> 00:01:52,555
+00:01:52,853 --> 00:01:57,669
 Search, reranking and a cited answer, in seconds, on one GPU.
 
 26
-00:01:53,575 --> 00:01:59,145
-Behind it, the architecture: three NVIDIA NIMs on one L40S.
+00:01:58,669 --> 00:02:03,451
+Behind it all: three NVIDIA NIMs on a single L40S.
 
 27
-00:01:59,765 --> 00:02:04,219
-Riva handles speech. NeMo Guardrails stops unsafe requests.
+00:02:03,851 --> 00:02:08,120
+Riva handles speech, and NeMo Guardrails stops unsafe requests.
 
 28
-00:02:04,439 --> 00:02:08,055
-NeMo Evaluator scores every release: the whole stack.
+00:02:08,320 --> 00:02:10,731
+NeMo Evaluator scores every release.
 
 29
-00:02:09,075 --> 00:02:14,086
-All observable: DCGM and app metrics, live in Grafana.
+00:02:11,731 --> 00:02:14,888
+And all of it is observable, live in Grafana.
 
 30
-00:02:15,106 --> 00:02:18,862
-In summary: updates in once, one shared state.
+00:02:15,888 --> 00:02:20,202
+In short: updates go in once, and everyone sees one state.
 
 31
-00:02:19,082 --> 00:02:22,698
+00:02:20,402 --> 00:02:24,018
 Answers in a tenth of a second, every one traced to a record.
 
 32
-00:02:22,918 --> 00:02:25,420
+00:02:24,218 --> 00:02:26,720
 Fast. Grounded. Yours to run.
 

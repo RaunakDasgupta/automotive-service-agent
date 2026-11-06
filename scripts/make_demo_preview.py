@@ -41,13 +41,13 @@ OUT = ROOT / "docs" / "demo"
 SCRIPT = ROOT / "docs" / "DEMO_VIDEO_REVISED.md"      # the beat table the revised video is built from (the old final demo is docs/demo/v1-final)
 VIDEO = "demo-revised"                                  # docs/demo/demo-revised.mp4, .srt and edit-sheet-revised.md
 WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
-GAP = 0.22                       # silence after each beat's voice
+GAP = 0.20                       # silence after each beat's voice
 F_TAIL = 0.4                     # seconds the closing card stays after the last word
 CAPTIONS = False                 # burned-in captions: off. demo-preview.srt (scripts/export_edit_sheet.py) carries them as a separate file
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
 HOLD = {"A4": 0.3, "B5": 0.3, "C3": 0.3, "C4": 0.3, "D3": 0.3, "D4": 0.6, "D6": 0.3,
-        "E1": 0.4, "E5": 0.3, "P2": 0.4, "D8": 0.3, "G1": 0.3, "F4": 0.3, "H1": 0.0, "K1": 0.5}
+        "E1": 0.2, "E5": 0.3, "P2": 0.2, "D8": 0.3, "G1": 0.3, "F4": 0.3, "H1": 0.0, "K1": 0.5}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -513,7 +513,7 @@ window.__pick=()=>{for(let i=1;i<6;i++) $('s'+i).animate([{opacity:1},{opacity:.
         .replace("@PERSON@", PI["person"]).replace("@CLOCK@", PI["clock"])
 
 
-def observ_html() -> str:
+def observ_html(subs: dict) -> str:
     """The observability infographic: DCGM's 19 GPU series and the app's 13 into Prometheus into Grafana. The live dashboard is
     laid into the empty frame by pip_overlay; the legend chips light up as its figures and graphs are ringed."""
     return """<!doctype html><meta charset=utf-8><style>
@@ -537,10 +537,10 @@ svg.ar{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:
 .lg{height:54px;padding:0 22px 0 18px;border-radius:27px;background:rgba(255,255,255,.1);border:2px solid rgba(118,185,0,.8);font:700 24px/50px Arial;white-space:nowrap;opacity:0}
 .lg:before{content:"";display:inline-block;width:20px;height:20px;border-radius:5px;border:4px solid #76B900;margin-right:10px;vertical-align:-3px;box-shadow:0 0 10px rgba(118,185,0,.8)}
 </style><div class=grid></div><h1>Observability, <u>built in</u></h1>
-<div class=src id=a><img src="@NV@"><div class=sub style="top:80px">DCGM exporter</div><div class=n><span class=v data-to=19>19</span></div><div class=u>GPU series</div>
+<div class=src id=a><img src="@NV@"><div class=sub style="top:80px">DCGM exporter</div><div class=n><span class=v data-to=@DCGM@>@DCGM@</span></div><div class=u>GPU series</div>
  <div class=m>utilisation &middot; framebuffer &middot; power &middot; temperature &middot; clock</div></div>
-<div class=src id=b><div class=t>Service Operations Agent</div><div class=sub style="top:80px">the app's own metrics</div><div class=n><span class=v data-to=13>13</span></div><div class=u>app series</div>
- <div class=m>answer latency &middot; NIM latency &middot; model calls &middot; tool use &middot; guardrail blocks</div></div>
+<div class=src id=b><div class=t>Service Operations Agent</div><div class=sub style="top:80px">the app's own metrics</div><div class=n><span class=v data-to=@APPN@>@APPN@</span></div><div class=u>app series</div>
+ <div class=m>answer latency &middot; NIM latency &middot; model calls &middot; tool use &middot; compose fallbacks</div></div>
 <div id=prom><b>Prometheus</b><i>scrapes both</i></div>
 <div id=gl><img src="@GR@">Grafana &middot; live</div><div id=frame></div>
 <svg class=ar viewBox="0 0 1920 1080"><defs><marker id=h viewBox="0 0 10 10" refX=7 refY=5 markerWidth=5 markerHeight=5 orient=auto-start-reverse><path d="M0 0L10 5L0 10z" fill="#76B900"/></marker></defs>
@@ -557,14 +557,15 @@ window.__go=ms=>{const at=(f,fn)=>setTimeout(fn,ms*f);
  at(.18,()=>{draw($('l0'));draw($('l1'));});at(.22,()=>up($('prom'),380));
  at(.28,()=>draw($('l2')));at(.30,()=>{$('frame').animate([{opacity:0},{opacity:1}],{duration:400,fill:'forwards'});up($('gl'),420);});
  at(.46,()=>up($('g0'),360));at(.60,()=>up($('g1'),360));at(.72,()=>up($('g2'),360));};
-</script>""".replace("@NV@", logo("nvidia")).replace("@GR@", logo("grafana"))
+</script>""".replace("@NV@", logo("nvidia")).replace("@GR@", logo("grafana")).replace("@DCGM@", subs.get("{dcgm_n}", "19")).replace("@APPN@", subs.get("{app_n}", "13"))
 
 
-def architecture_html() -> str:
+def architecture_html(subs: dict) -> str:
     """The deployed architecture as a layered diagram inside one frame: quality on top, speech and safety in the middle, the three
     NIMs on the L40S at the bottom. Row names sit in a left gutter, so nothing crosses a card or its border. Parts are shown one at a
     time; the camera frames each with the earlier ones still on screen, dimmed. The part being shown glows; it is not ringed, because
     a ring would sit on the part's own border."""
+    vu, vt = subs.get("{vram_used}", "30"), subs.get("{vram_total}", "46")
     tiles = [("t0", "chat", "Nemotron 8B", "language"), ("t1", "search", "Embedding", "search"), ("t2", "rank", "Reranking", "search")]
     t_html = "".join('<div class=tile id=%s><div class=ic>%s</div><b>%s</b><i>%s</i><span>NIM</span></div>' % (i, IC[ic], a, b) for i, ic, a, b in tiles)
     cards = [("c0", "wave", "Riva", "Speech to text, for spoken updates"), ("c1", "shield", "NeMo Guardrails", "Stops unsafe requests before tools run"),
@@ -612,17 +613,18 @@ svg#flow{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-event
 <div class=fn id=n0 style="left:660px;top:573px">transcript</div><div class=fn id=n1 style="left:1250px;top:573px">checked question</div><div class=fn id=n2 style="left:1580px;top:573px">checked answer</div>
 <div class=fn id=n3 style="left:1250px;top:323px">test questions</div><div class=fn id=n4 style="left:1580px;top:323px">answers scored</div>
 <div id=gpu><div class=chip><div class=nm>NVIDIA L40S</div>@TILES@</div>
- <div id=vr><div class=l><span>GPU memory in use</span><span>about 30 GB of 46 GB</span></div><div class=tr><div id=vf></div></div></div></div>
+ <div id=vr><div class=l><span>GPU memory in use</span><span>about @VU@ GB of @VT@ GB</span></div><div class=tr><div id=vf></div></div></div></div>
 @CARDS@
 <script>const $=id=>document.getElementById(id);
 const show=(e,d)=>e.animate([{opacity:0,transform:'translateY(46px) scale(.94)'},{opacity:1,transform:'none'}],{duration:d||480,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
-window.__show=id=>show($(id));window.__vram=()=>{show($('vr'));$('vf').animate([{width:'0%'},{width:'65%'}],{duration:1200,fill:'forwards',easing:'ease-out'});};
+window.__show=id=>show($(id));window.__vram=()=>{show($('vr'));$('vf').animate([{width:'0%'},{width:'@VP@%'}],{duration:1200,fill:'forwards',easing:'ease-out'});};
 window.__pulse=id=>$(id).animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.09)',filter:'brightness(1.35)'},{transform:'scale(1)',filter:'brightness(1)'}],{duration:640});
 window.__hl=id=>{document.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'));if(id)$(id).classList.add('hl');};
 window.__dim=(ids,on)=>ids.forEach(i=>{const e=$(i);e.animate([{opacity:getComputedStyle(e).opacity},{opacity:on?.5:1}],{duration:450,fill:'forwards'});});
 window.__flow=ids=>ids.forEach(i=>{const f=$('f'+i),n=$('n'+i);f.style.opacity=1;f.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:520,fill:'forwards',easing:'ease-out'});
  n.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:420,delay:260,fill:'forwards'});});
-</script>""".replace("@NV@", logo("nvidia")).replace("@TILES@", t_html).replace("@CARDS@", c_html.replace("@NV@", logo("nvidia")))
+</script>""".replace("@NV@", logo("nvidia")).replace("@TILES@", t_html).replace("@CARDS@", c_html.replace("@NV@", logo("nvidia"))) \
+        .replace("@VU@", vu).replace("@VT@", vt).replace("@VP@", "%d" % round(100 * int(vu) / int(vt)))
 
 
 def brand_html(closing: bool) -> str:
@@ -660,8 +662,8 @@ def end_html(subs: dict) -> str:
     """The summary: the application's strengths, each with one supporting figure, then the tagline."""
     cards = [("shield", "Safety first", "Safety-critical findings are flagged the moment an update is logged.", "%s of %s vehicles flagged" % (subs["{safety}"], subs["{open}"])),
              ("gauge", "Instant answers", "Supervisors get answers in a tenth of a second, with no model call.", "0.1 s per answer"),
-             ("search", "Grounded in records", "Every figure is checked and traced back to a real record.", "905 of 905 answers traced"),
-             ("chip", "Yours to run", "Three NIMs on one GPU you own, with observability built in.", "30 of 46 GB used")]
+             ("search", "Grounded in records", "Every figure is checked and traced back to a real record.", "%s of %s traced" % (subs.get("{trace_ok}", "905"), subs.get("{trace_n}", "905"))),
+             ("chip", "Yours to run", "Three NIMs on one GPU you own, with observability built in.", "%s of %s GB used" % (subs.get("{vram_used}", "30"), subs.get("{vram_total}", "46")))]
     c_html = "".join('<div class=c style="left:%dpx"><div class=ic>%s</div><div class=l>%s</div><div class=d>%s</div><div class=m>%s</div></div>'
                      % (76 + i * 440, IC[ic], t, d, m) for i, (ic, t, d, m) in enumerate(cards))
     return """<!doctype html><meta charset=utf-8><style>
@@ -1014,8 +1016,8 @@ def scene_F():
 # camera's limits; `co` the keyword callout; `freeze` shows one still of the step instead of playing it. `then` lists
 # later moves: `at` is a fraction of the beat, or "done+0.9" = 0.9 s after the step's result appeared on screen.
 LIVE_PLAN = {
-    "A1": dict(src="A", freeze=True, cam=None, camo=dict(to=1.04), co="Service Operations Agent"),
-    "A2": dict(src="A", freeze=True, cam="ROW", camo=dict(max=1.7, pad=70), ring="ROW", co="Automotive showcase"),
+    "A1": dict(src="A", freeze=True, cam=None, camo=dict(to=1.04), co="Live state"),
+    "A2": dict(src="A", freeze=True, cam="ROW", camo=dict(max=1.7, pad=70), ring="ROW", co="Reason on every row"),
     "A4": dict(src="A", freeze=True, cam="TILE", camo=dict(max=2.3, pad=200), ring="TILE", co="{safety} flagged"),
     "C1": dict(src="C1", cam="VOICE", camo=dict(max=1.55, pad=100), co="Voice in"),
     "C2": dict(src="C2", cam="TRANS", camo=dict(max=1.6, pad=100), co="Riva ASR", badge="C2"),
@@ -1324,10 +1326,10 @@ def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
 
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
-PIECES = [("P", "P", ["P1", "P2", "P3", "P4", "P5", "P6"]), ("H", "H", None), ("U", "P", ["P7"]), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
+PIECES = [("P", "P", ["P1", "P2", "P3", "P4", "P5", "P6"]), ("H", "H", None), ("U", "P", ["P7"]), ("B", "B", None), ("C", "C", None), ("A", "A", ["A1", "A2", "A4"]), ("D", "D", None),
           ("E", "E", None), ("I", "G", None), ("F", "F", None), ("K", "K", None)]
 LIVE = "ACD"
-BRIDGE_BEFORE = "HUABCDEIFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
+BRIDGE_BEFORE = "HUBCADEIFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
 
 
 def main():
@@ -1374,8 +1376,8 @@ def main():
         slide_driven, _ = slide_html(pptx, driven=True)
         (WORK / "slide_driven.html").write_text(slide_driven)
         (WORK / "problem.html").write_text(problem_html())
-        (WORK / "comp.html").write_text(architecture_html())
-        (WORK / "observ.html").write_text(observ_html())
+        (WORK / "comp.html").write_text(architecture_html(subs))
+        (WORK / "observ.html").write_text(observ_html(subs))
         (WORK / "end.html").write_text(end_html(subs))
         (WORK / "brand_open.html").write_text(brand_html(False))
         (WORK / "brand_close.html").write_text(brand_html(True))
