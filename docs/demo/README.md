@@ -5,7 +5,7 @@ Two files, both recorded from the real application:
 | file | what it is |
 |---|---|
 | `process-slide-preview.mp4` | The animated process slide on its own (~7.5 s): the five stages only, with no business figures |
-| `demo-preview.mp4` | The whole demo (2:31): 33 voiced beats and the Deloitte outro from `docs/DEMO_VIDEO.md`, at the voice's natural pace |
+| `v1-final/demo-final-v1.mp4` | The old final demo (2:28), kept as delivered, with its subtitles, edit sheet and script in `v1-final/`; git tag `demo-final-v1`. The revised video, with a rewritten opening, is in progress and will be `demo-preview.mp4` again |
 | `footage/` | The live application as recorded on the L40S box, **raw**: `raw/{A,C,D,G}.mp4` (3840x2160, nothing drawn on it) and `timeline.json` (time windows, clicks, and where every target is on screen). The video is edited from these alone, so **the box is not needed again until the app's screen changes** |
 
 ## What is on screen
