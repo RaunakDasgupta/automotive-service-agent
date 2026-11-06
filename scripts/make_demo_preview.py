@@ -46,8 +46,8 @@ F_TAIL = 0.4                     # seconds the closing card stays after the last
 CAPTIONS = False                 # burned-in captions: off. demo-preview.srt (scripts/export_edit_sheet.py) carries them as a separate file
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
-HOLD = {"A4": 0.3, "B5": 0.3, "C3": 0.6, "C4": 0.6, "D3": 0.4, "D4": 0.6, "D6": 0.5,
-        "E1": 0.4, "E5": 0.5, "P2": 0.6, "D8": 0.5, "G1": 0.3, "F4": 0.3, "H1": 0.0, "K1": 0.5}
+HOLD = {"A4": 0.3, "B5": 0.3, "C3": 0.3, "C4": 0.3, "D3": 0.3, "D4": 0.6, "D6": 0.3,
+        "E1": 0.4, "E5": 0.3, "P2": 0.4, "D8": 0.3, "G1": 0.3, "F4": 0.3, "H1": 0.0, "K1": 0.5}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -62,7 +62,7 @@ def beats():
         m = re.match(r"\| ([A-V])(\d) \| (.+?) \| (.+) \|$", line)
         if m:
             out.setdefault(m.group(1), []).append((m.group(1) + m.group(2), m.group(3)))
-    assert sorted(out) == list("ABCDEFGHKPV"), "expected scenes A-H, K, P and V in %s, found %%s" % SCRIPT.name % sorted(out)
+    assert sorted(out) == list("ABCDEFGHKP"), "expected scenes A-H, K and P in %s, found %%s" % SCRIPT.name % sorted(out)
     return out
 
 
@@ -681,33 +681,6 @@ window.__big=()=>{up($('big'),600);setTimeout(()=>up($('nm'),600),900);};
 </script>""".replace("@CARDS@", c_html)
 
 
-def value_html(subs: dict) -> str:
-    cards = [("v0", "shield", "%s of %s" % (subs["{safety}"], subs["{open}"]), "unsafe vehicles surfaced at once", "not buried in a technician's note"),
-             ("v1", "gauge", "0.1 s", "to answer a supervisor's question", "from live state, with no model call"),
-             ("v2", "search", "905 / 905", "answers traced to a real record", "every cited figure is checked"),
-             ("v3", "chat", "1 update", "feeds the whole operation", "the record, the handover and the dashboard")]
-    c_html = "".join('<div class=v id=%s><div class=ic>%s</div><div class=big>%s</div><div class=lab>%s</div><div class=sub>%s</div></div>'
-                     % (i, IC[ic], big, lab, sub) for i, ic, big, lab, sub in cards)
-    return """<!doctype html><meta charset=utf-8><style>
-:root{--co-x:1430px;--co-y:50px}
-body{margin:0;width:1920px;height:1080px;overflow:hidden;position:relative;font-family:Arial,sans-serif;color:#fff;background:radial-gradient(circle at 25% 15%,#1d4d3f 0%,#0d201b 75%)}
-h1{position:absolute;left:0;right:0;top:78px;text-align:center;margin:0;font-size:64px}
-p.sub2{position:absolute;left:0;right:0;top:166px;text-align:center;margin:0;font-size:30px;color:#C8D6BE}
-.v{position:absolute;top:270px;width:410px;height:600px;border-radius:22px;background:#fff;color:#142019;opacity:0;box-shadow:0 22px 50px rgba(0,0,0,.45);border-top:14px solid #76B900;padding:34px;box-sizing:border-box}
-.v .ic{width:96px;height:96px;background:#EEF6DF;border-radius:20px;padding:16px;box-sizing:border-box}
-.v .big{font:800 82px/1.05 Arial;margin:34px 0 16px;color:#2f5f00;white-space:nowrap}
-.v .lab{font:700 38px/1.22 Arial}.v .sub{font:28px/1.32 Arial;color:#4b5b50;margin-top:18px}
-#v0{left:72px}#v1{left:527px}#v2{left:982px}#v3{left:1437px}
-#note{position:absolute;left:0;right:0;bottom:70px;text-align:center;font:26px Arial;color:#9FB59A;opacity:0}
-</style><h1>What it changes for the operation</h1><p class=sub2>Measured on the demo dataset</p>@CARDS@
-<div id=note>Figures are from this demo dataset. Your results will vary.</div>
-<script>const $=id=>document.getElementById(id);
-const show=(e,d)=>e.animate([{opacity:0,transform:'translateY(50px) scale(.95)'},{opacity:1,transform:'none'}],{duration:d||520,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
-window.__show=id=>show($(id));window.__note=()=>$('note').animate([{opacity:0},{opacity:1}],{duration:600,fill:'forwards'});
-</script>""".replace("@CARDS@", c_html)
-
-
-# ------------------------------------------------------------------ recording
 def record(pw, name: str, url: str, texts, durs, plan, tail=0.0, holds=None) -> Path:
     """Record one scene. `plan[i]` is the choreography dict for beat i; it runs in real time,
     each beat starting at the running total of the voiced durations before it."""
@@ -967,14 +940,15 @@ def scene_B():
         c = [{"sel": '[data-name="anim-s%d-card"]' % i}, {"sel": '[data-name="anim-s%d-badge"]' % i}]
         return dict(cam=c, camo=dict(max=1.55, pad=110), co=co, ring={"sel": '[data-name="anim-s%d-badge"]' % i}, ringpad=6,
                     act=lambda page, d, i=i: page.evaluate("i => window.__stage(i)", i))
-    out = [stage(0, "Capture"), stage(1, "Understand"), stage(2, "Verify"), stage(3, "Record"), stage(4, "Decide")]
 
-    def last(page, d):
-        page.evaluate("() => window.__stage(4)")
-    out[4]["act"] = last
-    out[4]["cam"] = None                       # pull back: the whole five-stage flow, with nothing else on the slide
-    out[4]["camo"] = dict(to=1.0)
-    return out
+    def verify_record(page, d):                  # stage 3 on the first words, stage 4 half way through the same beat
+        page.evaluate("() => window.__stage(2)")
+        page.wait_for_timeout(int(d * 500))
+        page.evaluate("() => window.__stage(3)")
+    both = dict(cam=[{"sel": '[data-name="anim-s2-card"]'}, {"sel": '[data-name="anim-s3-card"]'}], camo=dict(max=1.3, pad=90), co="Verify",
+                ring={"sel": '[data-name="anim-s2-badge"]'}, ringpad=6, act=verify_record)
+    last = dict(cam=None, camo=dict(to=1.0), co="Decide", act=lambda page, d: page.evaluate("() => window.__stage(4)"))   # pull back: the whole five-stage flow
+    return [stage(0, "Capture"), stage(1, "Understand"), both, last]
 
 
 def scene_E():
@@ -1010,28 +984,6 @@ def scene_E():
     return [dict(cam=GPU, camo=dict(max=1.9, pad=70), act=e1),
             dict(cam={"rect": [130, 380, 1660, 640]}, camo=dict(max=1.3, pad=40), act=e3),      # the two lower rows and their names
             dict(cam={"sel": "#frame"}, camo=dict(max=1.18, pad=10), act=e5)]
-
-
-def scene_V():
-    def show(*ids, note=False):
-        def f(page, d):
-            for i in ids:
-                page.evaluate("i => window.__show(i)", i)
-            if note:
-                page.wait_for_timeout(int(d * 500))
-                page.evaluate("() => window.__note()")
-        return f
-    def show_then(first, second):                    # card 3 on the first words, card 4 and the pull-back half way
-        def f(page, d):
-            page.evaluate("i => window.__show(i)", first)
-            page.wait_for_timeout(int(d * 500))
-            page.evaluate("i => window.__show(i)", second)
-            page.evaluate("() => window.__note()")
-        return f
-    V = lambda i: {"sel": "#v%d" % i}
-    return [dict(cam=V(0), camo=dict(max=1.55, pad=160), co="Safety", act=show("v0")),
-            dict(cam=[V(0), V(1)], camo=dict(max=1.5, pad=120), co="Speed", act=show("v1")),
-            dict(cam=None, camo=dict(to=1.0), co="Trust", act=show_then("v2", "v3"))]
 
 
 def scene_brand():
@@ -1373,9 +1325,9 @@ def pip_overlay(pngs: Pngs, bg: Path, tl: dict, nd: float, out: Path) -> Path:
 # ------------------------------------------------------------------ main
 # (output piece, script scene, beat ids or None for all): the title card and the problem, then the stamped-note visual, then the live app
 PIECES = [("P", "P", ["P1", "P2", "P3", "P4", "P5", "P6"]), ("H", "H", None), ("U", "P", ["P7"]), ("A", "A", ["A1", "A2", "A4"]), ("B", "B", None), ("C", "C", None), ("D", "D", None),
-          ("E", "E", None), ("I", "G", None), ("V", "V", None), ("F", "F", None), ("K", "K", None)]
+          ("E", "E", None), ("I", "G", None), ("F", "F", None), ("K", "K", None)]
 LIVE = "ACD"
-BRIDGE_BEFORE = "HUABCDEIVFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
+BRIDGE_BEFORE = "HUABCDEIFK"   # ease from one screen to the next instead of cutting: problem, dashboard, process, ingest, assistant, impact, architecture, observability, summary
 
 
 def main():
@@ -1422,7 +1374,6 @@ def main():
         slide_driven, _ = slide_html(pptx, driven=True)
         (WORK / "slide_driven.html").write_text(slide_driven)
         (WORK / "problem.html").write_text(problem_html())
-        (WORK / "value.html").write_text(value_html(subs))
         (WORK / "comp.html").write_text(architecture_html())
         (WORK / "observ.html").write_text(observ_html())
         (WORK / "end.html").write_text(end_html(subs))
@@ -1431,7 +1382,6 @@ def main():
         local = {"P": ((WORK / "problem.html").as_uri(), scene_P()),
                  "U": ((WORK / "problem.html").as_uri() + "#sectors", scene_U()),
                  "B": ((WORK / "slide_driven.html").as_uri(), scene_B()),
-                 "V": ((WORK / "value.html").as_uri(), scene_V()),
                  "E": ((WORK / "comp.html").as_uri(), scene_E()),
                  "I": ((WORK / "observ.html").as_uri(), scene_I()),
                  "F": ((WORK / "end.html").as_uri(), scene_F()),

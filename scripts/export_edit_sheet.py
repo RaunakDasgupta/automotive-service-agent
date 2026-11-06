@@ -54,7 +54,7 @@ def main():
         for k, v in subs.items():
             t = t.replace(k, v)
         return t
-    plans = {"P": m.scene_P(), "U": m.scene_U(), "B": m.scene_B(), "V": m.scene_V(), "E": m.scene_E(), "I": m.scene_I(), "F": m.scene_F(), "H": m.scene_brand(), "K": m.scene_brand()}
+    plans = {"P": m.scene_P(), "U": m.scene_U(), "B": m.scene_B(), "E": m.scene_E(), "I": m.scene_I(), "F": m.scene_F(), "H": m.scene_brand(), "K": m.scene_brand()}
 
     rows, srt, now, first = [], [], 0.0, True
     wavs = []                                            # (path, seconds of voice+gap, hold, bridge before) for narration.wav
