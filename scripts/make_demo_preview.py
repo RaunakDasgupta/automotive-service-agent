@@ -41,13 +41,13 @@ OUT = ROOT / "docs" / "demo"
 SCRIPT = ROOT / "docs" / "DEMO_VIDEO_REVISED.md"      # the beat table the revised video is built from (the old final demo is docs/demo/v1-final)
 VIDEO = "demo-revised"                                  # docs/demo/demo-revised.mp4, .srt and edit-sheet-revised.md
 WORK = Path(tempfile.mkdtemp(prefix="asoia-demo-"))
-GAP = 0.20                       # silence after each beat's voice
+GAP = 0.18                       # silence after each beat's voice
 F_TAIL = 0.4                     # seconds the closing card stays after the last word
 CAPTIONS = False                 # burned-in captions: off. demo-preview.srt (scripts/export_edit_sheet.py) carries them as a separate file
 TEMPO = 1.0                      # speech speed (1.0 = the voice's natural pace)
 # seconds a key visual is held, still, after its line has been spoken, so it can be read
-HOLD = {"A4": 0.3, "B5": 0.3, "C3": 0.3, "C4": 0.3, "D3": 0.3, "D4": 0.6, "D6": 0.3,
-        "E1": 0.2, "E5": 0.3, "P2": 0.2, "D8": 0.3, "G1": 0.3, "F4": 0.3, "H1": 0.0, "K1": 0.5}
+HOLD = {"A4": 0.15, "B5": 0.15, "C3": 0.15, "C4": 0.15, "D3": 0.15, "D4": 0.6, "D6": 0.15,
+        "E1": 0.2, "E5": 0.15, "P2": 0.2, "D8": 0.15, "G1": 0.15, "F4": 0.15, "H1": 0.0, "K1": 0.5}
 VOICE, RATE = "Magpie-Multilingual.EN-US.Sofia", 44100
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -79,6 +79,15 @@ def spoken(text: str) -> str:
 
 
 _voice_cache: dict[tuple, tuple[Path, float]] = {}
+
+
+# The problem opening is read slower and with longer pauses than the rest: calm, so each point lands before the next one starts.
+OPENING_PACE = {"tempo": 0.92, "gap": 0.40}
+OPENING = ("P1", "P2", "P3", "P4", "P5", "P6")
+
+
+def pace(bid: str) -> dict:
+    return OPENING_PACE if bid in OPENING else {}
 
 
 def voice(text: str, tempo: float | None = None, gap: float | None = None) -> tuple[Path, float]:
@@ -1405,7 +1414,7 @@ def main():
                     Path(args.keep).mkdir(parents=True, exist_ok=True); shutil.copy(m, Path(args.keep) / "piece_K.mp4")
                 continue
             rows = [r for r in script[sc] if ids is None or r[0] in ids]
-            files, vdur = zip(*[voice(fill(t)) for _, t in rows])
+            files, vdur = zip(*[voice(fill(t), **pace(b)) for b, t in rows])
             holds = [HOLD.get(i, 0.0) for i, _ in rows]
             durs = [v + h for v, h in zip(vdur, holds)]
             tail = F_TAIL if name == "F" else 0.0

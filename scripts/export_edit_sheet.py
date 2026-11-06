@@ -72,7 +72,7 @@ def main():
             continue
         for k, (bid, text) in enumerate(piece):
             text = fill(text)
-            wav, v = m.voice(text)
+            wav, v = m.voice(text, **m.pace(bid))
             hold = m.HOLD.get(bid, 0.0)
             nd = v + hold + (m.F_TAIL if name == "F" and k == len(piece) - 1 else 0.0)
             cam = ""

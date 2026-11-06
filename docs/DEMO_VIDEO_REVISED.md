@@ -50,7 +50,7 @@ Each row is `| id | narration | what is on screen |`. The first letter is the sc
 | B1 | Here is how it works. An update goes in once, spoken or typed. | A soft dissolve from the sector map to the process slide: stage 1 builds, camera on it; callout **Capture** |
 | B2 | Riva turns speech into text, and Nemotron extracts the facts. | Stage 2, arrow wipes in; callout **Understand** |
 | B3 | Code checks every fact against the record, and keeps an audit trail. | Stages 3 and 4 build together, camera on both; callout **Verify** |
-| B5 | Supervisors then simply ask, and receive cited answers. | Stage 5, then the camera pulls back to the whole five-stage flow; callout **Decide** |
+| B5 | Supervisors then simply ask, and get cited answers. | Stage 5, then the camera pulls back to the whole five-stage flow; callout **Decide** |
 | C1 | Let's follow one update, live. A technician dictates it. | Dissolve from the process slide to Technician Update, camera drops to the voice panel; the recording is uploaded and its waveform appears; callout **Voice in** |
 | C2 | NVIDIA Riva transcribes the speech. | Transcribe is clicked; the transcript fills; callout **Riva ASR** |
 | C3 | Nemotron extracts the facts: the measurement and the spec. | Extract and apply is clicked; the extracted JSON lands; callout **Nemotron 8B** |
@@ -59,17 +59,17 @@ Each row is `| id | narration | what is on screen |`. The first letter is the sc
 | A2 | Every job, with the reason it needs attention. | Camera on the first table row and its *why it needs attention* column, ring on it; callout **Reason on every row** |
 | A4 | {safety} vehicles flagged unsafe, including the one just logged. | Zoom on the *Safety - do not release* tile (its count includes the repair order just logged), ring pulses; callout **{safety} flagged**; held a moment |
 | D2 | A supervisor asks: which vehicles cannot be released on safety grounds? | Manager Assistant (a soft dissolve from the dashboard), camera on the question box; the question types out at speaking pace, then is asked |
-| D3 | {ask_n} vehicles, each one cited, in about a tenth of a second. | Zoom on the answer; callout **Cited · no model call**; held |
+| D3 | {ask_n} vehicles, each one cited, in a tenth of a second. | Zoom on the answer; callout **Cited · no model call**; held |
 | D7 | Another question: which parts hold up more than one job? | The third question types out and is asked |
-| D8 | Order each part once, and clear several jobs at a time. | Zoom on the answer, the parts that each hold more than one repair order; callout **Order once**; held |
-| D5 | And an open question: has anyone seen a whistling noise on a Passat? | The fourth question types out and is asked |
+| D8 | Order each part once, and clear several jobs. | Zoom on the answer, the parts that each hold more than one repair order; callout **Order once**; held |
+| D5 | An open question: has anyone seen a whistling noise on a Passat? | The fourth question types out and is asked |
 | D6 | Search, reranking and a cited answer, in seconds, on one GPU. | Camera on the answer and its update citations; callout **Search + rerank**; held |
 | E1 | Behind it all: three NVIDIA NIMs on a single L40S. | **Deployed architecture:** a layered diagram in one frame; the camera drops to the GPU layer, the three NIM tiles and the memory bar |
 | E3 | Riva handles speech, and NeMo Guardrails stops unsafe requests. | The speech-and-safety layer appears above the GPU layer, with arrows for the transcript and the checked question and answer |
 | E5 | NeMo Evaluator scores every release. | The quality layer appears on top; then the camera pulls all the way out to the whole architecture |
-| G1 | And all of it is observable, live in Grafana. | **Infographic with the live dashboard inset:** the DCGM exporter and the app feed Prometheus, which feeds Grafana |
-| F1 | In short: updates go in once, and everyone sees one state. | Title *Summary* and card 1 fly in |
-| F2 | Answers in a tenth of a second, every one traced to a record. | Cards 2, 3 and 4 fly in one after another |
+| G1 | All of it observable, live in Grafana. | **Infographic with the live dashboard inset:** the DCGM exporter and the app feed Prometheus, which feeds Grafana |
+| F1 | In short: updates go in once, everyone sees one state. | Title *Summary* and card 1 fly in |
+| F2 | Every answer in a tenth of a second, traced to a record. | Cards 2, 3 and 4 fly in one after another |
 | F4 | Fast. Grounded. Yours to run. | Large type, with *Service Operations Agent* beneath it |
 | K1 | Service Operations Agent, powered by Deloitte and NVIDIA. | **Closing:** the supplied Deloitte outro clip (`~/.cache/asoia-demo-outro/outro.<ext>`); this line is only the fallback when the clip is missing |
 

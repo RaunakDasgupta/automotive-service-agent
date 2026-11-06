@@ -67,7 +67,7 @@ same verdict) says whether the footage still matches; if code changed but the sc
 ## The voice
 
 Narrated by **NVIDIA Riva Magpie TTS** (voice `Magpie-Multilingual.EN-US.Sofia`) at 44.1 kHz, using the project's key,
-at natural speed with beats padded by 0.22 s. Results are cached in `~/.cache/asoia-demo-tts`. The narration is read
+at natural speed (the problem opening, beats P1 to P6, is read at 0.92 of that speed with 0.4 s pauses, so it is calmer) with beats padded by 0.22 s. Results are cached in `~/.cache/asoia-demo-tts`. The narration is read
 straight from `docs/DEMO_VIDEO.md`, so editing the script and re-running regenerates the video. Whether this voice is
 good enough for clients is a judgement for your ears; the alternative in the plan is ElevenLabs.
 
