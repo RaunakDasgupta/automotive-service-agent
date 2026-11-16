@@ -1,5 +1,3 @@
-Hi Pritam, details for the capstone below. (A paste-ready table version is docs/CAPSTONE_TEAMS_MESSAGE.html: open it in a browser, copy the table, paste into Teams.)
-
 AREA OF DEPLOYMENT
 Domain: Service operations across sectors: automotive service (the showcase), equipment maintenance, facilities management, utilities and energy, healthcare equipment and aviation maintenance.
 Technical deployment: runs on one NVIDIA Brev L40S (48 GB) with three self-hosted NIMs; speech-to-text through NVIDIA-hosted Riva. Built and demonstrated for automotive service; the other sectors are the intended deployment area, not yet built.
