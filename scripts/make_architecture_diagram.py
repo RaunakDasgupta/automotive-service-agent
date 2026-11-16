@@ -18,7 +18,7 @@ Green is NVIDIA. Everything else is plain. That is the whole legend, and it is
 deliberate: the question this diagram has to answer at a glance is which parts
 of the system are NVIDIA's and which are not. Solid green is NVIDIA
 infrastructure and the served models; a green outline is an NVIDIA framework or
-library; a dashed green outline is present but not integrated. Plain grey boxes
+library. Plain grey boxes
 are this project's own code, the UI, and the datastores.
 
 Boxes name COMPONENTS, not files. A reader of an architecture diagram wants to
@@ -61,9 +61,6 @@ S_NV = _BOX + f"fillColor=#FFFFFF;strokeColor={NVGRN};strokeWidth=2;fontColor=#1
 S_NVB = _BOX + f"fillColor={NVSOLID};strokeColor=#446B29;strokeWidth=2;fontColor=#FFFFFF;"
 # Not NVIDIA: this project's code, the UI, the datastores.
 S_STD = _BOX + f"fillColor={PAPER};strokeColor={EDGE};strokeWidth=1;fontColor=#1C2B25;"
-# Present but not integrated.
-S_ROAD = (_BOX + f"fillColor=#FFFFFF;strokeColor={NVGRN};strokeWidth=2;"
-          "dashed=1;dashPattern=6 4;fontColor=#4A7023;")
 
 S_LANE = ("rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;"
           f"spacingLeft=10;fontSize=11;fontStyle=1;fillColor={LANE};"
@@ -92,9 +89,6 @@ S_RULE_O = f"rounded=0;html=1;fillColor={ACCENT_O};strokeColor=none;"
 S_CHIP = ("rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
           f"fontSize=10;fontStyle=1;fillColor={NVSOLID};strokeColor=none;"
           "fontColor=#FFFFFF;")
-S_CHIP_R = ("rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
-            f"fontSize=10;fontStyle=1;fillColor=#FFFFFF;strokeColor={NVGRN};"
-            "dashed=1;dashPattern=6 4;fontColor=#4A7023;")
 
 S_START = ("ellipse;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
            f"fontSize=11;fontStyle=1;fillColor=#FFFFFF;strokeColor={BAND};"
@@ -261,7 +255,6 @@ def page_architecture() -> Page:
     p.box(1118, 216, 180, 26, S_CHIP, "NVIDIA · SERVED")
     p.box(1304, 216, 180, 26, S_NV + "align=center;verticalAlign=middle;"
           "fontStyle=1;fontSize=10;spacingLeft=0;", "NVIDIA · FRAMEWORK")
-    p.box(1490, 216, 170, 26, S_CHIP_R, "NOT INTEGRATED")
 
     Y0 = 252
     LX, LW = 40, 240
@@ -391,16 +384,8 @@ def page_architecture() -> Page:
          "SQLite system of record", ""),
     ], pad=0, gap=10)
 
-    # ---------------------------------------------- not-integrated strip
     NY = IY + 54
-    p.box(40, NY, 170, 28, S_BANDL, "Not integrated")
-    p.box(216, NY, 1444, 28, S_ROAD + "align=left;verticalAlign=middle;",
-          "NemoClaw / OpenShell — containment boundary and a sandboxed compute "
-          "tool. Blocked by a platform fault on the gateway launchable, not "
-          "by this project. The one NVIDIA component of fourteen that is "
-          "not running.")
-
-    LY = NY + 42
+    LY = NY
     p.raw(40, LY, 1620, 40, S_NOTE,
           '<b>Green is NVIDIA.</b>&nbsp; '
           '<font style="color:#5B8C3A;">█</font>&nbsp;filled = served model or '
@@ -408,9 +393,7 @@ def page_architecture() -> Page:
           '<font style="color:#76B900;">▢</font>&nbsp;outlined = NVIDIA '
           'framework or library &nbsp;&nbsp;'
           '<font style="color:#AEB7AC;">▢</font>&nbsp;plain = this project\'s '
-          'code, the console and the datastores &nbsp;&nbsp;'
-          '<font style="color:#76B900;">⬚</font>&nbsp;dashed = present, not '
-          'integrated'
+          'code, the console and the datastores'
           '<br><font style="font-size:10px;">Nothing in the answer path calls '
           'a hosted model. Speech is the one hosted dependency, because there '
           'is no Riva container in this deployment.</font>')
@@ -691,17 +674,13 @@ COMPONENTS = [
     ("NVIDIA Brev", "The deployment target. One L40S carrying all three NIMs "
      "and everything else.",
      "L40S 48 GB", "running", S_NVB),
-    ("NemoClaw / OpenShell", "Would add a containment boundary and a "
-     "sandboxed compute tool, so derived figures could be computed rather "
-     "than narrated.",
-     "agent sandbox gateway", "BLOCKED — platform fault", S_ROAD),
 ]
 
 
 def page_components() -> Page:
     p = Page("4 · NVIDIA components", "comp", 1620, 1360)
     _title(p, 1480, "NVIDIA COMPONENT INVENTORY",
-           "thirteen NVIDIA components running, one blocked — every status "
+           "thirteen NVIDIA components running — every status "
            "here measured by running the thing, not by importing it")
 
     cols = [(40, 230), (278, 480), (766, 400), (1174, 406)]
@@ -718,22 +697,10 @@ def page_components() -> Page:
               f'<font style="font-size:11px;">{role}</font>')
         p.raw(cols[2][0], y, cols[2][1], hgt, S_STD + "verticalAlign=middle;",
               f'<font style="font-size:10.5px;">{thing}</font>')
-        blocked = status.startswith("BLOCKED")
-        p.raw(cols[3][0], y, cols[3][1], hgt,
-              (S_ROAD if blocked else style) + "verticalAlign=middle;",
-              f'<font style="font-size:10.5px;">'
-              f'{"<b>" + status + "</b>" if blocked else status}</font>')
+        p.raw(cols[3][0], y, cols[3][1], hgt, style + "verticalAlign=middle;",
+              f'<font style="font-size:10.5px;">{status}</font>')
         y += hgt + 5
 
-    p.box(40, y + 10, 1540, 96, S_NOTE,
-          "What the one blocked row actually costs",
-          "A containment boundary, and a sandboxed compute tool that would let "
-          "derived figures be computed rather than narrated. It is not in the "
-          "answer path: the agent the console and the API call is this "
-          "project's own router, and it is the one every measure on this page "
-          "was taken against. Nothing in it executes untrusted code — the ten "
-          "tools are deterministic SQL and vector reads, with no subprocess, "
-          "no evaluation of model output and no model-directed network calls.")
     return p
 
 

@@ -106,7 +106,7 @@ function slideTitleCard(pres) {
     x: M, y: 3.05, w: 9.6, h: 0.8, fontSize: 14, color: "C8D6BE",
   }));
   const stats = [
-    ["14", "NVIDIA components\n13 running, 1 blocked"],
+    ["13", "NVIDIA components\nall running"],
     ["11", "typed tools\ndeterministic SQL and vector reads"],
     ["100%", "grounded and traceable\n905 of 905 citations resolve"],
     ["5 of 6", "question classes answered\nwith no model call at all"],
@@ -244,8 +244,8 @@ function slideArchitecture(pres) {
     fontFace: "Arial", charSpacing: 1.2, valign: "middle",
   }));
   const lw = 1.88, lg = 0.1;
-  [["NVIDIA COMPONENTS", "nv"], ["NVIDIA FRAMEWORK", "fw"], ["ROADMAP · BLOCKED", "off"]]
-    .forEach(([l, k], i) => chip(s, W - M - (3 - i) * (lw + lg) + lg, 2.06, lw, 0.28, l, k));
+  [["NVIDIA COMPONENTS", "nv"], ["NVIDIA FRAMEWORK", "fw"]]
+    .forEach(([l, k], i) => chip(s, W - M - (2 - i) * (lw + lg) + lg, 2.06, lw, 0.28, l, k));
 
   const TOP = 2.42;
   const LX = M, LW = 2.42;
@@ -300,29 +300,26 @@ function slideArchitecture(pres) {
     ["std", "Prometheus · 13 series"], ["std", "Grafana · 11 panels"],
     ["std", "Attu and sqlite-web"]], TOP + 1.58);
 
-  // ---- governance, with the one blocked component as its last cell
+  // ---- governance
   const GY = 6.06;
   band(s, M, GY, W - 2 * M, 0.22, "TRACEABILITY, ASSURANCE & GOVERNANCE", { align: "center", fs: 10.5 });
-  const gw = (W - 2 * M - 5 * 0.1) / 6;
+  const gw = (W - 2 * M - 4 * 0.1) / 5;
   const gov = [
     ["std", "Answer log", "706 logged"],
     ["fw", "NeMo Relay", "trace spans"],
     ["fw", "NeMo Evaluator", "run over run"],
     ["nv", "Riva Magpie TTS", "speech harness"],
     ["std", "Acceptance gates", "six floors"],
-    ["off", "NemoClaw", "blocked"],
   ];
   gov.forEach(([k, n, sb], i) => {
     const x = M + i * (gw + 0.1), yy = GY + 0.24;
-    const blocked = k === "off";
     s.addShape("rect", {
       x, y: yy, w: gw, h: 0.42, fill: { color: k === "nv" ? NVF : PAPER },
-      line: blocked ? { color: NV, width: 1.5, dashType: "dash" }
-        : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 },
+      line: k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 },
       objectName: "gov-" + n,
     });
     s.addText([
-      { text: n, options: { bold: true, fontSize: 10.5, color: k === "nv" ? "FFFFFF" : (blocked ? "4A7023" : INK), breakLine: true } },
+      { text: n, options: { bold: true, fontSize: 10.5, color: k === "nv" ? "FFFFFF" : INK, breakLine: true } },
       { text: sb, options: { fontSize: SUB_PT, color: k === "nv" ? "DCE8CF" : MUTE } },
     ], txt(null, { x: x + 0.08, y: yy + 0.03, w: gw - 0.16, h: 0.34, valign: "top", lineSpacingMultiple: 0.86 }));
   });
@@ -339,7 +336,7 @@ function slideArchitecture(pres) {
     x: 7.76, y: IY, w: W - M - 7.76, h: 0.24, valign: "middle", fontSize: 10, color: MUTE,
   }));
 
-  s.addNotes("Six lanes, read top to bottom. The write path fills lanes 1-3; a question runs through 4-6. Thirteen of the fourteen NVIDIA components are running; NemoClaw is blocked by a platform fault, so it is drawn dashed.");
+  s.addNotes("Six lanes, read top to bottom. The write path fills lanes 1-3; a question runs through 4-6. All thirteen NVIDIA components are running.");
   return s;
 }
 
@@ -437,26 +434,23 @@ const COMPONENTS = [
   ["fw", "NeMo Evaluator", "Seven BYOB benchmarks, run over run.", "Evaluator result schema"],
   ["fw", "NeMo Relay", "How an answer was produced, not just what it said.", "per-stage trace spans"],
   ["fw", "NeMo Switchyard", "Efficient model local, capable one hosted.", "off unless enabled"],
-  ["off", "NemoClaw / OpenShell", "Would add a containment boundary and a sandboxed compute tool.", "BLOCKED — platform fault"],
 ];
 
 function slideComponents(pres) {
   const s = pres.addSlide({ sectionTitle: "Components" });
-  slideTitle(s, "NVIDIA components", "Thirteen running, one blocked — every status here measured by running the thing, not by importing it");
+  slideTitle(s, "NVIDIA components", "Thirteen running — every status here measured by running the thing, not by importing it");
 
   const colW = (W - 2 * M - 0.3) / 2;
   COMPONENTS.forEach(([k, name, role, thing], i) => {
     const col = i < 7 ? 0 : 1, row = i % 7;
     const x = M + col * (colW + 0.3), y = 1.22 + row * 0.80;
-    const blocked = k === "off";
     s.addShape("rect", {
       x, y, w: colW, h: 0.70,
       fill: { color: k === "nv" ? NVF : PAPER },
-      line: blocked ? { color: NV, width: 1.5, dashType: "dash" }
-        : k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 },
+      line: k === "fw" ? { color: NV, width: 1.75 } : { color: EDGE, width: 1 },
       objectName: "comp" + i,
     });
-    const nc = k === "nv" ? "FFFFFF" : (blocked ? "4A7023" : INK);
+    const nc = k === "nv" ? "FFFFFF" : INK;
     const sc = k === "nv" ? "DCE8CF" : MUTE;
     s.addText([
       { text: name, options: { bold: true, fontSize: NAME_PT, color: nc, breakLine: true } },
@@ -464,12 +458,10 @@ function slideComponents(pres) {
     ], txt(null, { x: x + 0.12, y: y + 0.05, w: colW - 2.25, h: 0.62, valign: "top", lineSpacingMultiple: 0.92 }));
     s.addText(thing, txt(null, {
       x: x + colW - 2.1, y: y + 0.05, w: 1.98, h: 0.60, align: "right", valign: "middle",
-      fontSize: SUB_PT, bold: blocked, color: blocked ? WARN : sc,
+      fontSize: SUB_PT, color: sc,
     }));
   });
 
-  s.addText("The blocked row costs the containment boundary and a sandboxed compute tool. It is not in the answer path: the agent the console and the API call is this project's own router, and nothing in it executes untrusted code.", txt(null, {
-    x: M, y: 6.66, w: W - 2 * M, h: 0.34, fontSize: 10, italic: true, color: MUTE }));
   return s;
 }
 

@@ -47,13 +47,11 @@ silently clobbered.
 
 ## Architecture
 
-Fourteen NVIDIA components: thirteen built and running, and the fourteenth —
-the NemoClaw / OpenShell sandbox gateway — blocked by a platform fault, listed as
-blocked rather than claimed (`ENGINEERING.md` §34). In
+Thirteen NVIDIA components, all built and running. In
 [`docs/architecture.drawio`](docs/architecture.drawio) the colour carries that
 argument: filled green is a served NVIDIA model or NVIDIA infrastructure, an
-outline is an NVIDIA framework, plain is this project's own code and the
-datastores, and a dashed outline is present but not integrated.
+outline is an NVIDIA framework, and plain is this project's own code and the
+datastores.
 
 | Component | What it does here | Status |
 |---|---|---|
@@ -70,7 +68,6 @@ datastores, and a dashed outline is present but not integrated.
 | **NeMo Switchyard** | Loopback routing proxy: nano local, `nemotron-3-super-120b` hosted on escalation | off by default |
 | **NVIDIA DCGM** | GPU telemetry: utilisation, framebuffer, power, temperature, clocks (19 series) | `:9401` |
 | **Milvus** | The vector store, standalone on the box | `:19530` |
-| **NemoClaw / OpenShell** | Would add a containment boundary and a sandboxed `compute` tool | **blocked** — `ENGINEERING.md` §34 |
 
 Prometheus and Grafana (13 application series, an 11-panel provisioned dashboard)
 are the glue around these and are not counted as NVIDIA components.
