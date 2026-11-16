@@ -1,17 +1,20 @@
 Hi Pritam, details for the capstone below. Full write-up: docs/CAPSTONE_SUMMARY.md in the repo.
 
 AREA OF DEPLOYMENT
-- Service operations, built and demonstrated for automotive service
-- Technicians feed in updates by voice or text; supervisors look things up and ask questions
+- Built for service operations: any operation where work is handed over between people and delays, rework or safety matter
+- Target sectors: automotive service, equipment maintenance, facilities management, utilities and energy, healthcare equipment, aviation maintenance
+- Showcased in automotive service, where it is built and demonstrated end to end
+- Same users in every sector: the people doing the work feed in updates; supervisors look things up and ask questions
+- Moving to a new sector means swapping the catalogue, spec limits and lifecycle; the core is generic
 - Runs on one NVIDIA Brev L40S with three self-hosted NIMs
-- Other sectors (equipment, facilities, utilities, aviation) are positioning only; automotive is the one built
 
 BUSINESS PROBLEM
-- Job information is spread across notes, calls, messages and systems
-- The hard part is moving it accurately and finding it again when it matters
+- In any service operation, job status lives in notes, calls, messages, spreadsheets and systems
+- The challenge is moving that information accurately and finding it again when it matters
 - Time is lost: people ask again, search and re-type the same update
-- Resources get over-committed: double-booked jobs, the same part ordered twice
-- Safety findings get buried in notes and missed at handover
+- Resources get over-committed: crews double-booked, the same part or spare ordered twice
+- Critical findings (a reading out of limit, a defect) get buried in notes and missed at handover
+- The result is delays, rework and safety incidents, and AI answers nobody can trace
 
 NV STACK (14 components: 13 running, 1 blocked)
 - NIMs: Nemotron Nano 8B, NV-EmbedQA E5, NV-RerankQA 4B
@@ -21,17 +24,17 @@ NV STACK (14 components: 13 running, 1 blocked)
 - Blocked: NemoClaw / OpenShell (Brev platform fault)
 
 RESULTS / PROGRESS
-- Built, deployed and demoed end to end; 2:34 client demo video made
+- Built, deployed and demoed end to end in automotive service; 2:34 client demo video made
 - 81 unit tests pass; 14 of 14 live answer checks pass
 - Routing, grounding, refusal and traceability all score 100%
 - Structured answers in about 0.1 s with no model call; free-text answers in 3 to 4 s locally
 - Weakest area: retrieval recall@6 is 83.3%
 
 NEXT STEPS
+- Build the second sector (swap catalogue, spec limits and lifecycle) and pilot with a real operation
+- Connect real sources (work orders, parts, scheduling)
 - Improve retrieval recall
 - Fix answer composition in the Agent Toolkit workflow
 - Unblock NemoClaw / OpenShell
 - Add a local Riva speech-to-text container
 - Add authentication and access control
-- Connect real sources (work orders, parts, scheduling)
-- Pilot with a real service operation

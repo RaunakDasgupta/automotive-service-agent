@@ -1,6 +1,6 @@
 # Capstone summary: Service Operations Intelligence Agent
 
-An NVIDIA-stack agent that turns technician updates (typed or spoken) into continuously derived job state, a prioritised shift handover and grounded, cited answers for a supervisor. Built and demonstrated for automotive service, on one NVIDIA Brev L40S, with three self-hosted NIMs.
+An NVIDIA-stack agent that turns field updates (typed or spoken) into continuously derived job state, a prioritised handover and grounded, cited answers for a supervisor. Built for service operations across sectors, demonstrated in automotive service, on one NVIDIA Brev L40S with three self-hosted NIMs.
 
 Every figure below is from this repo (`README.md`, `docs/TECHNICAL.md`, `ENGINEERING.md`, `evals/baseline.json`, `docs/architecture-deck.pptx`) or from the last live run on an L40S. Where a number differs between runs it says so.
 
@@ -8,27 +8,36 @@ Every figure below is from this repo (`README.md`, `docs/TECHNICAL.md`, `ENGINEE
 
 ## 1. Area of deployment
 
-| | |
+**Built for service operations: any operation where work is handed over between people, and delays, rework or safety matter.**
+
+| sector | what the work looks like |
 |---|---|
-| **Domain** | Service operations. Built and shown for **automotive service** (dealer or independent workshop): repair orders, technicians, service advisors, a service manager or supervisor |
-| **Users** | Technicians **feed updates in** (voice or text at the bay). Supervisors **look things up and ask questions** (dashboard, handover, plain-language assistant) |
-| **Where it runs** | **One NVIDIA Brev L40S (48 GB)**: three local NIMs, Milvus, the app and observability. Nothing in the answer path calls a hosted model. Speech-to-text is the one hosted dependency |
-| **Data** | A synthetic dataset modelled on real workshop practice, not a toy schema: 400 repair orders, 50 staff, 104 labour operations, about 1.7 to 1.9 thousand technician updates, about 10 thousand events. Valid VINs, real lifecycle (13 states), SAE J2012 fault codes, trade shorthand, measurements against spec |
-| **Reach beyond automotive** | The event log, state fold, grounding checks and agent are generic. Only the catalogue (operations, spec limits) and the lifecycle table are domain data. Candidate sectors: equipment maintenance, facilities, utilities and energy, healthcare equipment, aviation maintenance. **Positioning only: automotive is the one built and demonstrated** |
+| **Automotive service** (the showcase) | Workshop repair orders, technician updates, safety checks before a vehicle is released |
+| Equipment maintenance | Planned and breakdown work on plant and machinery, parts and spares |
+| Facilities management | Maintenance jobs, contractors, building and compliance checks |
+| Utilities and energy | Field work orders, crews, inspections |
+| Healthcare equipment | Servicing and calibration of medical devices, compliance records |
+| Aviation maintenance | Task cards, defects, parts and sign-off |
+
+- **Users in every sector:** the people doing the work **feed updates in** (voice or text, in their own words); supervisors and managers **look up the state of operations and ask questions**.
+- **What is generic and what is per sector:** the event log, state fold, grounding checks and agent are generic. Only the catalogue (operations, spec limits) and the lifecycle table are domain data, so moving to a new sector means swapping those.
+- **Status:** automotive service is built and demonstrated end to end. The other sectors are the intended area of deployment, not yet built.
+- **Where it runs:** one NVIDIA Brev L40S (48 GB), three local NIMs, self-hosted. Nothing in the answer path calls a hosted model; speech-to-text is the one hosted dependency.
+- **Showcase data:** a synthetic automotive dataset modelled on real workshop practice (400 repair orders, 50 staff, 104 labour operations, about 1.7 to 1.9 thousand updates, about 10 thousand events).
 
 ## 2. Business problem
 
-In a service operation the state of every job lives in notes, calls, messages, spreadsheets and people's memory. The challenge is **moving that information accurately, and finding it again when it matters.**
+In any service operation, the state of every job lives in notes, calls, messages, spreadsheets, systems and people's memory. The challenge is **moving that information accurately, and finding it again when it matters.**
 
 | symptom | cost |
 |---|---|
-| Updates arrive as free text and speech, in shorthand, from many people, and never become a record anyone can query | People ask again, search and re-type the same update: **time lost** |
-| Nobody sees one current picture of every job (blocked, at risk, promise already missed) | Supervisors find out when a customer calls |
-| The finding that matters most, such as a measurement below its minimum, is one line in one note | **Safety-critical items are missed** at handover |
-| Related work is invisible across jobs (the same part held up on several repair orders) | **Over-committed resources**: a part ordered more than once, jobs double-booked |
+| Updates arrive as free text and speech, in each trade's shorthand, from many people, and never become a record anyone can query | People ask again, search and re-type the same update: **time lost** |
+| Nobody sees one current picture of every job (blocked, at risk, late) | Supervisors find out when a customer, a client or an auditor calls |
+| The finding that matters most (a reading outside its limit, a defect, a failed check) is one line in one note | **Critical items are missed** at handover: delays, rework, safety incidents |
+| Related work is invisible across jobs (the same part or spare wanted by several jobs) | **Over-committed resources**: a part ordered more than once, crews double-booked |
 | AI answers are not checkable, and hosted models change underneath you (two used here were retired, `HTTP 410 Gone`) | Answers nobody can trace; a system you do not control |
 
-**The agent's answer:** capture an update once, in the technician's own words; check every fact against the record; derive state instead of storing it; let a supervisor ask in plain language and get a cited answer. **The model reads and writes language; Python computes everything that counts.**
+**The agent's answer:** capture an update once, in the worker's own words; check every fact against the record; derive state instead of storing it; let a supervisor ask in plain language and get a cited answer. **The model reads and writes language; Python computes everything that counts.**
 
 Note on scope: the agent surfaces state, contradictions and shared part holds so a supervisor can avoid double-booking and duplicate orders. It does not schedule, assign or order anything, and it has no double-booking detector.
 
@@ -90,7 +99,7 @@ Around it, not counted as NVIDIA: Milvus (vectors), SQLite (system of record), F
 | Local Riva ASR container | Removes the last hosted dependency in the answer path | proposed |
 | Add authentication and access control | Required before any pilot with real data | proposed |
 | Connect real sources (work-order system, parts inventory, scheduling) and add double-booking and duplicate-order detection | Moves from "makes conflicts visible" to "flags them" | proposed |
-| Pilot with a real service operation, then a second sector by swapping the catalogue, spec limits and lifecycle | Tests the "any service operation" claim, which is positioning today | proposed |
+| Build the second sector by swapping the catalogue, spec limits and lifecycle, and pilot with a real operation | Tests the cross-sector claim, which is the intended area of deployment but not yet built | proposed |
 | Keep the evaluation gates (`scripts/agent_loop.py`) in the release path | Protects the measured baselines as the system changes | in place, to extend |
 
 Steps marked *proposed* are suggestions drawn from the measured limits, not commitments; confirm priorities before presenting them as a plan.
