@@ -35,6 +35,7 @@ In any service operation, job status lives in notes, calls, messages, spreadshee
 | Nobody sees one current picture of every job | Supervisors find out late, when someone calls |
 | Related work is invisible across jobs (one part wanted by several jobs) | **Over-committed resources**: parts ordered twice, crews double-booked |
 | The finding that matters most is one line in one note | **Critical items missed**: delays, rework, safety incidents |
+| AI answers are not checkable or traceable, and hosted models change underneath you | Answers nobody can trust; a system you do not control |
 
 **The agent's answer:** capture an update once, in the worker's own words; check every fact against the record; derive state instead of storing it; let a supervisor ask in plain language and get a cited answer. **The model reads and writes language; Python computes everything that counts.**
 
