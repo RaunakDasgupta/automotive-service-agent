@@ -24,11 +24,16 @@ NV STACK (14 components: 13 running, 1 blocked)
 - Blocked: NemoClaw / OpenShell (Brev platform fault)
 
 RESULTS / PROGRESS
-- Built, deployed and demoed end to end in automotive service; 2:34 client demo video made
-- 81 unit tests pass; 14 of 14 live answer checks pass
-- Routing, grounding, refusal and traceability all score 100%
-- Structured answers in about 0.1 s with no model call; free-text answers in 3 to 4 s locally
-- Weakest area: retrieval recall@6 is 83.3%
+- Built, deployed and demoed end to end in automotive service, with a 2:34 client demo video
+
+| Measure | Result |
+| Unit tests | 81 pass |
+| Live answer checks | 14 of 14 pass |
+| Routing, grounding, refusal, traceability | 100% |
+| Structured answers | about 0.1 s, no model call |
+| Free-text answers | 3 to 4 s, local |
+| GPU memory | about 32 of 46 GB |
+| Retrieval recall@6 (weakest area) | 83.3% |
 
 NEXT STEPS
 - Build the second sector and pilot with a real operation
