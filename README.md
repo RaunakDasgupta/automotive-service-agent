@@ -382,6 +382,7 @@ Stated up front because each is measured.
 | [`docs/OPERATING.md`](docs/OPERATING.md) | restart, refresh, reboot behaviour, the model's real speed |
 | [`docs/EXAMPLES.md`](docs/EXAMPLES.md) | what it actually answers, captured from a live run on an L40S |
 | [`docs/screenshots/`](docs/screenshots/README.md) | the running stack, and how each frame was taken |
+| [`docs/CAPSTONE_SUMMARY.md`](docs/CAPSTONE_SUMMARY.md) | the capstone in five parts: area of deployment, business problem, NVIDIA stack, results and progress, next steps |
 | [`docs/DEMO_VIDEO.md`](docs/DEMO_VIDEO.md), [`docs/demo/`](docs/demo/README.md) | the client demo video: the revised script (`docs/DEMO_VIDEO_REVISED.md`), the current video (`docs/demo/demo-revised.mp4`), and the old final demo in `docs/demo/v1-final/` |
 | [`docs/VOICE-UPDATE-FORMAT.md`](docs/VOICE-UPDATE-FORMAT.md) | what to say so a spoken update is captured accurately |
 | [`docs/PASS_INDEX.md`](docs/PASS_INDEX.md) | the 61 numbered passes: what each addressed, and where it is recorded |

@@ -1,0 +1,96 @@
+# Capstone summary: Service Operations Intelligence Agent
+
+An NVIDIA-stack agent that turns technician updates (typed or spoken) into continuously derived job state, a prioritised shift handover and grounded, cited answers for a supervisor. Built and demonstrated for automotive service, on one NVIDIA Brev L40S, with three self-hosted NIMs.
+
+Every figure below is from this repo (`README.md`, `docs/TECHNICAL.md`, `ENGINEERING.md`, `evals/baseline.json`, `docs/architecture-deck.pptx`) or from the last live run on an L40S. Where a number differs between runs it says so.
+
+---
+
+## 1. Area of deployment
+
+| | |
+|---|---|
+| **Domain** | Service operations. Built and shown for **automotive service** (dealer or independent workshop): repair orders, technicians, service advisors, a service manager or supervisor |
+| **Users** | Technicians **feed updates in** (voice or text at the bay). Supervisors **look things up and ask questions** (dashboard, handover, plain-language assistant) |
+| **Where it runs** | **One NVIDIA Brev L40S (48 GB)**: three local NIMs, Milvus, the app and observability. Nothing in the answer path calls a hosted model. Speech-to-text is the one hosted dependency |
+| **Data** | A synthetic dataset modelled on real workshop practice, not a toy schema: 400 repair orders, 50 staff, 104 labour operations, about 1.7 to 1.9 thousand technician updates, about 10 thousand events. Valid VINs, real lifecycle (13 states), SAE J2012 fault codes, trade shorthand, measurements against spec |
+| **Reach beyond automotive** | The event log, state fold, grounding checks and agent are generic. Only the catalogue (operations, spec limits) and the lifecycle table are domain data. Candidate sectors: equipment maintenance, facilities, utilities and energy, healthcare equipment, aviation maintenance. **Positioning only: automotive is the one built and demonstrated** |
+
+## 2. Business problem
+
+In a service operation the state of every job lives in notes, calls, messages, spreadsheets and people's memory. The challenge is **moving that information accurately, and finding it again when it matters.**
+
+| symptom | cost |
+|---|---|
+| Updates arrive as free text and speech, in shorthand, from many people, and never become a record anyone can query | People ask again, search and re-type the same update: **time lost** |
+| Nobody sees one current picture of every job (blocked, at risk, promise already missed) | Supervisors find out when a customer calls |
+| The finding that matters most, such as a measurement below its minimum, is one line in one note | **Safety-critical items are missed** at handover |
+| Related work is invisible across jobs (the same part held up on several repair orders) | **Over-committed resources**: a part ordered more than once, jobs double-booked |
+| AI answers are not checkable, and hosted models change underneath you (two used here were retired, `HTTP 410 Gone`) | Answers nobody can trace; a system you do not control |
+
+**The agent's answer:** capture an update once, in the technician's own words; check every fact against the record; derive state instead of storing it; let a supervisor ask in plain language and get a cited answer. **The model reads and writes language; Python computes everything that counts.**
+
+Note on scope: the agent surfaces state, contradictions and shared part holds so a supervisor can avoid double-booking and duplicate orders. It does not schedule, assign or order anything, and it has no double-booking detector.
+
+## 3. NVIDIA stack
+
+Fourteen components: **thirteen built and running, one blocked** (listed as blocked, not claimed).
+
+| component | role here | status |
+|---|---|---|
+| **NIM: Nemotron Nano 8B** (`llama-3.1-nemotron-nano-8b-v1`) | Reads updates into structured JSON; narrates free-text search results. Nothing else | local, `:8000` |
+| **NIM: `nv-embedqa-e5-v5`** (1024-d) | Embeds updates and matches operation codes | local, `:8001` |
+| **NIM: `nv-rerankqa-mistral-4b-v3`** | Reorders search candidates before they are cited | local, `:8002` |
+| **Riva Parakeet ASR** | Speech to text for spoken updates (gRPC) | hosted |
+| **Riva Magpie TTS** | Voices the spoken updates the ASR leg is tested with | hosted |
+| **NeMo Agent Toolkit** | The agent as a workflow over the same 11 typed tools | runs: tools execute 18/18, composed answers 3/18 |
+| **NeMo Guardrails** | Input and output rails judged by the local model | `ASOIA_NEMO_RAILS` (off, shadow, on) |
+| **NeMo Curator** | Six-stage curation; the last stage quarantines the prompt-injection vector before indexing | `scripts/curate.py` |
+| **NeMo Evaluator** | Seven custom (BYOB) benchmarks: routing, grounding, traceability, refusal, tool calls, accuracy, relevance | `evals/asoia_byob.py` |
+| **NeMo Relay** | Per-stage trace spans: which tool, which model, how long | `ASOIA_TRACE` |
+| **NeMo Switchyard** | Routing proxy: nano local, a larger model hosted on escalation | off by default |
+| **NVIDIA DCGM** | GPU telemetry: utilisation, memory, power, temperature (19 series) | running, `:9401` |
+| **NVIDIA Brev, L40S 48 GB** | The deployment target carrying all three NIMs | running |
+| **NemoClaw / OpenShell** | Would add a containment boundary and a sandboxed compute tool | **blocked**: platform fault (`ENGINEERING.md` section 34) |
+
+Around it, not counted as NVIDIA: Milvus (vectors), SQLite (system of record), FastAPI, Gradio, Prometheus and Grafana.
+
+## 4. Results and progress
+
+**Delivered and running on the L40S:** the full write path (speech, extraction, validation, reconciliation, diff card), the read path (routing, 11 tools, grounded composition, rails), a six-tab operations console, an HTTP API, a seven-pane evidence workbench, observability, a ten-slide architecture deck, eight notebooks, a Brev runbook, and a 2:34 client demo video.
+
+| measure | result | source |
+|---|---|---|
+| Unit tests | **81 pass**, no GPU or network | `pytest tests/` |
+| Answer verification | **14 of 14 checks pass** on the live box, including two action requests refused before any tool runs | `scripts/verify_answers.py --with-llm` |
+| Routing | **100%** (37 labelled questions) | `evals/baseline.json` |
+| Grounding | **100%**: every figure in an answer appears in a tool result | baseline |
+| Traceability | **100%**: every citation resolves (905 of 905 at baseline; 1,042 of 1,042 on the latest run) | baseline, latest run |
+| Refusal | **100%** on four attacks and the legitimate set | baseline |
+| Full benchmark | answer accuracy 100%, relevance 100%, unsupported figures 0 | baseline |
+| Latency, structured questions | about **0.05 to 0.11 s**, no model call; five of six question classes need none | `docs/EXAMPLES.md`, latest run |
+| Latency, free-text search | **3 to 4 s** end to end on local NIMs, against 28 to 46 s hosted | README |
+| GPU memory | about **32 of 46 GB** with all three NIMs resident | measured on the latest run |
+| Retrieval | recall@6 **83.3%** on the question as a person asks it; reranker lifts recall@6 from 41.7% to 49.2% | `docs/TECHNICAL.md` |
+
+**Known limits** (stated up front, each measured):
+- Retrieval is the weakest link: recall@6 is capped near 53% on the complaint alone, because 400 repair orders share 36 complaint texts.
+- The Agent Toolkit workflow picks and runs the right tool every time but composes poorly (3 of 18 good answers). The native path in `app/agent/agent.py` is what answers.
+- NemoClaw / OpenShell is blocked by a platform fault, so there is no containment boundary or sandboxed compute tool.
+- No authentication on the UI, API or share link, by decision.
+- Speech-to-text is hosted; there is no local Riva container in this deployment.
+
+## 5. Next steps
+
+| step | why | status |
+|---|---|---|
+| Improve retrieval recall (disambiguate shared complaint texts, evaluate the hybrid and rerank settings further) | The weakest measured link | proposed |
+| Fix composition in the Agent Toolkit workflow, or keep the native path as the single answer route | 3 of 18 composed answers is not good enough to expose | proposed |
+| Unblock NemoClaw / OpenShell, or find an alternative containment boundary | Closes the one blocked component and enables a sandboxed compute tool | blocked on a Brev platform fault |
+| Local Riva ASR container | Removes the last hosted dependency in the answer path | proposed |
+| Add authentication and access control | Required before any pilot with real data | proposed |
+| Connect real sources (work-order system, parts inventory, scheduling) and add double-booking and duplicate-order detection | Moves from "makes conflicts visible" to "flags them" | proposed |
+| Pilot with a real service operation, then a second sector by swapping the catalogue, spec limits and lifecycle | Tests the "any service operation" claim, which is positioning today | proposed |
+| Keep the evaluation gates (`scripts/agent_loop.py`) in the release path | Protects the measured baselines as the system changes | in place, to extend |
+
+Steps marked *proposed* are suggestions drawn from the measured limits, not commitments; confirm priorities before presenting them as a plan.
