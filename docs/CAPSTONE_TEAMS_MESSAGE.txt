@@ -16,12 +16,11 @@ BUSINESS PROBLEM
 - Critical findings buried: delays, rework, safety incidents
 - AI answers can't be traced or checked
 
-NV STACK (14 components: 13 running, 1 blocked)
+NV STACK (13 components, all running)
 - NIMs: Nemotron Nano 8B, NV-EmbedQA E5, NV-RerankQA 4B
 - Riva: Parakeet (speech-to-text), Magpie (text-to-speech)
 - NeMo: Guardrails, Curator, Evaluator, Relay, Agent Toolkit, Switchyard
 - Infrastructure: DCGM, Brev L40S 48 GB
-- Blocked: NemoClaw / OpenShell (Brev platform fault)
 
 RESULTS / PROGRESS
 - Built, deployed and demoed end to end in automotive service, with a 2:34 client demo video
@@ -39,5 +38,5 @@ NEXT STEPS
 - Build the second sector and pilot with a real operation
 - Connect real sources (work orders, parts, scheduling)
 - Improve retrieval recall and agent answer quality
-- Unblock NemoClaw; add local Riva speech-to-text
+- Add local Riva speech-to-text
 - Add authentication before any pilot

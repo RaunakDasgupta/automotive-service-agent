@@ -35,7 +35,7 @@ Job status lives in notes, calls, messages and systems. The challenge is **movin
 
 The agent surfaces state, contradictions and shared part holds. It does not schedule, assign or order, and has no double-booking detector.
 
-## 3. NVIDIA stack (14 components: 13 running, 1 blocked)
+## 3. NVIDIA stack (13 components, all running)
 
 | component | role |
 |---|---|
@@ -49,7 +49,6 @@ The agent surfaces state, contradictions and shared part holds. It does not sche
 | NeMo Switchyard | local or hosted routing (off by default) |
 | DCGM | GPU telemetry (19 series) |
 | Brev L40S 48 GB | deployment |
-| NemoClaw / OpenShell | **blocked** (Brev platform fault) |
 
 Not counted as NVIDIA: Milvus, SQLite, FastAPI, Gradio, Prometheus, Grafana.
 
@@ -67,7 +66,7 @@ Built, deployed and demoed end to end in automotive service: write path, read pa
 | GPU memory | about 32 of 46 GB, all three NIMs resident |
 | Retrieval recall@6 | 83.3% (weakest area) |
 
-**Known limits:** retrieval recall is capped near 53% on the complaint alone; the Agent Toolkit composes only 3 of 18 answers well (the native path answers); NemoClaw is blocked; no authentication, by decision; speech-to-text is hosted.
+**Known limits:** retrieval recall is capped near 53% on the complaint alone; the Agent Toolkit composes only 3 of 18 answers well (the native path answers); no authentication, by decision; speech-to-text is hosted.
 
 ## 5. Next steps
 
@@ -76,7 +75,7 @@ Built, deployed and demoed end to end in automotive service: write path, read pa
 | Build the second sector and pilot | tests the cross-sector claim |
 | Connect real sources (work orders, parts, scheduling) | moves from visible conflicts to flagged ones |
 | Improve retrieval recall and agent answer quality | recall@6 83.3%; 3 of 18 Toolkit answers good |
-| Unblock NemoClaw; add local Riva speech-to-text | closes the blocked component and the last hosted dependency |
+| Add local Riva speech-to-text | removes the last hosted dependency |
 | Add authentication | needed before any pilot |
 
 Steps are proposed, drawn from the measured limits; confirm priorities before presenting them as a plan.
