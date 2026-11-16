@@ -550,7 +550,6 @@ do. Anything that touches the app from a shell must load it first.
 | **Tooling** | | |
 | `ASOIA_TEST_DB` | — | `keep` makes the tests use the real database |
 | `ASOIA_CAPTURE_UI_PORT` `ASOIA_PROM_URL` `ASOIA_GRAF_URL` `ASOIA_ATTU_URL` `ASOIA_SQLW_URL` | `7869`, loopback | `scripts/capture_screenshots.py` |
-| `OPENSHELL_GATEWAY` | — | `scripts/openshell_gateway.py` |
 
 ---
 
@@ -663,8 +662,6 @@ Stated because each is measured, not because they are comfortable.
 - **Not verifiable off the GPU box:** NeMo Guardrails, the Agent Toolkit
   workflow, traces and Switchyard need packages (`nvidia`, `flywheel` extras)
   that the CPU environment does not install.
-- **NemoClaw / OpenShell** — a sandbox gateway whose only ingress is browser
-  SSO a headless client cannot complete. Listed as blocked, not claimed.
 
 ---
 

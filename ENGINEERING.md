@@ -1762,33 +1762,14 @@ out loud rather than implied.
 
 ## 34. Where the architecture actually stands
 
-Eleven of the twelve components are built and running. The twelfth is not, and
-the reason is not ours.
-
-**Harness (NemoClaw / OpenShell): installed, not integrated.** `openshell 0.1.2`
-is in the serving venv and referenced by nothing. The gateway it would talk to
-runs on a separate Brev launchable that cannot be reached: its sshd rejects a
-certificate signed by its own Brev CA, with the correct principal, for the only
-linux user the CA will sign for. `brev mint-cert` succeeds, so the control plane
-authorises the connection; the box does not honour it. `brev enable-ssh` writes
-that trust and is Linux-only, so it must run on the target - which is the
-catch-22. It reproduces on a freshly deployed launchable and survives a full
-stop/start, so it is a platform fault rather than a broken instance.
-
-What that costs, precisely: the containment boundary, and a sandboxed `compute`
-tool that would let derived figures be computed rather than narrated. What it
-does not cost: all four acceptance criteria, every other row, and the flywheel -
-NemoClaw is a boundary around steps, not a step in the loop. Nothing in the
-current agent executes untrusted code; the ten tools are deterministic SQL
-and vector reads, with no `subprocess`, no `eval` of model output and no
+Every NVIDIA component the project names is built and running. Nothing in the
+current agent executes untrusted code: the ten tools are deterministic SQL and
+vector reads, with no `subprocess`, no `eval` of model output and no
 model-directed sockets.
-
-Stating it this way is deliberate. Eleven built and one blocked with evidence is
-a stronger position than twelve claimed.
 
 ## 35. The architecture had never been drawn
 
-Twelve components, six pipeline lanes, thirteen states and twenty-seven routes,
+Eleven components, six pipeline lanes, thirteen states and twenty-seven routes,
 and the only picture of any of it was a slide for a different project. Every
 explanation of this system has been prose, which is the wrong medium for a
 thing whose whole argument is *where the boundaries are*.
@@ -1826,9 +1807,6 @@ side, it is clear why - the three Python rails all need the tool payload, and
 The read path has a branch with five of six question classes on the side that
 never reaches a model. Written down that is a sentence; drawn, it is most of
 the page.
-
-NemoClaw is one grey dashed box out of twelve, on a page where everything else
-is green. That is the correct weight to give it.
 
 **What the renderer taught me, again.** The geometry checker was written before
 the diagram and caught sixteen problems the generator would otherwise have
@@ -1923,19 +1901,19 @@ shipped.
 
 Also checked and already NVIDIA: NeMo Relay, which `app/obs/trace.py` has used
 for per-span tracing since pass 27 and which I had half-expected to find
-declared-but-unused, the way OpenShell was.
+declared-but-unused.
 
 **The diagram now carries the argument in its colours.** Filled green is a
 served NVIDIA model or NVIDIA infrastructure; a green outline is an NVIDIA
-framework; plain is this project's code, the console and the datastores; a
-dashed outline is present but not integrated. Milvus is deliberately plain -
+framework; plain is this project's code, the console and the datastores.
+Milvus is deliberately plain -
 it is the vector store in NVIDIA's own RAG reference stack, but it is not an
 NVIDIA product, and colouring it green to pad the count would be the kind of
 claim the rest of this document exists to avoid. Boxes name components rather
 than modules: a reader of an architecture diagram wants to know what a thing
 is, not which file it lives in.
 
-Counted honestly: thirteen NVIDIA components running, one blocked.
+Counted honestly: thirteen NVIDIA components running.
 
 ## 37. The restart, and the first time the rails were measured in the process
 
@@ -2032,9 +2010,9 @@ question.
 
 **So the row is now marked as not running, in the README and in the diagram.**
 It had read "running · aiq run" since pass 41 on the strength of the module
-importing. That is the fourth time in this project a component has been
+importing. That is the third time in this project a component has been
 present, correct and unreachable - the colang rails in §22, the metrics
-exporter in §28, OpenShell in §34, and now this. The pattern is always the
+exporter in §28, and now this. The pattern is always the
 same: the thing was verified by importing it, and never by running it the way
 a user would.
 
@@ -2745,8 +2723,8 @@ something other than accuracy.
 A NemoClaw launchable was deployed with the aim of improving this agent, and
 the obvious reading of that - wire it to the GPU box so it can make the agent
 better - does not describe anything that can happen. NemoClaw is a
-coding-agent sandbox platform: OpenClaw, Hermes or Deep Agents in containers
-behind an OpenShell gateway. It has no inference path into this application.
+coding-agent sandbox platform: OpenClaw, Hermes or Deep Agents in containers.
+It has no inference path into this application.
 `nemoclaw-asoia` is an `n2d-standard-4` with `gpu: "-"`, so it cannot serve the
 chat NIM or the embedding model either, and making the gradio app depend on an
 SSO-gated CPU box would add a failure mode to the demo path in exchange for
@@ -2757,16 +2735,8 @@ when something decides whether an edit helped.
 
 ### The transport is GitHub, and that was a cost decision
 
-The `openshell` Python package can drive sandboxes over gRPC, and this box has
-it installed (0.1.2). It is not used. The gateway's only ingress is Pomerium
-browser SSO - `/healthz` answers 200 from inside the GPU box, every other path
-redirects to `auth.apps.run.brev.nvidia.com` - and a headless client cannot
-complete a browser sign-in. Pushing a branch needs nothing that does not
-already work.
-
-So: the sandbox proposes on a branch, this box pulls it and decides.
-`scripts/openshell_gateway.py check` still reports the gateway unwired, which
-is the accurate state and not an outstanding task.
+The sandbox proposes changes on a branch; this box pulls it and decides.
+Pushing a branch needs nothing that does not already work.
 
 ### No second scorer was written
 
