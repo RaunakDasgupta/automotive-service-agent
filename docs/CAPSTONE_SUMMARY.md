@@ -27,15 +27,14 @@ Every figure below is from this repo (`README.md`, `docs/TECHNICAL.md`, `ENGINEE
 
 ## 2. Business problem
 
-In any service operation, the state of every job lives in notes, calls, messages, spreadsheets, systems and people's memory. The challenge is **moving that information accurately, and finding it again when it matters.**
+In any service operation, job status lives in notes, calls, messages, spreadsheets and people's memory. The challenge is **moving that information accurately, and finding it again when it matters.**
 
 | symptom | cost |
 |---|---|
-| Updates arrive as free text and speech, in each trade's shorthand, from many people, and never become a record anyone can query | People ask again, search and re-type the same update: **time lost** |
-| Nobody sees one current picture of every job (blocked, at risk, late) | Supervisors find out when a customer, a client or an auditor calls |
-| The finding that matters most (a reading outside its limit, a defect, a failed check) is one line in one note | **Critical items are missed** at handover: delays, rework, safety incidents |
-| Related work is invisible across jobs (the same part or spare wanted by several jobs) | **Over-committed resources**: a part ordered more than once, crews double-booked |
-| AI answers are not checkable, and hosted models change underneath you (two used here were retired, `HTTP 410 Gone`) | Answers nobody can trace; a system you do not control |
+| Updates arrive as free text and speech, from many people, and never become a record anyone can query | **Time lost**: people ask again, search and re-type the same update |
+| Nobody sees one current picture of every job | Supervisors find out late, when someone calls |
+| Related work is invisible across jobs (one part wanted by several jobs) | **Over-committed resources**: parts ordered twice, crews double-booked |
+| The finding that matters most is one line in one note | **Critical items missed**: delays, rework, safety incidents |
 
 **The agent's answer:** capture an update once, in the worker's own words; check every fact against the record; derive state instead of storing it; let a supervisor ask in plain language and get a cited answer. **The model reads and writes language; Python computes everything that counts.**
 

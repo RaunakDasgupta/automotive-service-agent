@@ -9,12 +9,10 @@ AREA OF DEPLOYMENT
 - Runs on one NVIDIA Brev L40S with three self-hosted NIMs
 
 BUSINESS PROBLEM
-- In any service operation, job status lives in notes, calls, messages, spreadsheets and systems
+- In any service operation, job status lives in notes, calls, messages and systems
 - The challenge is moving that information accurately and finding it again when it matters
-- Time is lost: people ask again, search and re-type the same update
-- Resources get over-committed: crews double-booked, the same part or spare ordered twice
-- Critical findings (a reading out of limit, a defect) get buried in notes and missed at handover
-- The result is delays, rework and safety incidents, and AI answers nobody can trace
+- Time is lost re-asking, searching and re-typing; resources get over-committed (crews double-booked, parts ordered twice)
+- Critical findings get buried, leading to delays, rework and safety incidents
 
 NV STACK (14 components: 13 running, 1 blocked)
 - NIMs: Nemotron Nano 8B, NV-EmbedQA E5, NV-RerankQA 4B
