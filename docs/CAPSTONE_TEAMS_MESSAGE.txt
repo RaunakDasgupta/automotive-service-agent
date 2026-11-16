@@ -1,42 +1,32 @@
-Hi Pritam, details for the capstone below. Full write-up: docs/CAPSTONE_SUMMARY.md in the repo.
+Hi Pritam, details for the capstone below. (A paste-ready table version is docs/CAPSTONE_TEAMS_MESSAGE.html: open it in a browser, copy the table, paste into Teams.)
 
 AREA OF DEPLOYMENT
-- Built for service operations: any operation where work is handed over between people and delays, rework or safety matter
-- Target sectors: automotive service, equipment maintenance, facilities management, utilities and energy, healthcare equipment, aviation maintenance
-- Showcased in automotive service, where it is built and demonstrated end to end
-- Same users in every sector: the people doing the work feed in updates; supervisors look things up and ask questions
-- Moving to a new sector means swapping the catalogue, spec limits and lifecycle; the core is generic
-- Runs on one NVIDIA Brev L40S with three self-hosted NIMs
+Domain: Service operations across sectors: automotive service (the showcase), equipment maintenance, facilities management, utilities and energy, healthcare equipment and aviation maintenance.
+Technical deployment: runs on one NVIDIA Brev L40S (48 GB) with three self-hosted NIMs; speech-to-text through NVIDIA-hosted Riva. Built and demonstrated for automotive service; the other sectors are the intended deployment area, not yet built.
 
 BUSINESS PROBLEM
-- Job status is scattered across notes, calls, messages and systems
-- Challenge: moving it accurately, and finding it again when it matters
-- Time lost re-asking, searching and re-typing
-- Resources over-committed: crews double-booked, parts ordered twice
-- Critical findings buried: delays, rework, safety incidents
-- AI answers can't be traced or checked
+Service Operations Intelligence Agent: Job information is spread across notes, calls, messages and systems, so the challenge is moving it accurately and finding it again when it matters.
+People ask again, search and re-type the same update. Resources get over-committed: crews double-booked, parts ordered twice. Critical findings get buried in notes, leading to delays, rework and safety incidents. AI answers that cannot be traced or checked make it worse.
 
-NV STACK (13 components, all running)
-- NIMs: Nemotron Nano 8B, NV-EmbedQA E5, NV-RerankQA 4B
-- Riva: Parakeet (speech-to-text), Magpie (text-to-speech)
-- NeMo: Guardrails, Curator, Evaluator, Relay, Agent Toolkit, Switchyard
-- Infrastructure: DCGM, Brev L40S 48 GB
+NV STACK
+Nemotron Nano 8B (NIM): reads updates into structured JSON and narrates search results
+NV-EmbedQA E5 (NIM): embeddings for update search and operation matching
+NV-RerankQA 4B (NIM): reranks search candidates before they are cited
+Riva Parakeet / Magpie: speech-to-text and text-to-speech
+NeMo Guardrails: input and output rails
+NeMo Curator: curation; quarantines prompt injection before indexing
+NeMo Evaluator: seven benchmarks, run over run
+NeMo Relay: per-stage traces
+NeMo Agent Toolkit: the agent as a workflow over 11 typed tools
+NeMo Switchyard: local or hosted model routing (off by default)
+NVIDIA DCGM: GPU telemetry
+NVIDIA Brev: L40S compute
+Around these: Milvus vector store, SQLite event log, FastAPI, Gradio UI, Prometheus and Grafana.
 
 RESULTS / PROGRESS
-- Built, deployed and demoed end to end in automotive service, with a 2:34 client demo video
-
-| Measure | Result |
-| Unit tests | 81 pass |
-| Live answer checks | 14 of 14 pass |
-| Routing, grounding, refusal, traceability | 100% |
-| Structured answers | about 0.1 s, no model call |
-| Free-text answers | 3 to 4 s, local |
-| GPU memory | about 32 of 46 GB |
-| Retrieval recall@6 (weakest area) | 83.3% |
+Built, deployed and demonstrated end to end in automotive service: spoken or typed updates become derived job state, a prioritised handover and cited answers, with a 2:34 client demo video.
+81 unit tests and 14 of 14 live answer checks pass; routing, grounding, refusal and traceability all score 100%. Structured answers return in about 0.1 s with no model call and free-text answers in 3 to 4 s on local NIMs; all three NIMs fit in about 32 of 46 GB.
+Weakest area: retrieval recall@6 of 83.3%.
 
 NEXT STEPS
-- Build the second sector and pilot with a real operation
-- Connect real sources (work orders, parts, scheduling)
-- Improve retrieval recall and agent answer quality
-- Add local Riva speech-to-text
-- Add authentication before any pilot
+Build the second sector and pilot with a real operation; connect real sources (work orders, parts, scheduling); improve retrieval recall and agent answer quality; add local Riva speech-to-text; and add authentication before any pilot.
