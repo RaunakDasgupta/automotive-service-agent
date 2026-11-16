@@ -31,10 +31,8 @@ RESULTS / PROGRESS
 - Weakest area: retrieval recall@6 is 83.3%
 
 NEXT STEPS
-- Build the second sector (swap catalogue, spec limits and lifecycle) and pilot with a real operation
+- Build the second sector and pilot with a real operation
 - Connect real sources (work orders, parts, scheduling)
-- Improve retrieval recall
-- Fix answer composition in the Agent Toolkit workflow
-- Unblock NemoClaw / OpenShell
-- Add a local Riva speech-to-text container
-- Add authentication and access control
+- Improve retrieval recall and agent answer quality
+- Unblock NemoClaw; add local Riva speech-to-text
+- Add authentication before any pilot

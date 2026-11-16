@@ -91,15 +91,12 @@ Around it, not counted as NVIDIA: Milvus (vectors), SQLite (system of record), F
 
 ## 5. Next steps
 
-| step | why | status |
-|---|---|---|
-| Improve retrieval recall (disambiguate shared complaint texts, evaluate the hybrid and rerank settings further) | The weakest measured link | proposed |
-| Fix composition in the Agent Toolkit workflow, or keep the native path as the single answer route | 3 of 18 composed answers is not good enough to expose | proposed |
-| Unblock NemoClaw / OpenShell, or find an alternative containment boundary | Closes the one blocked component and enables a sandboxed compute tool | blocked on a Brev platform fault |
-| Local Riva ASR container | Removes the last hosted dependency in the answer path | proposed |
-| Add authentication and access control | Required before any pilot with real data | proposed |
-| Connect real sources (work-order system, parts inventory, scheduling) and add double-booking and duplicate-order detection | Moves from "makes conflicts visible" to "flags them" | proposed |
-| Build the second sector by swapping the catalogue, spec limits and lifecycle, and pilot with a real operation | Tests the cross-sector claim, which is the intended area of deployment but not yet built | proposed |
-| Keep the evaluation gates (`scripts/agent_loop.py`) in the release path | Protects the measured baselines as the system changes | in place, to extend |
+| step | why |
+|---|---|
+| Build the second sector and pilot with a real operation | Tests the cross-sector claim, which is not yet built |
+| Connect real sources (work orders, parts, scheduling) | Moves from visible conflicts to flagged ones |
+| Improve retrieval recall and agent answer quality | Recall@6 is 83.3%; only 3 of 18 Agent Toolkit answers are good |
+| Unblock NemoClaw; add local Riva speech-to-text | Closes the blocked component and the last hosted dependency |
+| Add authentication | Needed before any pilot with real data |
 
-Steps marked *proposed* are suggestions drawn from the measured limits, not commitments; confirm priorities before presenting them as a plan.
+Steps are *proposed*, drawn from the measured limits; confirm priorities before presenting them as a plan.
